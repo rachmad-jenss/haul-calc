@@ -1,0 +1,2 @@
+haulpave==0.2.0
+pyinstaller>=6.6

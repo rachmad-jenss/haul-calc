@@ -1,0 +1,30 @@
+[package]
+name = "haul-calc"
+version = "0.1.0"
+description = "Haul road pavement calculations desktop app"
+authors = ["Rachmad Jenss"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "haul_calc_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

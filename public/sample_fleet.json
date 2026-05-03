@@ -1,0 +1,8 @@
+{
+  "fleet": [
+    { "vehicle_id": "cat-797f", "count": 8, "trips_per_day": 22, "payload_kn": 4000 },
+    { "vehicle_id": "cat-789d", "count": 4, "trips_per_day": 24, "payload_kn": 2100 },
+    { "vehicle_id": "kom-960e", "count": 6, "trips_per_day": 22, "payload_kn": 3800 }
+  ],
+  "design_life_years": 10
+}
