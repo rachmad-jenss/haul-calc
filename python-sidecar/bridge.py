@@ -147,7 +147,7 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
                 reg_entry = find_by_id(vehicle_id)
                 if reg_entry is not None:
                     vehicle = reg_entry.vehicle
-            except Exception:  # pragma: no cover
+            except ImportError:  # pragma: no cover — registry not available
                 pass
 
         if vehicle is None:
@@ -170,9 +170,11 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
                 source="bridge synthetic — vehicle_id not found in registry",
             )
 
+        # `count` is the number of vehicles of this type; multiply into trips_per_day
+        count = max(1, int(entry.get("count", 1)))
         fleet_units.append(FleetUnit(
             vehicle=vehicle,
-            trips_per_day=float(entry.get("trips_per_day", 1)),
+            trips_per_day=float(entry.get("trips_per_day", 1)) * count,
         ))
 
     traffic = TrafficInput(
@@ -353,13 +355,14 @@ def main() -> int:
             )
             sys.stdout.flush()
         except Exception as e:  # noqa: BLE001
+            # Full traceback written to stderr (log) only — not exposed over stdout RPC.
+            traceback.print_exc(file=sys.stderr)
             sys.stdout.write(
                 json.dumps({
                     "id": req_id,
                     "error": {
                         "code": type(e).__name__,
                         "message": str(e),
-                        "trace": traceback.format_exc(),
                     },
                 })
                 + "\n"
