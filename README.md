@@ -1,8 +1,10 @@
-# Haul Calc
+# HaulCalc
 
-Desktop GUI (Windows) for **mining haul road pavement calculations**, built on
-top of the [haul-pave](https://github.com/rachmad-jenss/haul-pave) Python
-library.
+Desktop GUI (Windows) for **mining haul road pavement calculations**, powered by the
+[haul-pave](https://github.com/rachmad-jenss/haul-pave) Python library.
+
+[![CI](https://github.com/rachmad-jenss/haul-calc/actions/workflows/ci.yml/badge.svg)](https://github.com/rachmad-jenss/haul-calc/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Stack
 
@@ -10,24 +12,17 @@ library.
 - **React 18 + TypeScript + Vite** — UI
 - **Tailwind CSS** + shadcn-style primitives — styling
 - **Recharts** — pavement layer & cost charts
-- **Python sidecar** (PyInstaller single-file exe) — wraps `haulpave` and
-  speaks JSON-RPC over stdin/stdout
+- **Python sidecar** (PyInstaller single-file exe) — wraps `haulpave` and speaks JSON-RPC over stdin/stdout
 
-## What it covers (v1)
+## What it covers
 
-- Fleet definition → CESA + design coverages
+- Fleet definition from built-in OEM vehicle registry (CAT 797F, 789D, 785D; KOM 960E) → CESA + design coverages
 - USACE CBR pavement thickness
 - TRH 14 pavement thickness
-- Operating-cost comparison across pavement scenarios (tires, fuel,
-  maintenance)
+- Multi-scenario operating-cost comparison (tires, fuel, maintenance) using rolling-resistance model
 - Versioned design summary export (JSON)
 
-`haul-pave` is currently Phase 0; calculations not yet shipped upstream are
-returned as **clearly-flagged stub fixtures** so the UI is fully usable
-during development.
-
-**Out of scope for v1:** geometric design (gradient, super-elevation, sight
-distance, curves), full haul-cycle / productivity simulation.
+**Out of scope:** geometric design (gradient, super-elevation, sight distance, curves), full haul-cycle / productivity simulation.
 
 ## Prerequisites
 
@@ -35,24 +30,20 @@ distance, curves), full haul-cycle / productivity simulation.
 - Node.js 20+ and pnpm 9+
 - Rust stable (via `rustup`)
 - Python 3.10+
-- WebView2 runtime (preinstalled on Windows 11; bootstrapped by the installer
-  on older systems)
+- WebView2 runtime (preinstalled on Windows 11; bootstrapped by the installer on older systems)
 
-## First-time setup
+## Development setup
 
 ```powershell
-# 1. Generate platform icons from the base SVG (one-time)
+# Install JS and Python dependencies
 pnpm install
-pnpm tauri icon src-tauri/icons/base.svg
+pip install haulpave  # or: cd python-sidecar && pip install -r requirements.txt
 
-# 2. Build the Python sidecar exe (one-time per haul-pave version bump)
+# Build the Python sidecar exe (run once per haul-pave version bump)
 pwsh python-sidecar/build.ps1
-```
 
-## Develop
-
-```powershell
-pnpm tauri:dev
+# Start dev server + Tauri window
+pnpm tauri dev
 ```
 
 ## Build a release installer
@@ -60,31 +51,35 @@ pnpm tauri:dev
 ```powershell
 pwsh python-sidecar/build.ps1
 pnpm install
-pnpm tauri:build
+pnpm tauri build
 ```
 
 Outputs land in `src-tauri/target/release/bundle/`:
-- `msi/Haul Calc_*.msi`
-- `nsis/Haul Calc_*-setup.exe`
+- `msi/HaulCalc_*.msi`
+- `nsis/HaulCalc_*-setup.exe`
+
+## Running tests
+
+```powershell
+pnpm test:e2e   # Playwright E2E smoke tests (requires running Tauri dev window)
+```
 
 ## Project layout
 
 ```
 haul-calc/
-├── src-tauri/          Rust host (Tauri shell + sidecar bridge)
-│   ├── src/main.rs        entrypoint
-│   ├── src/lib.rs         app builder, plugins, state wiring
-│   ├── src/bridge.rs      JSON-RPC client over sidecar stdio
-│   └── src/commands.rs    #[tauri::command] handlers
-├── src/                React frontend
-│   ├── lib/haulpave-client.ts   typed wrapper around invoke()
-│   ├── lib/types.ts             DTO mirror of haul-pave pydantic models
-│   └── routes/                  one page per feature
-├── python-sidecar/     Python bridge + PyInstaller config
-│   ├── bridge.py
+├── src-tauri/              Rust host (Tauri shell + sidecar bridge)
+│   ├── src/bridge.rs         JSON-RPC client over sidecar stdio
+│   └── src/commands.rs       #[tauri::command] handlers
+├── src/                    React frontend
+│   ├── lib/haulpave-client.ts  typed wrapper around invoke()
+│   ├── lib/types.ts            DTO mirrors of haul-pave Pydantic models
+│   └── routes/                 one page per feature
+├── python-sidecar/
+│   ├── bridge.py             JSON-RPC stdio bridge wrapping haulpave
 │   ├── requirements.txt
-│   └── build.ps1
-└── .github/workflows/ci.yml
+│   └── build.ps1             PyInstaller build script
+└── tests/smoke/              Playwright E2E smoke tests (6 suites)
 ```
 
 ## How the bridge works
@@ -97,21 +92,20 @@ Tauri command (Rust)
    │  newline-delimited JSON-RPC
    ▼
 haulpave-bridge.exe (Python sidecar)
-   │  dispatches to haulpave.{traffic, pavement, economics, ...}
+   │  dispatches to haulpave.{traffic, pavement, economics, reporting, vehicle_registry}
    ▼
-haulpave package (pydantic results)
+haulpave package (Pydantic results)
 ```
 
-Responses come back in three flavours:
+Responses come back in three shapes:
 
 | Shape | Meaning |
-|---|---|
-| `{ data, stub: false }` | Real haul-pave result |
-| `{ data, stub: true, stub_message }` | Fixture (haul-pave hasn't shipped this yet) |
-| `throw CallError` | Real failure |
+|-------|---------|
+| `{ result }` | Real haul-pave result |
+| `{ result, stub: true, stub_message }` | Fixture (haul-pave method not yet wired) |
+| `{ error }` | Real failure |
 
-The UI renders a yellow `<StubBanner>` whenever a response is flagged as a
-stub.
+The UI renders a yellow `<StubBanner>` whenever a response is flagged as a stub.
 
 ## License
 
