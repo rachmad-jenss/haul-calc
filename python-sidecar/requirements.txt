@@ -1,2 +1,2 @@
-haulpave==0.2.0
+haulpave @ git+https://github.com/rachmad-jenss/haul-pave.git
 pyinstaller>=6.6

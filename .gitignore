@@ -41,3 +41,14 @@ python-sidecar/*.spec
 
 # Generated
 *.tsbuildinfo
+
+# E2E test output (generated at runtime, not tracked)
+tests/screenshots/
+tests/playwright-report/
+tests/test-results/
+
+# AI tool files (not for public repo)
+CLAUDE.md
+CONTRIBUTING.md
+TEMPLATES.md
+.claude/
