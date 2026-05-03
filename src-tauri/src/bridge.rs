@@ -8,6 +8,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
+use tauri::async_runtime;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, warn};
 
@@ -92,7 +93,7 @@ impl BridgeClient {
         // Writer task: drain write_rx, push bytes into sidecar stdin.
         // We move the CommandChild into this task; it owns the handle.
         let mut child_owned: CommandChild = child;
-        tokio::spawn(async move {
+        async_runtime::spawn(async move {
             while let Some(buf) = write_rx.recv().await {
                 if let Err(e) = child_owned.write(&buf) {
                     error!("failed writing to sidecar stdin: {e:?}");
@@ -105,7 +106,7 @@ impl BridgeClient {
 
         // Reader task: parse stdout JSON lines, route to pending oneshot senders.
         let pending_for_reader = Arc::clone(&pending);
-        tokio::spawn(async move {
+        async_runtime::spawn(async move {
             while let Some(event) = event_rx.recv().await {
                 match event {
                     CommandEvent::Stdout(line) => {

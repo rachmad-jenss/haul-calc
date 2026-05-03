@@ -27,10 +27,10 @@ src-tauri/Cargo.lock
 src-tauri/gen/
 src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
-# Tauri-generated platform icons (regenerated locally via `pnpm tauri icon`)
-src-tauri/icons/*.png
-src-tauri/icons/*.ico
-src-tauri/icons/*.icns
+# Tauri-generated platform icons — all committed so CI can build without pnpm tauri icon
+# src-tauri/icons/*.png
+# src-tauri/icons/*.ico
+# src-tauri/icons/*.icns
 
 # Python sidecar
 python-sidecar/.venv/
@@ -41,3 +41,14 @@ python-sidecar/*.spec
 
 # Generated
 *.tsbuildinfo
+
+# E2E test output (generated at runtime, not tracked)
+tests/screenshots/
+tests/playwright-report/
+tests/test-results/
+
+# AI tool files (not for public repo)
+CLAUDE.md
+CONTRIBUTING.md
+TEMPLATES.md
+.claude/

@@ -1,18 +1,18 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 const host = process.env.TAURI_DEV_HOST;
+const isDebug = !!process.env.TAURI_ENV_DEBUG;
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
-  plugins: [react()],
+export default defineConfig({
+  plugins: [react() as unknown as Plugin],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Vite options tailored for Tauri development
   clearScreen: false,
   server: {
     port: 1420,
@@ -28,7 +28,7 @@ export default defineConfig(async () => ({
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   build: {
     target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
-    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
-    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    minify: isDebug ? false : "esbuild",
+    sourcemap: isDebug,
   },
-}));
+});
