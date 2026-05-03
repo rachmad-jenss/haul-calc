@@ -24,8 +24,13 @@ Thumbs.db
 # Rust / Tauri
 src-tauri/target/
 src-tauri/Cargo.lock
+src-tauri/gen/
 src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
+# Tauri-generated platform icons (regenerated locally via `pnpm tauri icon`)
+src-tauri/icons/*.png
+src-tauri/icons/*.ico
+src-tauri/icons/*.icns
 
 # Python sidecar
 python-sidecar/.venv/

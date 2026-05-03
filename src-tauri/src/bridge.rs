@@ -23,8 +23,6 @@ pub enum BridgeError {
     Io(#[from] std::io::Error),
     #[error("json: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("internal: {0}")]
-    Internal(String),
 }
 
 #[derive(Serialize)]
