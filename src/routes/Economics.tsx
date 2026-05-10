@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
+import { compareRequestSchema, firstError } from "@/lib/schemas";
 import type {
   CallError,
   CostComparison,
@@ -71,9 +72,14 @@ export default function Economics() {
     setScenarios((prev) => prev.filter((_, i) => i !== idx));
 
   const compute = async () => {
+    const parsed = compareRequestSchema.safeParse(scenarios);
+    if (!parsed.success) {
+      toast.error(firstError(parsed.error));
+      return;
+    }
     setRunning(true);
     try {
-      const res = await haulPave.compareScenarios(scenarios);
+      const res = await haulPave.compareScenarios(parsed.data);
       setResult(res.data);
       setStub(res.stub);
       setStubMessage(res.stubMessage);

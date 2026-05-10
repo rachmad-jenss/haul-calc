@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
+import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import type { CallError, PavementResult } from "@/lib/types";
 
 const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
@@ -41,17 +42,27 @@ export default function PavementDesign() {
   const [running, setRunning] = useState(false);
 
   const compute = async () => {
+    const cbrParsed = cbrRequestSchema.safeParse({
+      subgrade_cbr: subgradeCbr,
+      design_coverages: coverages,
+    });
+    if (!cbrParsed.success) {
+      toast.error(firstError(cbrParsed.error));
+      return;
+    }
+    const trhParsed = trh14RequestSchema.safeParse({
+      category,
+      design_coverages: coverages,
+    });
+    if (!trhParsed.success) {
+      toast.error(firstError(trhParsed.error));
+      return;
+    }
     setRunning(true);
     try {
       const [cbrRes, trhRes] = await Promise.all([
-        haulPave.cbrThickness({
-          subgrade_cbr: subgradeCbr,
-          design_coverages: coverages,
-        }),
-        haulPave.trh14Thickness({
-          category,
-          design_coverages: coverages,
-        }),
+        haulPave.cbrThickness(cbrParsed.data),
+        haulPave.trh14Thickness(trhParsed.data),
       ]);
       setCbr({ data: cbrRes.data, stub: cbrRes.stub, msg: cbrRes.stubMessage });
       setTrh({ data: trhRes.data, stub: trhRes.stub, msg: trhRes.stubMessage });
