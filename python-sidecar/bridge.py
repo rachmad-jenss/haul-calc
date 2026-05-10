@@ -129,158 +129,194 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
 # Per-method adapters — convert raw JSON params to typed haulpave inputs
 # ---------------------------------------------------------------------------
 
-def _call_compute_cesa(params: dict[str, Any]) -> Any:
+# ---------------------------------------------------------------------------
+# Shared: build a TrafficInput from the fleet params sent by haul-calc UI
+# ---------------------------------------------------------------------------
+
+def _build_traffic(params: dict[str, Any]) -> Any:
+    """Convert haul-calc fleet JSON into haulpave TrafficInput."""
     from haulpave.models.traffic import FleetUnit, TrafficInput
     from haulpave.models.vehicle import AxleGroup, MiningVehicle, TireSpec
-    from haulpave.traffic.cesa import compute_cesa
 
     _tire = TireSpec(contact_pressure_kpa=700.0, contact_area_mm2=50_000.0)
 
     fleet_units = []
     for entry in params.get("fleet", []):
         vehicle_id = entry.get("vehicle_id", "")
-        # Try registry first; fall back to a synthetic vehicle from payload_kn
-        vehicle: MiningVehicle | None = None
-        if haulpave is not None:
-            try:
-                from haulpave.vehicle_registry import find_by_id
-                reg_entry = find_by_id(vehicle_id)
-                if reg_entry is not None:
-                    vehicle = reg_entry.vehicle
-            except ImportError:  # pragma: no cover — registry not available
-                pass
-
-        if vehicle is None:
-            # Synthesise from payload_kn if registry lookup fails
-            payload_kn = float(entry.get("payload_kn", 1_000.0))
-            gvw_kn = payload_kn * 4 / 3  # rough 75% payload fraction
-            vehicle = MiningVehicle(
-                name=vehicle_id or "unknown",
-                gross_vehicle_mass_t=round(gvw_kn / 9.81, 1),
-                axle_groups=[
-                    AxleGroup(
-                        axle_count=1, tyres_per_axle=2,
-                        gross_load_kn=round(gvw_kn * 0.25, 1), tire_spec=_tire,
-                    ),
-                    AxleGroup(
-                        axle_count=2, tyres_per_axle=4,
-                        gross_load_kn=round(gvw_kn * 0.75, 1), tire_spec=_tire,
-                    ),
-                ],
-                source="bridge synthetic — vehicle_id not found in registry",
-            )
-
-        # `count` is the number of vehicles of this type; multiply into trips_per_day
+        # Synthesise a MiningVehicle from payload_kn (vehicle_registry is Phase 1)
+        payload_kn = float(entry.get("payload_kn", 1_000.0))
+        gvw_kn = payload_kn * 4 / 3  # rough 75% payload fraction
+        vehicle = MiningVehicle(
+            name=vehicle_id or "unknown",
+            gross_vehicle_mass_t=round(gvw_kn / 9.81, 1),
+            axle_groups=[
+                AxleGroup(
+                    axle_count=1, tyres_per_axle=2,
+                    gross_load_kn=round(gvw_kn * 0.25, 1), tire_spec=_tire,
+                ),
+                AxleGroup(
+                    axle_count=2, tyres_per_axle=4,
+                    gross_load_kn=round(gvw_kn * 0.75, 1), tire_spec=_tire,
+                ),
+            ],
+            source="bridge synthetic",
+        )
         count = max(1, int(entry.get("count", 1)))
         fleet_units.append(FleetUnit(
             vehicle=vehicle,
             trips_per_day=float(entry.get("trips_per_day", 1)) * count,
         ))
 
-    traffic = TrafficInput(
+    return TrafficInput(
         fleet=fleet_units,
         design_life_years=float(params.get("design_life_years", 10)),
         working_days_per_year=int(params.get("working_days_per_year", 250)),
     )
-    result = compute_cesa(traffic)
+
+
+def _call_compute_cesa(params: dict[str, Any]) -> Any:
+    from haulpave.traffic.cesa import compute_cesa
+    from haulpave.traffic.coverages import compute_coverages
+
+    traffic = _build_traffic(params)
+    cesa_result = compute_cesa(traffic)
+    cov_result = compute_coverages(traffic)
+
+    # Build axle load distribution from fleet vehicles
+    axle_dist = []
+    for fu in traffic.fleet:
+        total_passes = fu.trips_per_day * traffic.working_days_per_year * traffic.design_life_years
+        for ag in fu.vehicle.axle_groups:
+            axle_dist.append({
+                "axle_kn": round(ag.gross_load_kn),
+                "passes": round(total_passes),
+            })
+
     return {
-        "cesa": result.total_cesa,
-        "design_coverages": result.total_cesa,  # CESA used as coverage proxy for bridge
+        "cesa": cesa_result.total_cesa,
+        "design_coverages": cov_result.total_coverages,
         "design_life_years": traffic.design_life_years,
-        "axle_load_distribution": [],
+        "axle_load_distribution": axle_dist,
     }
 
 
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import cbr_thickness_from_coverages
+    from haulpave.pavement import interpolate_thickness, load_curve_data
 
-    thickness = cbr_thickness_from_coverages(
-        subgrade_cbr=float(params["subgrade_cbr"]),
-        design_coverages=float(params["design_coverages"]),
-    )
     cbr = float(params["subgrade_cbr"])
+    coverages = float(params["design_coverages"])
+    curve_data = load_curve_data("usace_cbr_v1")
+    thickness = interpolate_thickness(curve_data, cbr=cbr, coverages=coverages)
+    t = round(thickness)
+
+    # Decompose into rational layer structure (surface < base > sub-base)
     return {
         "method": "USACE TM 5-822-12 CBR design curves",
         "subgrade_cbr": cbr,
         "layers": [
-            {"name": "Surface (asphalt)", "thickness_mm": round(thickness * 0.12), "cbr": None},
-            {"name": "Base course",       "thickness_mm": round(thickness * 0.38), "cbr": 80},
-            {"name": "Sub-base",          "thickness_mm": round(thickness * 0.50), "cbr": 30},
+            {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
+            {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
+            {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
         ],
-        "total_thickness_mm": round(thickness),
+        "total_thickness_mm": t,
     }
 
 
 # Map TypeScript category A/B/C/D → representative subgrade CBR for TRH14 lookup.
-# Loosely follows TRH 14 Table 2 G-class mid-points for road design categories:
-#   A = strong sub-base quality (G3, CBR≥25)  → 30 %
-#   B = medium sub-base quality (G5, CBR≥7)   → 10 %
-#   C = weaker sub-grade (G6, CBR≥4)          →  5 %
-#   D = very weak sub-grade (G7, CBR≥2)       →  3 %
+# TRH 14 Table 2 G-class mid-points:
+#   A = G3 (CBR≥25) → 30%   B = G5 (CBR≥7) → 10%
+#   C = G6 (CBR≥4)  →  5%   D = G7 (CBR≥2) →  3%
 _TRH14_CATEGORY_CBR: dict[str, float] = {
-    "A": 30.0,
-    "B": 10.0,
-    "C": 5.0,
-    "D": 3.0,
+    "A": 30.0, "B": 10.0, "C": 5.0, "D": 3.0,
 }
 
 
 def _call_trh14_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import trh14_thickness_from_coverages
+    from haulpave.pavement.trh14 import (
+        _interpolate_catalog, _load_catalog, cbr_to_material_class,
+    )
 
     category = str(params.get("category", "B")).upper()
     cbr = _TRH14_CATEGORY_CBR.get(category, 10.0)
-    result = trh14_thickness_from_coverages(
-        subgrade_cbr=cbr,
-        design_coverages=float(params["design_coverages"]),
+    coverages = float(params["design_coverages"])
+    mat_class = cbr_to_material_class(cbr)
+    catalog = _load_catalog()
+    thickness = _interpolate_catalog(
+        catalog["thickness_mm"][mat_class],
+        catalog["coverage_levels"],
+        coverages,
     )
-    t = result.total_thickness_mm
+    t = round(thickness)
     return {
-        "method": result.method,
+        "method": "TRH 14 (CSRA 1985) design catalog",
         "category": category,
         "layers": [
-            {"name": f"Wearing course ({result.material_class})",
+            {"name": f"Wearing course ({mat_class})",
              "thickness_mm": round(t * 0.28), "cbr": None},
             {"name": "Base",
-             "thickness_mm": round(t * 0.35), "cbr": 25},
+             "thickness_mm": round(t * 0.42), "cbr": 25},
             {"name": "Sub-base",
-             "thickness_mm": round(t * 0.37), "cbr": 10},
+             "thickness_mm": round(t * 0.30), "cbr": 10},
         ],
-        "total_thickness_mm": round(t),
+        "total_thickness_mm": t,
     }
 
 
-def _call_compare_scenarios(params: dict[str, Any]) -> Any:
-    from haulpave.economics.compare import ComparisonResult, RoadScenario, compare_scenarios
+# Surface type → assumed parameters for the economics engine.
+# fuel_consumption in L/km, speed in km/h (loaded direction averages).
+_SURFACE_DEFAULTS: dict[str, dict[str, float]] = {
+    "asphalt":  {"fuel_l_km": 3.0, "speed_kmh": 30.0},
+    "gravel":   {"fuel_l_km": 4.5, "speed_kmh": 20.0},
+    "concrete": {"fuel_l_km": 2.8, "speed_kmh": 30.0},
+}
 
-    road_scenarios = [
-        RoadScenario(
-            name=s.get("name", f"Scenario {i + 1}"),
-            surface=s["surface"],
-            thickness_mm=float(s.get("thickness_mm", 0)),
+
+def _call_compare_scenarios(params: dict[str, Any]) -> Any:
+    from haulpave.models.economics import CostAssumptions, CostScenario
+    from haulpave.economics import compute_economics
+
+    assumptions = CostAssumptions(
+        fuel_cost_per_litre=1.20,
+        tyre_cost_per_hour=45.0,
+        maintenance_cost_per_km=2.50,
+        operator_cost_per_hour=65.0,
+    )
+
+    results = []
+    for i, s in enumerate(params.get("scenarios", [])):
+        surface = s.get("surface", "asphalt")
+        defaults = _SURFACE_DEFAULTS.get(surface, _SURFACE_DEFAULTS["asphalt"])
+
+        scenario = CostScenario(
+            scenario_id=s.get("name", f"Scenario {i + 1}"),
             haul_distance_km=float(s["haul_distance_km"]),
-            trips_per_day=float(s["trips_per_day"]),
+            average_speed_kmh=defaults["speed_kmh"],
+            payload_t=350.0,  # representative heavy mining truck payload
+            fuel_consumption_l_per_km=defaults["fuel_l_km"],
+            assumptions=assumptions,
         )
-        for i, s in enumerate(params.get("scenarios", []))
-    ]
-    result: ComparisonResult = compare_scenarios(road_scenarios)
-    return result.model_dump(mode="json")
+        econ = compute_economics(
+            scenario, trips_per_day=float(s.get("trips_per_day", 20)),
+        )
+        results.append({
+            "name": s.get("name", surface.capitalize()),
+            "tire_cost_usd_per_year": round(econ.tyre_cost_per_trip * econ.trips_per_year),
+            "fuel_cost_usd_per_year": round(econ.fuel_cost_per_trip * econ.trips_per_year),
+            "maintenance_cost_usd_per_year": round(
+                econ.maintenance_cost_per_trip * econ.trips_per_year
+            ),
+        })
+    return {"scenarios": results}
 
 
 def _call_build_summary(params: dict[str, Any]) -> Any:
-    from haulpave.reporting import build_design_summary
-
-    summary = build_design_summary(inputs=params)
-    return summary.model_dump(mode="json")
+    # reporting module is Phase 1 — raise to fall back to stub
+    raise NotImplementedError("build_summary")
 
 
 def _call_list_vehicles(_params: dict[str, Any]) -> Any:
-    from haulpave.vehicle_registry import list_all
-
-    return [
-        {"id": entry.id, "name": entry.name, "gvw_kn": entry.gvw_kn, "axles": entry.axles}
-        for entry in list_all()
-    ]
+    # vehicle_registry is Phase 1 — raise to fall back to stub
+    raise NotImplementedError("list_vehicles")
 
 
 # ---------------------------------------------------------------------------
