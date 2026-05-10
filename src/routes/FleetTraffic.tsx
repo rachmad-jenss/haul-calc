@@ -194,7 +194,7 @@ export default function FleetTraffic() {
             </CardContent>
           </Card>
 
-          {cesaResult?.axle_load_distribution.length ? (
+          {cesaResult?.axle_load_distribution?.length ? (
             <Card>
               <CardHeader>
                 <CardTitle>Axle load distribution</CardTitle>
