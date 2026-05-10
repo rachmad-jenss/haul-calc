@@ -378,16 +378,11 @@ def _call_list_vehicles(_params: dict[str, Any]) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Dispatch table
+# Dispatch table — built once at module import, not per request.
 # ---------------------------------------------------------------------------
 
-# Maps method name → (real_callable | None).
-# real_callable is a function(params) → Any that uses the real haul-pave impl.
-# If haulpave is unavailable, the callable is set to None and the stub fires.
-def _build_dispatch_table() -> dict[str, Callable[[dict[str, Any]], Any] | None]:
-    if haulpave is None:
-        return {}
-    return {
+_DISPATCH: dict[str, Callable[[dict[str, Any]], Any]] = (
+    {
         "compute_cesa": _call_compute_cesa,
         "cbr_thickness": _call_cbr_thickness,
         "trh14_thickness": _call_trh14_thickness,
@@ -397,6 +392,9 @@ def _build_dispatch_table() -> dict[str, Callable[[dict[str, Any]], Any] | None]
         "build_summary": _call_build_summary,
         "list_vehicles": _call_list_vehicles,
     }
+    if haulpave is not None
+    else {}
+)
 
 
 def _dispatch(method: str, params: dict[str, Any]) -> tuple[Any, bool]:
@@ -409,8 +407,7 @@ def _dispatch(method: str, params: dict[str, Any]) -> tuple[Any, bool]:
         version = getattr(haulpave, "__version__", None) if haulpave is not None else None
         return {"haulpave": version, "bridge": "0.1.0"}, version is None
 
-    dispatch = _build_dispatch_table()
-    real_fn = dispatch.get(method)
+    real_fn = _DISPATCH.get(method)
 
     if real_fn is not None:
         try:
