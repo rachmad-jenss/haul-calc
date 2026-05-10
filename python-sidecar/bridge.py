@@ -33,10 +33,14 @@ except Exception:  # pragma: no cover - early dev only
 
 def _serialize(obj: Any) -> Any:
     """Coerce pydantic models / dataclasses into JSON-friendly structures."""
+    import dataclasses
+
     if obj is None or isinstance(obj, (bool, int, float, str)):
         return obj
     if hasattr(obj, "model_dump"):
         return obj.model_dump(mode="json")
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        return {k: _serialize(v) for k, v in dataclasses.asdict(obj).items()}
     if hasattr(obj, "_asdict"):
         return obj._asdict()
     if isinstance(obj, dict):
@@ -134,33 +138,46 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
 # ---------------------------------------------------------------------------
 
 def _build_traffic(params: dict[str, Any]) -> Any:
-    """Convert haul-calc fleet JSON into haulpave TrafficInput."""
+    """Convert haul-calc fleet JSON into haulpave TrafficInput.
+
+    Looks up vehicle_id in the registry first; falls back to synthetic
+    axle-split from payload_kn when the ID is unknown.
+    """
     from haulpave.models.traffic import FleetUnit, TrafficInput
     from haulpave.models.vehicle import AxleGroup, MiningVehicle, TireSpec
+    from haulpave.vehicle_registry import find_by_id
 
     _tire = TireSpec(contact_pressure_kpa=700.0, contact_area_mm2=50_000.0)
 
     fleet_units = []
     for entry in params.get("fleet", []):
         vehicle_id = entry.get("vehicle_id", "")
-        # Synthesise a MiningVehicle from payload_kn (vehicle_registry is Phase 1)
-        payload_kn = float(entry.get("payload_kn", 1_000.0))
-        gvw_kn = payload_kn * 4 / 3  # rough 75% payload fraction
-        vehicle = MiningVehicle(
-            name=vehicle_id or "unknown",
-            gross_vehicle_mass_t=round(gvw_kn / 9.81, 1),
-            axle_groups=[
-                AxleGroup(
-                    axle_count=1, tyres_per_axle=2,
-                    gross_load_kn=round(gvw_kn * 0.25, 1), tire_spec=_tire,
-                ),
-                AxleGroup(
-                    axle_count=2, tyres_per_axle=4,
-                    gross_load_kn=round(gvw_kn * 0.75, 1), tire_spec=_tire,
-                ),
-            ],
-            source="bridge synthetic",
-        )
+
+        # Try the real registry first
+        reg_entry = find_by_id(vehicle_id) if vehicle_id else None
+
+        if reg_entry is not None:
+            vehicle = reg_entry.vehicle
+        else:
+            # Synthesise from payload_kn (custom / unknown vehicle)
+            payload_kn = float(entry.get("payload_kn", 1_000.0))
+            gvw_kn = payload_kn * 4 / 3  # rough 75% payload fraction
+            vehicle = MiningVehicle(
+                name=vehicle_id or "unknown",
+                gross_vehicle_mass_t=round(gvw_kn / 9.81, 1),
+                axle_groups=[
+                    AxleGroup(
+                        axle_count=1, tyres_per_axle=2,
+                        gross_load_kn=round(gvw_kn * 0.25, 1), tire_spec=_tire,
+                    ),
+                    AxleGroup(
+                        axle_count=2, tyres_per_axle=4,
+                        gross_load_kn=round(gvw_kn * 0.75, 1), tire_spec=_tire,
+                    ),
+                ],
+                source="bridge synthetic",
+            )
+
         count = max(1, int(entry.get("count", 1)))
         fleet_units.append(FleetUnit(
             vehicle=vehicle,
@@ -262,61 +279,102 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     }
 
 
-# Surface type → assumed parameters for the economics engine.
-# fuel_consumption in L/km, speed in km/h (loaded direction averages).
-_SURFACE_DEFAULTS: dict[str, dict[str, float]] = {
-    "asphalt":  {"fuel_l_km": 3.0, "speed_kmh": 30.0},
-    "gravel":   {"fuel_l_km": 4.5, "speed_kmh": 20.0},
-    "concrete": {"fuel_l_km": 2.8, "speed_kmh": 30.0},
-}
-
-
 def _call_compare_scenarios(params: dict[str, Any]) -> Any:
-    from haulpave.models.economics import CostAssumptions, CostScenario
-    from haulpave.economics import compute_economics
+    from haulpave.economics.compare import RoadScenario, compare_scenarios
 
-    assumptions = CostAssumptions(
-        fuel_cost_per_litre=1.20,
-        tyre_cost_per_hour=45.0,
-        maintenance_cost_per_km=2.50,
-        operator_cost_per_hour=65.0,
-    )
+    road_scenarios = []
+    for s in params.get("scenarios", []):
+        road_scenarios.append(RoadScenario(
+            name=s.get("name", "Scenario"),
+            surface=s.get("surface", "asphalt"),
+            thickness_mm=int(s.get("thickness_mm", 100)),
+            haul_distance_km=float(s.get("haul_distance_km", 5)),
+            trips_per_day=int(s.get("trips_per_day", 20)),
+        ))
 
-    results = []
-    for i, s in enumerate(params.get("scenarios", [])):
-        surface = s.get("surface", "asphalt")
-        defaults = _SURFACE_DEFAULTS.get(surface, _SURFACE_DEFAULTS["asphalt"])
+    result = compare_scenarios(road_scenarios)
 
-        scenario = CostScenario(
-            scenario_id=s.get("name", f"Scenario {i + 1}"),
-            haul_distance_km=float(s["haul_distance_km"]),
-            average_speed_kmh=defaults["speed_kmh"],
-            payload_t=350.0,  # representative heavy mining truck payload
-            fuel_consumption_l_per_km=defaults["fuel_l_km"],
-            assumptions=assumptions,
-        )
-        econ = compute_economics(
-            scenario, trips_per_day=float(s.get("trips_per_day", 20)),
-        )
-        results.append({
-            "name": s.get("name", surface.capitalize()),
-            "tire_cost_usd_per_year": round(econ.tyre_cost_per_trip * econ.trips_per_year),
-            "fuel_cost_usd_per_year": round(econ.fuel_cost_per_trip * econ.trips_per_year),
-            "maintenance_cost_usd_per_year": round(
-                econ.maintenance_cost_per_trip * econ.trips_per_year
-            ),
-        })
-    return {"scenarios": results}
+    # Map to the wire format the UI expects
+    return {
+        "scenarios": [
+            {
+                "name": sc.name,
+                "tire_cost_usd_per_year": round(sc.tire_cost_usd_per_year),
+                "fuel_cost_usd_per_year": round(sc.fuel_cost_usd_per_year),
+                "maintenance_cost_usd_per_year": round(sc.maintenance_cost_usd_per_year),
+            }
+            for sc in result.scenarios
+        ],
+    }
+
+
+def _call_compare_methods(params: dict[str, Any]) -> Any:
+    """Compare CBR vs TRH14 in a single call — returns both results."""
+    import warnings
+    from haulpave.pavement.compare import compare_methods
+
+    traffic = _build_traffic(params)
+    cbr = float(params.get("subgrade_cbr", 8.0))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = compare_methods(traffic, subgrade_cbr=cbr)
+
+    return {
+        "usace": {
+            "method": result.usace.method,
+            "total_thickness_mm": round(result.usace.required_thickness_mm),
+            "total_coverages": round(result.usace.total_coverages),
+            "total_cesa": result.usace.total_cesa,
+            "confidence": result.usace.confidence,
+        },
+        "trh14": {
+            "method": result.trh14.method,
+            "total_thickness_mm": round(result.trh14.total_thickness_mm),
+            "total_coverages": round(result.trh14.total_coverages),
+            "material_class": result.trh14.material_class,
+            "confidence": result.trh14.confidence,
+        },
+        "delta_mm": round(result.delta_mm),
+        "subgrade_cbr": cbr,
+        "confidence": result.confidence,
+    }
+
+
+def _call_design_pavement(params: dict[str, Any]) -> Any:
+    """One-call full pavement design (recommended method)."""
+    import warnings
+    from haulpave.pavement.compare import design_pavement
+
+    traffic = _build_traffic(params)
+    cbr = float(params.get("subgrade_cbr", 8.0))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = design_pavement(traffic, subgrade_cbr=cbr)
+
+    return _serialize(result)
 
 
 def _call_build_summary(params: dict[str, Any]) -> Any:
-    # reporting module is Phase 1 — raise to fall back to stub
-    raise NotImplementedError("build_summary")
+    from haulpave.reporting.summary import build_design_summary
+
+    summary = build_design_summary(params)
+    return summary.model_dump(mode="json")
 
 
 def _call_list_vehicles(_params: dict[str, Any]) -> Any:
-    # vehicle_registry is Phase 1 — raise to fall back to stub
-    raise NotImplementedError("list_vehicles")
+    from haulpave.vehicle_registry import list_all
+
+    return [
+        {
+            "id": entry.id,
+            "name": entry.name,
+            "gvw_kn": entry.gvw_kn,
+            "axles": entry.axles,
+        }
+        for entry in list_all()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +392,8 @@ def _build_dispatch_table() -> dict[str, Callable[[dict[str, Any]], Any] | None]
         "cbr_thickness": _call_cbr_thickness,
         "trh14_thickness": _call_trh14_thickness,
         "compare_scenarios": _call_compare_scenarios,
+        "compare_methods": _call_compare_methods,
+        "design_pavement": _call_design_pavement,
         "build_summary": _call_build_summary,
         "list_vehicles": _call_list_vehicles,
     }
