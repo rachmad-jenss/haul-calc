@@ -43,7 +43,7 @@ export default function FleetTraffic() {
   };
 
   const compute = async () => {
-    const parsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLife });
+    const parsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
     if (!parsed.success) {
       toast.error(firstError(parsed.error));
       return;
