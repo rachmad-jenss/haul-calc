@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
+import { cesaRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
@@ -42,12 +43,14 @@ export default function FleetTraffic() {
   };
 
   const compute = async () => {
+    const parsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
+    if (!parsed.success) {
+      toast.error(firstError(parsed.error));
+      return;
+    }
     setRunning(true);
     try {
-      const res = await haulPave.computeCesa({
-        fleet,
-        design_life_years: designLifeYears,
-      });
+      const res = await haulPave.computeCesa(parsed.data);
       setCesaResult(res.data, res.stub, res.stubMessage);
     } catch (err) {
       const e = err as CallError;
