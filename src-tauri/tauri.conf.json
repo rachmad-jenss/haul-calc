@@ -38,7 +38,7 @@
     ],
     "externalBin": ["binaries/haulpave-bridge"],
     "resources": ["../public/sample_fleet.json"],
-    "category": "DeveloperTool",
+    "category": "Business",
     "shortDescription": "Mining haul road pavement calculations",
     "longDescription": "Desktop GUI for CESA, CBR/TRH 14 pavement thickness, and operating cost comparison. Wraps the haul-pave Python library."
   }
