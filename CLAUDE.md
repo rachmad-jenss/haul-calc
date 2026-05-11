@@ -220,7 +220,7 @@ Gunakan `/loop 3m` untuk polling otomatis setiap 3 menit sampai semua selesai.
 Setelah user merge PR (atau issue di-close), lakukan cleanup & sync:
 
 1. **Verify status sinkron:**
-   - Notion status harus "Done" (biasanya otomatis via `notion-sync.yml` GH Actions)
+   - Notion status harus "Done" (update manual via Notion MCP)
    - GitHub Issue harus "closed" (otomatis via `Closes #N` di PR body — jika tidak, close manual: `gh issue close {number} --repo rachmad-jenss/haul-calc`)
    - Jika salah satu belum terupdate, **update manual**
 
@@ -256,10 +256,10 @@ Setelah user merge PR (atau issue di-close), lakukan cleanup & sync:
 - Wajib isi **Repo** → `haul-calc`
 
 ## Notion Sync
-- GitHub Actions (`.github/workflows/notion-sync.yml`) syncs PR status to Notion
-- Trigger: PR title atau branch name harus mengandung task ID uppercase, e.g. `DAS-{N}`
+- Notion sync saat ini dilakukan **manual via Notion MCP** (GitHub Actions billing issue)
+- Saat billing fixed, setup `.github/workflows/notion-sync.yml` (copy dari repo lain, pakai `secrets.NOTION_TASKS_DB`)
 - Regex yang dipakai: `\b([A-Z]{2,5}-\d+)\b` — hanya match uppercase
-- Pastikan PR title selalu include `DAS-{ID}` agar sync berjalan otomatis
+- Pastikan PR title selalu include `DAS-{ID}` agar sync berjalan saat diaktifkan
 
 ## AI Attribution Rules
 - JANGAN pernah tambahkan `Co-Authored-By` di commit message
