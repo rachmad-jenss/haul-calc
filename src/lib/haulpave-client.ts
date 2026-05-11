@@ -28,6 +28,8 @@ async function call<T>(method: string, params: unknown = {}): Promise<CallResult
   }
 }
 
+export type SidecarStatus = "running" | "crashed" | "restarting";
+
 export const haulPave = {
   computeCesa: (req: CesaRequest) => call<CesaResult>("compute_cesa", req),
   cbrThickness: (req: CbrRequest) => call<PavementResult>("cbr_thickness", req),
@@ -39,6 +41,8 @@ export const haulPave = {
   listVehicles: () => call<Vehicle[]>("list_vehicles", {}),
   getVersion: () => call<{ haulpave: string | null; bridge: string }>("get_version", {}),
   healthCheck: () => call<{ ok: boolean; haulpave_loaded: boolean }>("health_check", {}),
+  getSidecarStatus: () => invoke<SidecarStatus>("get_sidecar_status"),
+  restartSidecar: () => invoke<void>("restart_sidecar"),
 };
 
 export type { CallResult, CallError } from "@/lib/types";
