@@ -10,9 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
+import { useCalcStore } from "@/lib/store";
 import type { CallError, DesignSummary } from "@/lib/types";
 
 export default function Reports() {
+  const { cesaResult, cbrResult, trhResult, costResult } = useCalcStore();
+
   const [project, setProject] = useState("Pit South — Main Haul");
   const [author, setAuthor] = useState("");
   const [summary, setSummary] = useState<DesignSummary | null>(null);
@@ -20,12 +23,38 @@ export default function Reports() {
   const [stubMessage, setStubMessage] = useState<string>();
   const [running, setRunning] = useState(false);
 
+  const hasData = !!(cesaResult || cbrResult || trhResult || costResult);
+
   const generate = async () => {
     setRunning(true);
     try {
       const res = await haulPave.buildSummary({
         project_name: project,
         author,
+        cesa: cesaResult
+          ? {
+              cesa: cesaResult.cesa,
+              design_coverages: cesaResult.design_coverages,
+              design_life_years: cesaResult.design_life_years,
+            }
+          : undefined,
+        pavement_cbr: cbrResult
+          ? {
+              method: cbrResult.method,
+              total_thickness_mm: cbrResult.total_thickness_mm,
+              layers: cbrResult.layers,
+            }
+          : undefined,
+        pavement_trh14: trhResult
+          ? {
+              method: trhResult.method,
+              total_thickness_mm: trhResult.total_thickness_mm,
+              layers: trhResult.layers,
+            }
+          : undefined,
+        cost_comparison: costResult
+          ? { scenarios: costResult.scenarios }
+          : undefined,
       });
       setSummary(res.data);
       setStub(res.stub);
@@ -95,6 +124,18 @@ export default function Reports() {
                 placeholder="Name, certification"
               />
             </div>
+            <div className="rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Data available</p>
+              <DataBadge label="CESA" active={!!cesaResult} />
+              <DataBadge label="CBR thickness" active={!!cbrResult} />
+              <DataBadge label="TRH 14 thickness" active={!!trhResult} />
+              <DataBadge label="Cost comparison" active={!!costResult} />
+              {!hasData && (
+                <p className="pt-1 text-xs text-amber-600">
+                  Run calculations on other tabs first for a complete report.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -110,13 +151,24 @@ export default function Reports() {
               </pre>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Click "Generate summary" to build a design report from the most
-                recent calculations.
+                Click "Generate summary" to build a design report from the most recent
+                calculations.
               </p>
             )}
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function DataBadge({ label, active }: { label: string; active: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
+      />
+      <span className={active ? "text-foreground" : ""}>{label}</span>
     </div>
   );
 }

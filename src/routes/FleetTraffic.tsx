@@ -8,22 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
-import type { CallError, CesaResult, FleetEntry, Vehicle } from "@/lib/types";
+import { useCalcStore } from "@/lib/store";
+import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
-const DEFAULT_FLEET: FleetEntry[] = [
-  { vehicle_id: "cat-797f", count: 8, trips_per_day: 22, payload_kn: 4_000 },
-  { vehicle_id: "cat-789d", count: 4, trips_per_day: 24, payload_kn: 2_100 },
-];
-
 export default function FleetTraffic() {
+  const { fleet, designLifeYears, cesaResult, setFleet, setDesignLifeYears, setCesaResult } =
+    useCalcStore();
+
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [fleet, setFleet] = useState<FleetEntry[]>(DEFAULT_FLEET);
-  const [designLife, setDesignLife] = useState(10);
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<CesaResult | null>(null);
-  const [stub, setStub] = useState(false);
-  const [stubMessage, setStubMessage] = useState<string>();
 
   useEffect(() => {
     haulPave
@@ -35,19 +29,16 @@ export default function FleetTraffic() {
   }, []);
 
   const updateRow = (idx: number, patch: Partial<FleetEntry>) => {
-    setFleet((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    setFleet(fleet.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
   const addRow = () => {
     const first = vehicles[0]?.id ?? "cat-797f";
-    setFleet((prev) => [
-      ...prev,
-      { vehicle_id: first, count: 1, trips_per_day: 20, payload_kn: 3_000 },
-    ]);
+    setFleet([...fleet, { vehicle_id: first, count: 1, trips_per_day: 20, payload_kn: 3_000 }]);
   };
 
   const removeRow = (idx: number) => {
-    setFleet((prev) => prev.filter((_, i) => i !== idx));
+    setFleet(fleet.filter((_, i) => i !== idx));
   };
 
   const compute = async () => {
@@ -55,11 +46,9 @@ export default function FleetTraffic() {
     try {
       const res = await haulPave.computeCesa({
         fleet,
-        design_life_years: designLife,
+        design_life_years: designLifeYears,
       });
-      setResult(res.data);
-      setStub(res.stub);
-      setStubMessage(res.stubMessage);
+      setCesaResult(res.data, res.stub, res.stubMessage);
     } catch (err) {
       const e = err as CallError;
       toast.error(`compute_cesa failed: ${e.message}`);
@@ -108,9 +97,7 @@ export default function FleetTraffic() {
                       <td className="px-2 py-2">
                         <select
                           value={row.vehicle_id}
-                          onChange={(e) =>
-                            updateRow(idx, { vehicle_id: e.target.value })
-                          }
+                          onChange={(e) => updateRow(idx, { vehicle_id: e.target.value })}
                           className="h-8 w-full rounded border border-input bg-background px-2 text-sm"
                         >
                           {vehicles.length === 0 ? (
@@ -129,9 +116,7 @@ export default function FleetTraffic() {
                           type="number"
                           min={1}
                           value={row.count}
-                          onChange={(e) =>
-                            updateRow(idx, { count: Number(e.target.value) })
-                          }
+                          onChange={(e) => updateRow(idx, { count: Number(e.target.value) })}
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -140,9 +125,7 @@ export default function FleetTraffic() {
                           min={0}
                           value={row.trips_per_day}
                           onChange={(e) =>
-                            updateRow(idx, {
-                              trips_per_day: Number(e.target.value),
-                            })
+                            updateRow(idx, { trips_per_day: Number(e.target.value) })
                           }
                         />
                       </td>
@@ -151,9 +134,7 @@ export default function FleetTraffic() {
                           type="number"
                           min={0}
                           value={row.payload_kn}
-                          onChange={(e) =>
-                            updateRow(idx, { payload_kn: Number(e.target.value) })
-                          }
+                          onChange={(e) => updateRow(idx, { payload_kn: Number(e.target.value) })}
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -180,8 +161,8 @@ export default function FleetTraffic() {
                   type="number"
                   min={1}
                   max={50}
-                  value={designLife}
-                  onChange={(e) => setDesignLife(Number(e.target.value))}
+                  value={designLifeYears}
+                  onChange={(e) => setDesignLifeYears(Number(e.target.value))}
                   className="w-32"
                 />
               </div>
@@ -195,18 +176,15 @@ export default function FleetTraffic() {
               <CardTitle>CESA result</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {stub ? <StubBanner message={stubMessage} /> : null}
-              {result ? (
+              {cesaResult?.stub ? <StubBanner message={cesaResult.stubMessage} /> : null}
+              {cesaResult ? (
                 <>
-                  <Metric label="CESA" value={formatNumber(result.cesa, 0)} />
+                  <Metric label="CESA" value={formatNumber(cesaResult.cesa, 0)} />
                   <Metric
                     label="Design coverages"
-                    value={formatNumber(result.design_coverages, 0)}
+                    value={formatNumber(cesaResult.design_coverages, 0)}
                   />
-                  <Metric
-                    label="Design life"
-                    value={`${result.design_life_years} yr`}
-                  />
+                  <Metric label="Design life" value={`${cesaResult.design_life_years} yr`} />
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -216,7 +194,7 @@ export default function FleetTraffic() {
             </CardContent>
           </Card>
 
-          {result?.axle_load_distribution.length ? (
+          {cesaResult?.axle_load_distribution?.length ? (
             <Card>
               <CardHeader>
                 <CardTitle>Axle load distribution</CardTitle>
@@ -230,12 +208,10 @@ export default function FleetTraffic() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result.axle_load_distribution.map((a, i) => (
+                    {cesaResult.axle_load_distribution.map((a, i) => (
                       <tr key={i} className="border-t">
                         <td className="px-2 py-1">{formatNumber(a.axle_kn, 0)}</td>
-                        <td className="px-2 py-1 text-right">
-                          {formatNumber(a.passes, 0)}
-                        </td>
+                        <td className="px-2 py-1 text-right">{formatNumber(a.passes, 0)}</td>
                       </tr>
                     ))}
                   </tbody>
