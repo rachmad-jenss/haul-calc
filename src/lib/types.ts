@@ -10,6 +10,7 @@ export interface Vehicle {
 }
 
 export interface FleetEntry {
+  _id: string;
   vehicle_id: string;
   count: number;
   trips_per_day: number;

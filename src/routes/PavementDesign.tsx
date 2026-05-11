@@ -13,6 +13,7 @@ import { Calculator, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
+import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,19 +23,25 @@ import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, PavementResult } from "@/lib/types";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
 
 export default function PavementDesign() {
-  const { cesaResult, cbrResult, trhResult, setCbrResult, setTrhResult } = useCalcStore();
+  const {
+    cesaResult,
+    subgradeCbr,
+    coverages,
+    trhCategory,
+    cbrResult,
+    trhResult,
+    setSubgradeCbr,
+    setCoverages,
+    setTrhCategory,
+    setCbrResult,
+    setTrhResult,
+  } = useCalcStore();
 
-  const [subgradeCbr, setSubgradeCbr] = useState(8);
-  // Default coverages to CESA result if available, otherwise use 1_050_000
-  const [coverages, setCoverages] = useState(
-    () => cesaResult?.design_coverages ?? 1_050_000,
-  );
-  const [category, setCategory] = useState<"A" | "B" | "C" | "D">("B");
   const [running, setRunning] = useState(false);
 
   const importFromCesa = () => {
@@ -54,7 +61,7 @@ export default function PavementDesign() {
       return;
     }
     const trhParsed = trh14RequestSchema.safeParse({
-      category,
+      category: trhCategory,
       design_coverages: coverages,
     });
     if (!trhParsed.success) {
@@ -96,7 +103,7 @@ export default function PavementDesign() {
             <CardTitle>Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Field
+            <NumField
               id="subgrade-cbr"
               label="Subgrade CBR (%)"
               value={subgradeCbr}
@@ -123,15 +130,15 @@ export default function PavementDesign() {
                 type="number"
                 min={1}
                 value={coverages}
-                onChange={(e) => setCoverages(Number(e.target.value))}
+                onChange={(e) => setCoverages(parseNumericInput(e.target.value, coverages))}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="category">TRH 14 category</Label>
               <select
                 id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as "A" | "B" | "C" | "D")}
+                value={trhCategory}
+                onChange={(e) => setTrhCategory(e.target.value as "A" | "B" | "C" | "D")}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="A">A — heavily trafficked</option>
@@ -165,36 +172,6 @@ export default function PavementDesign() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  id,
-  label,
-  value,
-  onChange,
-  min,
-  max,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="number"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
     </div>
   );
 }

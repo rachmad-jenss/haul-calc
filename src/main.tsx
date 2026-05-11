@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createHashRouter, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import App from "@/App";
 import FleetTraffic from "@/routes/FleetTraffic";
 import PavementDesign from "@/routes/PavementDesign";
@@ -27,7 +28,9 @@ const router = createHashRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-    <Toaster richColors position="top-right" />
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
+    </ErrorBoundary>
   </React.StrictMode>,
 );

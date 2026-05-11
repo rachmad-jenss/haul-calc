@@ -28,7 +28,6 @@ impl From<BridgeError> for CallError {
     }
 }
 
-/// Wire format the frontend sees: `data` plus stub metadata.
 #[derive(Serialize)]
 pub struct CallEnvelope {
     pub data: Value,
@@ -55,28 +54,6 @@ pub async fn haul_pave_call(
 ) -> Result<CallEnvelope, CallError> {
     let ok = state
         .call(&method, params.unwrap_or(json!({})))
-        .await
-        .map_err(CallError::from)?;
-    Ok(ok.into())
-}
-
-#[tauri::command]
-pub async fn health_check(
-    state: State<'_, Arc<BridgeClient>>,
-) -> Result<CallEnvelope, CallError> {
-    let ok = state
-        .call("health_check", json!({}))
-        .await
-        .map_err(CallError::from)?;
-    Ok(ok.into())
-}
-
-#[tauri::command]
-pub async fn get_lib_version(
-    state: State<'_, Arc<BridgeClient>>,
-) -> Result<CallEnvelope, CallError> {
-    let ok = state
-        .call("get_version", json!({}))
         .await
         .map_err(CallError::from)?;
     Ok(ok.into())

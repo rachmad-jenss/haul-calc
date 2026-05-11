@@ -21,3 +21,9 @@ export function formatCurrency(value: number, currency = "USD"): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+export function parseNumericInput(raw: string, fallback: number): number {
+  if (raw.trim() === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}

@@ -13,6 +13,7 @@ import { Plus, Trash2, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
+import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -181,28 +182,6 @@ export default function Economics() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function NumField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label>{label}</Label>
-      <Input
-        type="number"
-        min={0}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
     </div>
   );
 }
