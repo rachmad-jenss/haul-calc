@@ -142,6 +142,7 @@ chore/DAS-{N}-desc    → maintenance  (contoh: chore/DAS-9-update-deps)
      6. Long-term — apakah perubahan ini baik untuk jangka panjang dan tidak meninggalkan tech debt
      Berikan daftar findings dan saran fix.
      ```
+   - Jika `codex:rescue` tidak bisa di-spawn atau tidak merespons → fallback: spawn subagent `feature-dev:code-reviewer` dengan prompt yang sama
    - Jika Codex menemukan critical issue → fix sebelum buat PR
    - Jika Codex menemukan medium/low issue → fix atau catat sebagai tech-debt
 
