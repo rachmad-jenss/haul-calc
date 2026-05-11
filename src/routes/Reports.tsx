@@ -14,10 +14,17 @@ import { useCalcStore } from "@/lib/store";
 import type { CallError, DesignSummary } from "@/lib/types";
 
 export default function Reports() {
-  const { cesaResult, cbrResult, trhResult, costResult } = useCalcStore();
+  const {
+    cesaResult,
+    cbrResult,
+    trhResult,
+    costResult,
+    projectName,
+    authorName,
+    setProjectName,
+    setAuthorName,
+  } = useCalcStore();
 
-  const [project, setProject] = useState("Pit South — Main Haul");
-  const [author, setAuthor] = useState("");
   const [summary, setSummary] = useState<DesignSummary | null>(null);
   const [stub, setStub] = useState(false);
   const [stubMessage, setStubMessage] = useState<string>();
@@ -29,8 +36,8 @@ export default function Reports() {
     setRunning(true);
     try {
       const res = await haulPave.buildSummary({
-        project_name: project,
-        author,
+        project_name: projectName,
+        author: authorName,
         cesa: cesaResult
           ? {
               cesa: cesaResult.cesa,
@@ -71,7 +78,7 @@ export default function Reports() {
     if (!summary) return;
     try {
       const path = await save({
-        defaultPath: `${project.replace(/\s+/g, "_")}.json`,
+        defaultPath: `${projectName.replace(/\s+/g, "_")}.json`,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (!path) return;
@@ -111,16 +118,16 @@ export default function Reports() {
               <Label htmlFor="project">Project name</Label>
               <Input
                 id="project"
-                value={project}
-                onChange={(e) => setProject(e.target.value)}
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="author">Author / engineer</Label>
               <Input
                 id="author"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
                 placeholder="Name, certification"
               />
             </div>

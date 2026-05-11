@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, XCircle, RefreshCw, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { Row } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { haulPave, type SidecarStatus } from "@/lib/haulpave-client";
@@ -20,7 +21,7 @@ export default function Settings() {
   const [refreshing, setRefreshing] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
       const [health, version, sidecarStatus] = await Promise.all([
@@ -46,7 +47,7 @@ export default function Settings() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const restart = async () => {
     setRestarting(true);
@@ -64,7 +65,7 @@ export default function Settings() {
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   return (
     <div className="flex h-full flex-col">
@@ -176,20 +177,5 @@ function SidecarStatusBadge({
       <XCircle className="h-4 w-4" />
       {error ?? "Crashed"}
     </span>
-  );
-}
-
-function Row({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between border-b pb-2 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{children}</span>
-    </div>
   );
 }

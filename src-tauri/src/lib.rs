@@ -25,8 +25,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::haul_pave_call,
-            commands::health_check,
-            commands::get_lib_version,
             commands::get_sidecar_status,
             commands::restart_sidecar,
         ])

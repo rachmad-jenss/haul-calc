@@ -3,6 +3,7 @@ import { Plus, Trash2, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
+import { Metric } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { haulPave } from "@/lib/haulpave-client";
 import { cesaRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 export default function FleetTraffic() {
   const { fleet, designLifeYears, cesaResult, setFleet, setDesignLifeYears, setCesaResult } =
@@ -35,7 +36,10 @@ export default function FleetTraffic() {
 
   const addRow = () => {
     const first = vehicles[0]?.id ?? "cat-797f";
-    setFleet([...fleet, { vehicle_id: first, count: 1, trips_per_day: 20, payload_kn: 3_000 }]);
+    setFleet([
+      ...fleet,
+      { _id: crypto.randomUUID(), vehicle_id: first, count: 1, trips_per_day: 20, payload_kn: 3_000 },
+    ]);
   };
 
   const removeRow = (idx: number) => {
@@ -96,7 +100,7 @@ export default function FleetTraffic() {
                 </thead>
                 <tbody>
                   {fleet.map((row, idx) => (
-                    <tr key={idx} className="border-b last:border-0">
+                    <tr key={row._id} className="border-b last:border-0">
                       <td className="px-2 py-2">
                         <select
                           value={row.vehicle_id}
@@ -119,7 +123,9 @@ export default function FleetTraffic() {
                           type="number"
                           min={1}
                           value={row.count}
-                          onChange={(e) => updateRow(idx, { count: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateRow(idx, { count: parseNumericInput(e.target.value, row.count) })
+                          }
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -128,7 +134,9 @@ export default function FleetTraffic() {
                           min={0}
                           value={row.trips_per_day}
                           onChange={(e) =>
-                            updateRow(idx, { trips_per_day: Number(e.target.value) })
+                            updateRow(idx, {
+                              trips_per_day: parseNumericInput(e.target.value, row.trips_per_day),
+                            })
                           }
                         />
                       </td>
@@ -137,7 +145,11 @@ export default function FleetTraffic() {
                           type="number"
                           min={0}
                           value={row.payload_kn}
-                          onChange={(e) => updateRow(idx, { payload_kn: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateRow(idx, {
+                              payload_kn: parseNumericInput(e.target.value, row.payload_kn),
+                            })
+                          }
                         />
                       </td>
                       <td className="px-2 py-2">
@@ -165,7 +177,9 @@ export default function FleetTraffic() {
                   min={1}
                   max={50}
                   value={designLifeYears}
-                  onChange={(e) => setDesignLifeYears(Number(e.target.value))}
+                  onChange={(e) =>
+                    setDesignLifeYears(parseNumericInput(e.target.value, designLifeYears))
+                  }
                   className="w-32"
                 />
               </div>
@@ -224,15 +238,6 @@ export default function FleetTraffic() {
           ) : null}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between border-b pb-2 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="font-mono text-base font-semibold">{value}</span>
     </div>
   );
 }
