@@ -236,6 +236,15 @@ Setelah user merge PR (atau issue di-close), lakukan cleanup & sync:
    - Jika semua sub-tasks dari parent issue sudah Done, update parent issue juga ke Done (di Notion dan GitHub Issues)
    - Jika belum semua selesai, biarkan parent tetap In Progress
 
+6. **Hapus branch** — setelah merged, delete branch dari remote dan local:
+   - Remote: `git push origin --delete <branch-name>`
+   - Local: `git branch -d <branch-name>`
+
+7. **Update README** (jika diperlukan):
+   - Cek apakah perubahan ini mempengaruhi cara setup, install, config, atau cara penggunaan app
+   - Jika ada perubahan user-facing (perintah baru, env var baru, fitur baru yang perlu didokumentasikan) → update `README.md`
+   - Jika tidak ada perubahan user-facing → skip
+
 ### Jika blocked:
 - Update Notion **Status** → "Blocked"
 - Update Notion **Next action** → alasan blocked (e.g. "Blocked: haul-pave API belum merged", "Blocked: waiting dependency X")
