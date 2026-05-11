@@ -27,6 +27,8 @@ pub fn run() {
             commands::haul_pave_call,
             commands::health_check,
             commands::get_lib_version,
+            commands::get_sidecar_status,
+            commands::restart_sidecar,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

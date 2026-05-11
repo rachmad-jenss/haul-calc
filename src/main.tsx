@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createBrowserRouter, Navigate } from "react-router-dom";
+import { RouterProvider, createHashRouter, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import App from "@/App";
 import FleetTraffic from "@/routes/FleetTraffic";
@@ -10,7 +10,7 @@ import Reports from "@/routes/Reports";
 import Settings from "@/routes/Settings";
 import "@/styles/globals.css";
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <App />,

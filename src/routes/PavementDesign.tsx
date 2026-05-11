@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Calculator } from "lucide-react";
+import { Calculator, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
@@ -20,26 +20,29 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
+import { useCalcStore } from "@/lib/store";
 import type { CallError, PavementResult } from "@/lib/types";
+import { formatNumber } from "@/lib/utils";
 
 const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
 
 export default function PavementDesign() {
-  const [subgradeCbr, setSubgradeCbr] = useState(8);
-  const [coverages, setCoverages] = useState(1_050_000);
-  const [category, setCategory] = useState<"A" | "B" | "C" | "D">("B");
+  const { cesaResult, cbrResult, trhResult, setCbrResult, setTrhResult } = useCalcStore();
 
-  const [cbr, setCbr] = useState<{
-    data: PavementResult;
-    stub: boolean;
-    msg?: string;
-  } | null>(null);
-  const [trh, setTrh] = useState<{
-    data: PavementResult;
-    stub: boolean;
-    msg?: string;
-  } | null>(null);
+  const [subgradeCbr, setSubgradeCbr] = useState(8);
+  // Default coverages to CESA result if available, otherwise use 1_050_000
+  const [coverages, setCoverages] = useState(
+    () => cesaResult?.design_coverages ?? 1_050_000,
+  );
+  const [category, setCategory] = useState<"A" | "B" | "C" | "D">("B");
   const [running, setRunning] = useState(false);
+
+  const importFromCesa = () => {
+    if (cesaResult) {
+      setCoverages(cesaResult.design_coverages);
+      toast.success("Design coverages imported from CESA result.");
+    }
+  };
 
   const compute = async () => {
     const cbrParsed = cbrRequestSchema.safeParse({
@@ -64,8 +67,8 @@ export default function PavementDesign() {
         haulPave.cbrThickness(cbrParsed.data),
         haulPave.trh14Thickness(trhParsed.data),
       ]);
-      setCbr({ data: cbrRes.data, stub: cbrRes.stub, msg: cbrRes.stubMessage });
-      setTrh({ data: trhRes.data, stub: trhRes.stub, msg: trhRes.stubMessage });
+      setCbrResult(cbrRes.data, cbrRes.stub, cbrRes.stubMessage);
+      setTrhResult(trhRes.data, trhRes.stub, trhRes.stubMessage);
     } catch (err) {
       const e = err as CallError;
       toast.error(`thickness calc failed: ${e.message}`);
@@ -101,21 +104,34 @@ export default function PavementDesign() {
               min={1}
               max={50}
             />
-            <Field
-              id="coverages"
-              label="Design coverages"
-              value={coverages}
-              onChange={setCoverages}
-              min={1}
-            />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="coverages">Design coverages</Label>
+                {cesaResult && (
+                  <button
+                    type="button"
+                    onClick={importFromCesa}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ArrowDownToLine className="h-3 w-3" />
+                    Import from CESA ({formatNumber(cesaResult.design_coverages, 0)})
+                  </button>
+                )}
+              </div>
+              <Input
+                id="coverages"
+                type="number"
+                min={1}
+                value={coverages}
+                onChange={(e) => setCoverages(Number(e.target.value))}
+              />
+            </div>
             <div className="space-y-1">
               <Label htmlFor="category">TRH 14 category</Label>
               <select
                 id="category"
                 value={category}
-                onChange={(e) =>
-                  setCategory(e.target.value as "A" | "B" | "C" | "D")
-                }
+                onChange={(e) => setCategory(e.target.value as "A" | "B" | "C" | "D")}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="A">A — heavily trafficked</option>
@@ -138,12 +154,12 @@ export default function PavementDesign() {
                 <TabsTrigger value="trh14">TRH 14</TabsTrigger>
               </TabsList>
               <TabsContent value="cbr" className="space-y-3">
-                {cbr?.stub ? <StubBanner message={cbr.msg} /> : null}
-                <PavementChart result={cbr?.data} />
+                {cbrResult?.stub ? <StubBanner message={cbrResult.stubMessage} /> : null}
+                <PavementChart result={cbrResult ?? undefined} />
               </TabsContent>
               <TabsContent value="trh14" className="space-y-3">
-                {trh?.stub ? <StubBanner message={trh.msg} /> : null}
-                <PavementChart result={trh?.data} />
+                {trhResult?.stub ? <StubBanner message={trhResult.stubMessage} /> : null}
+                <PavementChart result={trhResult ?? undefined} />
               </TabsContent>
             </Tabs>
           </CardContent>

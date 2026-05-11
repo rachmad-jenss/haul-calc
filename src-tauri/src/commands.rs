@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
 
-use crate::bridge::{BridgeClient, BridgeError, CallOk};
+use crate::bridge::{BridgeClient, BridgeError, CallOk, SidecarStatus};
 
 #[derive(Serialize)]
 pub struct CallError {
@@ -80,4 +80,20 @@ pub async fn get_lib_version(
         .await
         .map_err(CallError::from)?;
     Ok(ok.into())
+}
+
+#[tauri::command]
+pub fn get_sidecar_status(state: State<'_, Arc<BridgeClient>>) -> SidecarStatus {
+    state.status.lock().unwrap().clone()
+}
+
+#[tauri::command]
+pub fn restart_sidecar(
+    state: State<'_, Arc<BridgeClient>>,
+    app: tauri::AppHandle,
+) -> Result<(), CallError> {
+    state.restart(&app).map_err(|e| CallError {
+        code: "RestartFailed".into(),
+        message: e.to_string(),
+    })
 }

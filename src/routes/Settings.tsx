@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, RotateCcw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { haulPave } from "@/lib/haulpave-client";
+import { haulPave, type SidecarStatus } from "@/lib/haulpave-client";
 import type { CallError } from "@/lib/types";
 
 interface Status {
@@ -11,23 +12,27 @@ interface Status {
   error?: string;
   haulpaveVersion: string | null;
   bridgeVersion: string;
+  sidecarStatus: SidecarStatus;
 }
 
 export default function Settings() {
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [restarting, setRestarting] = useState(false);
 
   const refresh = async () => {
     setRefreshing(true);
     try {
-      const [health, version] = await Promise.all([
+      const [health, version, sidecarStatus] = await Promise.all([
         haulPave.healthCheck(),
         haulPave.getVersion(),
+        haulPave.getSidecarStatus(),
       ]);
       setStatus({
         loaded: health.data.haulpave_loaded,
         haulpaveVersion: version.data.haulpave,
         bridgeVersion: version.data.bridge,
+        sidecarStatus,
       });
     } catch (err) {
       const e = err as CallError;
@@ -36,9 +41,24 @@ export default function Settings() {
         error: e.message,
         haulpaveVersion: null,
         bridgeVersion: "—",
+        sidecarStatus: "crashed",
       });
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const restart = async () => {
+    setRestarting(true);
+    try {
+      await haulPave.restartSidecar();
+      toast.success("Sidecar restarted");
+      await refresh();
+    } catch (err) {
+      const e = err as CallError;
+      toast.error(`Restart failed: ${e.message}`);
+    } finally {
+      setRestarting(false);
     }
   };
 
@@ -52,10 +72,26 @@ export default function Settings() {
         title="Settings"
         description="Sidecar status, library version, and unit system."
         actions={
-          <Button variant="outline" onClick={refresh} disabled={refreshing}>
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {status?.sidecarStatus === "crashed" && (
+              <Button
+                variant="destructive"
+                onClick={restart}
+                disabled={restarting}
+              >
+                {restarting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                {restarting ? "Restarting…" : "Restart Sidecar"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={refresh} disabled={refreshing || restarting}>
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -65,16 +101,8 @@ export default function Settings() {
             <CardTitle>Sidecar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <Row label="Bridge process">
-              {status?.error ? (
-                <span className="flex items-center gap-1 text-destructive">
-                  <XCircle className="h-4 w-4" /> {status.error}
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" /> Running
-                </span>
-              )}
+            <Row label="Process status">
+              <SidecarStatusBadge status={status?.sidecarStatus} error={status?.error} />
             </Row>
             <Row label="haul-pave loaded">
               {status?.loaded ? (
@@ -117,6 +145,37 @@ export default function Settings() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function SidecarStatusBadge({
+  status,
+  error,
+}: {
+  status?: SidecarStatus;
+  error?: string;
+}) {
+  if (!status) return <span className="text-muted-foreground">—</span>;
+
+  if (status === "running") {
+    return (
+      <span className="flex items-center gap-1 text-emerald-600">
+        <CheckCircle2 className="h-4 w-4" /> Running
+      </span>
+    );
+  }
+  if (status === "restarting") {
+    return (
+      <span className="flex items-center gap-1 text-amber-600">
+        <Loader2 className="h-4 w-4 animate-spin" /> Restarting…
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 text-destructive">
+      <XCircle className="h-4 w-4" />
+      {error ?? "Crashed"}
+    </span>
   );
 }
 

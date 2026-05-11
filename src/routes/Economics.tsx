@@ -19,48 +19,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
 import { compareRequestSchema, firstError } from "@/lib/schemas";
-import type {
-  CallError,
-  CostComparison,
-  CostScenario,
-  ScenarioComparison,
-} from "@/lib/types";
+import { useCalcStore } from "@/lib/store";
+import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
-const DEFAULT_SCENARIOS: CostScenario[] = [
-  {
-    name: "Asphalt 100 mm",
-    surface: "asphalt",
-    thickness_mm: 100,
-    haul_distance_km: 5,
-    trips_per_day: 200,
-  },
-  {
-    name: "Gravel 250 mm",
-    surface: "gravel",
-    thickness_mm: 250,
-    haul_distance_km: 5,
-    trips_per_day: 200,
-  },
-];
-
 export default function Economics() {
-  const [scenarios, setScenarios] = useState<CostScenario[]>(DEFAULT_SCENARIOS);
-  const [result, setResult] = useState<CostComparison | null>(null);
-  const [stub, setStub] = useState(false);
-  const [stubMessage, setStubMessage] = useState<string>();
+  const { costScenarios, costResult, setCostScenarios, setCostResult } = useCalcStore();
   const [running, setRunning] = useState(false);
 
   const update = (idx: number, patch: Partial<CostScenario>) =>
-    setScenarios((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
+    setCostScenarios(
+      costScenarios.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
     );
 
   const add = () =>
-    setScenarios((prev) => [
-      ...prev,
+    setCostScenarios([
+      ...costScenarios,
       {
-        name: `Scenario ${prev.length + 1}`,
+        name: `Scenario ${costScenarios.length + 1}`,
         surface: "asphalt",
         thickness_mm: 100,
         haul_distance_km: 5,
@@ -69,10 +45,10 @@ export default function Economics() {
     ]);
 
   const remove = (idx: number) =>
-    setScenarios((prev) => prev.filter((_, i) => i !== idx));
+    setCostScenarios(costScenarios.filter((_, i) => i !== idx));
 
   const compute = async () => {
-    const parsed = compareRequestSchema.safeParse(scenarios);
+    const parsed = compareRequestSchema.safeParse(costScenarios);
     if (!parsed.success) {
       toast.error(firstError(parsed.error));
       return;
@@ -80,9 +56,7 @@ export default function Economics() {
     setRunning(true);
     try {
       const res = await haulPave.compareScenarios(parsed.data);
-      setResult(res.data);
-      setStub(res.stub);
-      setStubMessage(res.stubMessage);
+      setCostResult(res.data, res.stub, res.stubMessage);
     } catch (err) {
       const e = err as CallError;
       toast.error(`compare_scenarios failed: ${e.message}`);
@@ -92,7 +66,7 @@ export default function Economics() {
   };
 
   const chartData =
-    result?.scenarios.map((s) => ({
+    costResult?.scenarios.map((s) => ({
       name: s.name,
       Tires: s.tire_cost_usd_per_year,
       Fuel: s.fuel_cost_usd_per_year,
@@ -105,7 +79,7 @@ export default function Economics() {
         title="Economics"
         description="Compare operating cost (tires, fuel, maintenance) across pavement scenarios."
         actions={
-          <Button onClick={compute} disabled={running || scenarios.length < 2}>
+          <Button onClick={compute} disabled={running || costScenarios.length < 2}>
             <Calculator className="h-4 w-4" />
             {running ? "Computing..." : "Compare scenarios"}
           </Button>
@@ -122,7 +96,7 @@ export default function Economics() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {scenarios.map((s, idx) => (
+            {costScenarios.map((s, idx) => (
               <div key={idx} className="rounded border p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <Input
@@ -145,9 +119,7 @@ export default function Economics() {
                     <select
                       value={s.surface}
                       onChange={(e) =>
-                        update(idx, {
-                          surface: e.target.value as CostScenario["surface"],
-                        })
+                        update(idx, { surface: e.target.value as CostScenario["surface"] })
                       }
                       className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                     >
@@ -182,7 +154,7 @@ export default function Economics() {
             <CardTitle>Comparison</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {stub ? <StubBanner message={stubMessage} /> : null}
+            {costResult?.stub ? <StubBanner message={costResult.stubMessage} /> : null}
             {chartData.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Run "Compare scenarios" to see operating cost breakdown.
@@ -195,9 +167,7 @@ export default function Economics() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip
-                        formatter={(value: number) => formatCurrency(value)}
-                      />
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
                       <Legend />
                       <Bar dataKey="Tires" stackId="a" fill="#ef4444" />
                       <Bar dataKey="Fuel" stackId="a" fill="#f59e0b" />
@@ -205,7 +175,7 @@ export default function Economics() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <SummaryTable rows={result?.scenarios ?? []} />
+                <SummaryTable rows={costResult?.scenarios ?? []} />
               </>
             )}
           </CardContent>
