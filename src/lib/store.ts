@@ -96,27 +96,37 @@ export const useCalcStore = create<CalcStore>()(
       authorName: "",
       reportSummary: null,
 
-      setFleet: (fleet) => set({ fleet, cesaResult: null }),
-      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null }),
+      setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
+      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
         set({ cesaResult: { ...result, stub, stubMessage } }),
-      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null }),
-      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null }),
-      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null }),
+      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, reportSummary: null }),
+      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, reportSummary: null }),
+      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, reportSummary: null }),
       setCbrResult: (result, stub, stubMessage) =>
         set({ cbrResult: { ...result, stub, stubMessage } }),
       setTrhResult: (result, stub, stubMessage) =>
         set({ trhResult: { ...result, stub, stubMessage } }),
-      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null }),
+      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, reportSummary: null }),
       setCostResult: (result, stub, stubMessage) =>
         set({ costResult: { ...result, stub, stubMessage } }),
-      setProjectName: (projectName) => set({ projectName }),
-      setAuthorName: (authorName) => set({ authorName }),
+      setProjectName: (projectName) => set({ projectName, reportSummary: null }),
+      setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
     }),
     {
       name: "haul-calc-store",
+      version: 1,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const s = persisted as Record<string, unknown>;
+        if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
+          s.costScenarios = (s.costScenarios as Record<string, unknown>[]).map((sc) =>
+            "_id" in sc ? sc : { ...sc, _id: crypto.randomUUID() },
+          );
+        }
+        return s;
+      },
       partialize: (state) => ({
         fleet: state.fleet,
         designLifeYears: state.designLifeYears,
