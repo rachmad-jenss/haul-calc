@@ -28,15 +28,14 @@ export default function Economics() {
   const { costScenarios, costResult, setCostScenarios, setCostResult } = useCalcStore();
   const [running, setRunning] = useState(false);
 
-  const update = (idx: number, patch: Partial<CostScenario>) =>
-    setCostScenarios(
-      costScenarios.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
-    );
+  const update = (id: string, patch: Partial<CostScenario>) =>
+    setCostScenarios(costScenarios.map((s) => (s._id === id ? { ...s, ...patch } : s)));
 
   const add = () =>
     setCostScenarios([
       ...costScenarios,
       {
+        _id: crypto.randomUUID(),
         name: `Scenario ${costScenarios.length + 1}`,
         surface: "asphalt",
         thickness_mm: 100,
@@ -45,8 +44,8 @@ export default function Economics() {
       },
     ]);
 
-  const remove = (idx: number) =>
-    setCostScenarios(costScenarios.filter((_, i) => i !== idx));
+  const remove = (id: string) =>
+    setCostScenarios(costScenarios.filter((s) => s._id !== id));
 
   const compute = async () => {
     const parsed = compareRequestSchema.safeParse(costScenarios);
@@ -97,18 +96,18 @@ export default function Economics() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {costScenarios.map((s, idx) => (
-              <div key={idx} className="rounded border p-3">
+            {costScenarios.map((s) => (
+              <div key={s._id} className="rounded border p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <Input
                     value={s.name}
-                    onChange={(e) => update(idx, { name: e.target.value })}
+                    onChange={(e) => update(s._id, { name: e.target.value })}
                     className="max-w-[240px]"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => remove(idx)}
+                    onClick={() => remove(s._id)}
                     aria-label="Remove scenario"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -120,7 +119,7 @@ export default function Economics() {
                     <select
                       value={s.surface}
                       onChange={(e) =>
-                        update(idx, { surface: e.target.value as CostScenario["surface"] })
+                        update(s._id, { surface: e.target.value as CostScenario["surface"] })
                       }
                       className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                     >
@@ -132,17 +131,17 @@ export default function Economics() {
                   <NumField
                     label="Thickness (mm)"
                     value={s.thickness_mm}
-                    onChange={(v) => update(idx, { thickness_mm: v })}
+                    onChange={(v) => update(s._id, { thickness_mm: v })}
                   />
                   <NumField
                     label="Haul distance (km)"
                     value={s.haul_distance_km}
-                    onChange={(v) => update(idx, { haul_distance_km: v })}
+                    onChange={(v) => update(s._id, { haul_distance_km: v })}
                   />
                   <NumField
                     label="Trips/day"
                     value={s.trips_per_day}
-                    onChange={(v) => update(idx, { trips_per_day: v })}
+                    onChange={(v) => update(s._id, { trips_per_day: v })}
                   />
                 </div>
               </div>
