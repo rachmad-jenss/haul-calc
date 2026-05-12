@@ -55,6 +55,7 @@ export interface PavementResult {
 }
 
 export interface CostScenario {
+  _id: string;
   name: string;
   surface: "asphalt" | "gravel" | "concrete";
   thickness_mm: number;

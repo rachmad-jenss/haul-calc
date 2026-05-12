@@ -4,6 +4,7 @@ import type {
   CesaResult,
   CostComparison,
   CostScenario,
+  DesignSummary,
   FleetEntry,
   PavementResult,
 } from "@/lib/types";
@@ -33,6 +34,7 @@ interface CalcStore {
   // Reports
   projectName: string;
   authorName: string;
+  reportSummary: (DesignSummary & StubMeta) | null;
 
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
@@ -47,6 +49,7 @@ interface CalcStore {
   setCostResult: (result: CostComparison, stub: boolean, stubMessage?: string) => void;
   setProjectName: (name: string) => void;
   setAuthorName: (name: string) => void;
+  setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
 }
 
 const DEFAULT_FLEET: FleetEntry[] = [
@@ -56,6 +59,7 @@ const DEFAULT_FLEET: FleetEntry[] = [
 
 const DEFAULT_SCENARIOS: CostScenario[] = [
   {
+    _id: crypto.randomUUID(),
     name: "Asphalt 100 mm",
     surface: "asphalt",
     thickness_mm: 100,
@@ -63,6 +67,7 @@ const DEFAULT_SCENARIOS: CostScenario[] = [
     trips_per_day: 200,
   },
   {
+    _id: crypto.randomUUID(),
     name: "Gravel 250 mm",
     surface: "gravel",
     thickness_mm: 250,
@@ -89,26 +94,39 @@ export const useCalcStore = create<CalcStore>()(
 
       projectName: "Pit South — Main Haul",
       authorName: "",
+      reportSummary: null,
 
-      setFleet: (fleet) => set({ fleet }),
-      setDesignLifeYears: (designLifeYears) => set({ designLifeYears }),
+      setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
+      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
         set({ cesaResult: { ...result, stub, stubMessage } }),
-      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr }),
-      setCoverages: (coverages) => set({ coverages }),
-      setTrhCategory: (trhCategory) => set({ trhCategory }),
+      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, reportSummary: null }),
+      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, reportSummary: null }),
+      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, reportSummary: null }),
       setCbrResult: (result, stub, stubMessage) =>
         set({ cbrResult: { ...result, stub, stubMessage } }),
       setTrhResult: (result, stub, stubMessage) =>
         set({ trhResult: { ...result, stub, stubMessage } }),
-      setCostScenarios: (costScenarios) => set({ costScenarios }),
+      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, reportSummary: null }),
       setCostResult: (result, stub, stubMessage) =>
         set({ costResult: { ...result, stub, stubMessage } }),
-      setProjectName: (projectName) => set({ projectName }),
-      setAuthorName: (authorName) => set({ authorName }),
+      setProjectName: (projectName) => set({ projectName, reportSummary: null }),
+      setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
+      setReportSummary: (result, stub, stubMessage) =>
+        set({ reportSummary: { ...result, stub, stubMessage } }),
     }),
     {
       name: "haul-calc-store",
+      version: 1,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const s = persisted as Record<string, unknown>;
+        if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
+          s.costScenarios = (s.costScenarios as Record<string, unknown>[]).map((sc) =>
+            "_id" in sc ? sc : { ...sc, _id: crypto.randomUUID() },
+          );
+        }
+        return s;
+      },
       partialize: (state) => ({
         fleet: state.fleet,
         designLifeYears: state.designLifeYears,
@@ -122,6 +140,7 @@ export const useCalcStore = create<CalcStore>()(
         costResult: state.costResult,
         projectName: state.projectName,
         authorName: state.authorName,
+        reportSummary: state.reportSummary,
       }),
     },
   ),

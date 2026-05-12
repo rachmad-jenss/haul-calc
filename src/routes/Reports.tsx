@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
-import type { CallError, DesignSummary } from "@/lib/types";
+import type { CallError } from "@/lib/types";
 
 export default function Reports() {
   const {
@@ -21,13 +21,12 @@ export default function Reports() {
     costResult,
     projectName,
     authorName,
+    reportSummary,
     setProjectName,
     setAuthorName,
+    setReportSummary,
   } = useCalcStore();
 
-  const [summary, setSummary] = useState<DesignSummary | null>(null);
-  const [stub, setStub] = useState(false);
-  const [stubMessage, setStubMessage] = useState<string>();
   const [running, setRunning] = useState(false);
 
   const hasData = !!(cesaResult || cbrResult || trhResult || costResult);
@@ -63,9 +62,7 @@ export default function Reports() {
           ? { scenarios: costResult.scenarios }
           : undefined,
       });
-      setSummary(res.data);
-      setStub(res.stub);
-      setStubMessage(res.stubMessage);
+      setReportSummary(res.data, res.stub, res.stubMessage);
     } catch (err) {
       const e = err as CallError;
       toast.error(`build_summary failed: ${e.message}`);
@@ -75,14 +72,15 @@ export default function Reports() {
   };
 
   const exportJson = async () => {
-    if (!summary) return;
+    if (!reportSummary) return;
     try {
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.json`,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (!path) return;
-      await writeTextFile(path, JSON.stringify(summary, null, 2));
+      const { stub: _s, stubMessage: _sm, ...data } = reportSummary;
+      await writeTextFile(path, JSON.stringify(data, null, 2));
       toast.success(`Saved to ${path}`);
     } catch (err) {
       toast.error(`Export failed: ${(err as Error).message}`);
@@ -100,7 +98,7 @@ export default function Reports() {
               <FileText className="h-4 w-4" />
               {running ? "Generating..." : "Generate summary"}
             </Button>
-            <Button onClick={exportJson} disabled={!summary}>
+            <Button onClick={exportJson} disabled={!reportSummary}>
               <Download className="h-4 w-4" />
               Export JSON
             </Button>
@@ -151,10 +149,10 @@ export default function Reports() {
             <CardTitle>Summary preview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {stub ? <StubBanner message={stubMessage} /> : null}
-            {summary ? (
+            {reportSummary?.stub ? <StubBanner message={reportSummary.stubMessage} /> : null}
+            {reportSummary ? (
               <pre className="max-h-[480px] overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
-                {JSON.stringify(summary, null, 2)}
+                {JSON.stringify(reportSummary, null, 2)}
               </pre>
             ) : (
               <p className="text-sm text-muted-foreground">

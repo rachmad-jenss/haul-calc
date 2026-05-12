@@ -34,7 +34,7 @@ export const haulPave = {
   computeCesa: (req: CesaRequest) => call<CesaResult>("compute_cesa", req),
   cbrThickness: (req: CbrRequest) => call<PavementResult>("cbr_thickness", req),
   trh14Thickness: (req: Trh14Request) => call<PavementResult>("trh14_thickness", req),
-  compareScenarios: (scenarios: CostScenario[]) =>
+  compareScenarios: (scenarios: Omit<CostScenario, "_id">[]) =>
     call<CostComparison>("compare_scenarios", { scenarios }),
   buildSummary: (inputs: Record<string, unknown>) =>
     call<DesignSummary>("build_summary", inputs),
