@@ -7,7 +7,7 @@ mkdirSync(join("tests", "screenshots"), { recursive: true });
 export const SS = (name: string) => join("tests", "screenshots", `${name}.png`);
 
 export async function navigate(page: Page, route: string) {
-  await page.goto(route);
+  await page.goto(`/#${route}`);
   await page.waitForTimeout(400);
 }
 
@@ -101,6 +101,8 @@ const TAURI_MOCK = `(function () {
     invoke: function(cmd, args) {
       return new Promise(function(resolve, reject) {
         setTimeout(function() {
+          if (cmd === "get_sidecar_status") { return resolve("running"); }
+          if (cmd === "restart_sidecar")    { return resolve(undefined); }
           if (cmd !== "haul_pave_call") {
             return reject({ code: "UNKNOWN_CMD", message: "Unknown command: " + cmd, stub: false });
           }

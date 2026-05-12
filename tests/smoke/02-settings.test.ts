@@ -7,7 +7,7 @@ test.describe("Settings page", () => {
   });
 
   test("shows sidecar status rows", async ({ page }) => {
-    await expect(page.locator("main")).toContainText("Bridge process");
+    await expect(page.locator("main")).toContainText("Process status");
     await expect(page.locator("main")).toContainText("haul-pave loaded");
     await expect(page.locator("main")).toContainText("Bridge version");
     await page.screenshot({ path: SS("02-settings") });
