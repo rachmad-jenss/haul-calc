@@ -9,6 +9,7 @@ import PavementDesign from "@/routes/PavementDesign";
 import Economics from "@/routes/Economics";
 import Reports from "@/routes/Reports";
 import Settings from "@/routes/Settings";
+import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
 import "@/styles/globals.css";
 
 const router = createHashRouter([
@@ -21,6 +22,7 @@ const router = createHashRouter([
       { path: "pavement", element: <PavementDesign /> },
       { path: "economics", element: <Economics /> },
       { path: "reports", element: <Reports /> },
+      { path: "sensitivity", element: <SensitivityAnalysis /> },
       { path: "settings", element: <Settings /> },
     ],
   },
