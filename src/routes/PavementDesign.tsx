@@ -1,15 +1,6 @@
 import { useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { Calculator, ArrowDownToLine } from "lucide-react";
+import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
@@ -24,8 +15,6 @@ import { cesaRequestSchema, cbrRequestSchema, trh14RequestSchema, firstError } f
 import { useCalcStore } from "@/lib/store";
 import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
-
-const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
 
 export default function PavementDesign() {
   const {
@@ -307,12 +296,6 @@ function PavementChart({ result }: { result?: PavementResult }) {
       </p>
     );
   }
-  const data = result.layers.map((l, i) => ({
-    name: l.name,
-    thickness: l.thickness_mm,
-    cbr: l.cbr,
-    fill: LAYER_COLORS[i % LAYER_COLORS.length],
-  }));
   return (
     <div className="space-y-3">
       <div className="text-sm text-muted-foreground">
@@ -320,21 +303,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
         {" · "}
         Total: <span className="font-mono">{result.total_thickness_mm} mm</span>
       </div>
-      <div className="h-72 w-full">
-        <ResponsiveContainer>
-          <BarChart data={data} layout="vertical" margin={{ left: 16, right: 16 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" unit=" mm" />
-            <YAxis type="category" dataKey="name" width={140} />
-            <Tooltip />
-            <Bar dataKey="thickness">
-              {data.map((entry, idx) => (
-                <Cell key={idx} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <PavementCrossSection result={result} />
     </div>
   );
 }
