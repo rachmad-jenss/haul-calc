@@ -18,7 +18,8 @@ import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
 
-type SensParam = "subgrade_cbr" | "design_coverages" | "design_life_years";
+type SensParam = "subgrade_cbr" | "design_coverages" | "design_life_years" | "trips_per_day";
+type SensMetric = "total_thickness_mm" | "cesa" | "cost_total";
 
 interface ParamConfig {
   label: string;
@@ -27,30 +28,29 @@ interface ParamConfig {
   unit: string;
 }
 
+interface MetricConfig {
+  label: string;
+  yAxisLabel: string;
+  unit: string;
+  decimals: number;
+}
+
 const PARAM_CONFIG: Record<SensParam, ParamConfig> = {
-  subgrade_cbr: {
-    label: "Subgrade CBR (%)",
-    defaultMin: 2,
-    defaultMax: 20,
-    unit: "%",
-  },
-  design_coverages: {
-    label: "Design coverages",
-    defaultMin: 100_000,
-    defaultMax: 2_000_000,
-    unit: "",
-  },
-  design_life_years: {
-    label: "Design life (years)",
-    defaultMin: 5,
-    defaultMax: 25,
-    unit: "yr",
-  },
+  subgrade_cbr: { label: "Subgrade CBR", defaultMin: 2, defaultMax: 20, unit: "%" },
+  design_coverages: { label: "Design coverages", defaultMin: 100_000, defaultMax: 2_000_000, unit: "" },
+  design_life_years: { label: "Design life", defaultMin: 5, defaultMax: 25, unit: "yr" },
+  trips_per_day: { label: "Trips/day (multiplier)", defaultMin: 0.5, defaultMax: 2.0, unit: "×" },
+};
+
+const METRIC_CONFIG: Record<SensMetric, MetricConfig> = {
+  total_thickness_mm: { label: "Pavement thickness", yAxisLabel: "Thickness (mm)", unit: "mm", decimals: 0 },
+  cesa: { label: "CESA", yAxisLabel: "CESA", unit: "", decimals: 0 },
+  cost_total: { label: "Annual cost (USD/yr)", yAxisLabel: "Cost (USD/yr)", unit: "USD/yr", decimals: 0 },
 };
 
 interface ChartPoint {
   x: number;
-  thickness_mm: number | null;
+  y: number | null;
 }
 
 function linspace(min: number, max: number, n: number): number[] {
@@ -60,10 +60,11 @@ function linspace(min: number, max: number, n: number): number[] {
 }
 
 export default function SensitivityAnalysis() {
-  const { subgradeCbr, coverages, fleet } = useCalcStore();
+  const { subgradeCbr, coverages, designLifeYears, fleet, costScenarios } = useCalcStore();
   const runIdRef = useRef(0);
 
   const [param, setParam] = useState<SensParam>("subgrade_cbr");
+  const [metric, setMetric] = useState<SensMetric>("total_thickness_mm");
   const [minVal, setMinVal] = useState<number>(PARAM_CONFIG.subgrade_cbr.defaultMin);
   const [maxVal, setMaxVal] = useState<number>(PARAM_CONFIG.subgrade_cbr.defaultMax);
   const [steps, setSteps] = useState<number>(10);
@@ -74,6 +75,11 @@ export default function SensitivityAnalysis() {
     setParam(newParam);
     setMinVal(PARAM_CONFIG[newParam].defaultMin);
     setMaxVal(PARAM_CONFIG[newParam].defaultMax);
+    setChartData([]);
+  };
+
+  const handleMetricChange = (newMetric: SensMetric) => {
+    setMetric(newMetric);
     setChartData([]);
   };
 
@@ -97,33 +103,68 @@ export default function SensitivityAnalysis() {
 
       const promises: Promise<ChartPoint>[] = values.map(async (v): Promise<ChartPoint> => {
         try {
-          if (param === "subgrade_cbr") {
-            const res = await haulPave.cbrThickness({
-              subgrade_cbr: v,
-              design_coverages: coverages,
-            });
-            return { x: v, thickness_mm: res.data.total_thickness_mm };
-          } else if (param === "design_coverages") {
-            const res = await haulPave.cbrThickness({
-              subgrade_cbr: subgradeCbr,
-              design_coverages: v,
-            });
-            return { x: v, thickness_mm: res.data.total_thickness_mm };
-          } else {
-            // design_life_years: compute CESA first, then CBR thickness
+          // Build effective fleet: trips_per_day sweep scales all vehicles
+          const effectiveFleet =
+            param === "trips_per_day"
+              ? fleet.map((f) => ({ ...f, trips_per_day: Math.max(1, Math.round(f.trips_per_day * v)) }))
+              : fleet;
+
+          const effectiveCbr = param === "subgrade_cbr" ? v : subgradeCbr;
+          const effectiveLife = param === "design_life_years" ? v : designLifeYears;
+
+          // Params that require a CESA call first to derive design_coverages
+          const needsCesa =
+            param === "design_life_years" ||
+            param === "trips_per_day" ||
+            metric === "cesa";
+
+          let effectiveCoverages = param === "design_coverages" ? v : coverages;
+          let cesaValue: number | null = null;
+
+          if (needsCesa) {
             const cesaRes = await haulPave.computeCesa({
-              fleet,
-              design_life_years: v,
+              fleet: effectiveFleet,
+              design_life_years: effectiveLife,
             });
-            const cbrRes = await haulPave.cbrThickness({
-              subgrade_cbr: subgradeCbr,
-              design_coverages: cesaRes.data.design_coverages,
-            });
-            return { x: v, thickness_mm: cbrRes.data.total_thickness_mm };
+            cesaValue = cesaRes.data.cesa;
+            if (param === "design_life_years" || param === "trips_per_day") {
+              effectiveCoverages = cesaRes.data.design_coverages;
+            }
           }
+
+          let y: number | null = null;
+
+          if (metric === "cesa") {
+            y = cesaValue;
+          } else if (metric === "total_thickness_mm") {
+            const cbrRes = await haulPave.cbrThickness({
+              subgrade_cbr: effectiveCbr,
+              design_coverages: effectiveCoverages,
+            });
+            y = cbrRes.data.total_thickness_mm;
+          } else {
+            // cost_total: sum first scenario's annual costs
+            // for trips_per_day sweep, scale scenario trips proportionally
+            if (costScenarios.length > 0) {
+              const scenariosForCall = costScenarios.map(({ _id: _unused, ...s }) =>
+                param === "trips_per_day"
+                  ? { ...s, trips_per_day: Math.max(1, Math.round(s.trips_per_day * v)) }
+                  : s,
+              );
+              const costRes = await haulPave.compareScenarios(scenariosForCall);
+              if (costRes.data.scenarios.length > 0) {
+                const s = costRes.data.scenarios[0];
+                y =
+                  s.tire_cost_usd_per_year +
+                  s.fuel_cost_usd_per_year +
+                  s.maintenance_cost_usd_per_year;
+              }
+            }
+          }
+
+          return { x: v, y };
         } catch {
-          // Skip failed points — do not abort the whole run
-          return { x: v, thickness_mm: null };
+          return { x: v, y: null };
         }
       });
 
@@ -140,15 +181,16 @@ export default function SensitivityAnalysis() {
     }
   };
 
-  const cfg = PARAM_CONFIG[param];
+  const paramCfg = PARAM_CONFIG[param];
+  const metricCfg = METRIC_CONFIG[metric];
   const hasData = chartData.length > 0;
-  const validPoints = chartData.filter((p) => p.thickness_mm !== null).length;
+  const validPoints = chartData.filter((p) => p.y !== null).length;
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Sensitivity Analysis"
-        description="See how pavement thickness changes as a single input parameter varies across a range."
+        description="See how an output metric changes as a single input parameter varies across a range."
         actions={
           <Button onClick={runAnalysis} disabled={running}>
             <TrendingUp className="h-4 w-4" />
@@ -158,14 +200,13 @@ export default function SensitivityAnalysis() {
       />
 
       <div className="grid flex-1 gap-4 overflow-auto p-6 lg:grid-cols-[320px,1fr]">
-        {/* Left card: inputs */}
         <Card>
           <CardHeader>
             <CardTitle>Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="sens-param">Parameter</Label>
+              <Label htmlFor="sens-param">Sweep parameter</Label>
               <select
                 id="sens-param"
                 value={param}
@@ -173,19 +214,34 @@ export default function SensitivityAnalysis() {
                 onChange={(e) => handleParamChange(e.target.value as SensParam)}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                {(Object.entries(PARAM_CONFIG) as [SensParam, ParamConfig][]).map(
-                  ([key, c]) => (
-                    <option key={key} value={key}>
-                      {c.label}
-                    </option>
-                  ),
-                )}
+                {(Object.entries(PARAM_CONFIG) as [SensParam, ParamConfig][]).map(([key, c]) => (
+                  <option key={key} value={key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="sens-metric">Y-axis metric</Label>
+              <select
+                id="sens-metric"
+                value={metric}
+                disabled={running}
+                onChange={(e) => handleMetricChange(e.target.value as SensMetric)}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {(Object.entries(METRIC_CONFIG) as [SensMetric, MetricConfig][]).map(([key, c]) => (
+                  <option key={key} value={key}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="space-y-1">
               <Label htmlFor="sens-min">
-                Min{cfg.unit ? ` (${cfg.unit})` : ""}
+                Min{paramCfg.unit ? ` (${paramCfg.unit})` : ""}
               </Label>
               <Input
                 id="sens-min"
@@ -198,7 +254,7 @@ export default function SensitivityAnalysis() {
 
             <div className="space-y-1">
               <Label htmlFor="sens-max">
-                Max{cfg.unit ? ` (${cfg.unit})` : ""}
+                Max{paramCfg.unit ? ` (${paramCfg.unit})` : ""}
               </Label>
               <Input
                 id="sens-max"
@@ -218,34 +274,31 @@ export default function SensitivityAnalysis() {
                 max={20}
                 value={steps}
                 disabled={running}
-                onChange={(e) =>
-                  setSteps(Math.max(3, Math.min(20, Number(e.target.value))))
-                }
+                onChange={(e) => setSteps(Math.max(3, Math.min(20, Number(e.target.value))))}
               />
             </div>
 
             <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Fixed inputs</p>
-              {param !== "subgrade_cbr" && (
-                <p>Subgrade CBR: {subgradeCbr}%</p>
-              )}
-              {param !== "design_coverages" && param !== "design_life_years" && (
+              {param !== "subgrade_cbr" && <p>Subgrade CBR: {subgradeCbr}%</p>}
+              {param !== "design_coverages" && param !== "design_life_years" && param !== "trips_per_day" && (
                 <p>Design coverages: {coverages.toLocaleString()}</p>
               )}
-              {param === "design_life_years" && (
-                <p>Fleet: {fleet.length} vehicle type(s)</p>
+              {param !== "design_life_years" && <p>Design life: {designLifeYears} yr</p>}
+              {param !== "trips_per_day" && <p>Fleet: {fleet.length} vehicle type(s)</p>}
+              {param === "trips_per_day" && (
+                <p>Fleet trips scaled by multiplier × current trips/day</p>
               )}
-              {param === "design_coverages" && (
-                <p>Design coverages varied directly</p>
+              {metric === "cost_total" && (
+                <p>Cost: first scenario — {costScenarios[0]?.name ?? "none"}</p>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Right card: chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Results</CardTitle>
+            <CardTitle>Results — {metricCfg.label}</CardTitle>
           </CardHeader>
           <CardContent className="flex h-[calc(100%-4rem)] flex-col">
             {!hasData ? (
@@ -262,8 +315,8 @@ export default function SensitivityAnalysis() {
                 <div className="flex-1 min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={chartData.filter((p) => p.thickness_mm !== null)}
-                      margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
+                      data={chartData.filter((p) => p.y !== null)}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis
@@ -272,7 +325,9 @@ export default function SensitivityAnalysis() {
                         domain={["dataMin", "dataMax"]}
                         tickCount={6}
                         label={{
-                          value: cfg.label,
+                          value: paramCfg.unit
+                            ? `${paramCfg.label} (${paramCfg.unit})`
+                            : paramCfg.label,
                           position: "insideBottom",
                           offset: -12,
                           fontSize: 12,
@@ -280,10 +335,17 @@ export default function SensitivityAnalysis() {
                         tick={{ fontSize: 11 }}
                       />
                       <YAxis
-                        dataKey="thickness_mm"
+                        dataKey="y"
                         tickCount={6}
+                        tickFormatter={(v: number) =>
+                          v >= 1_000_000
+                            ? `${(v / 1_000_000).toFixed(1)}M`
+                            : v >= 1_000
+                            ? `${(v / 1_000).toFixed(0)}k`
+                            : v.toFixed(metricCfg.decimals)
+                        }
                         label={{
-                          value: "Total thickness (mm)",
+                          value: metricCfg.yAxisLabel,
                           angle: -90,
                           position: "insideLeft",
                           offset: 10,
@@ -292,14 +354,21 @@ export default function SensitivityAnalysis() {
                         tick={{ fontSize: 11 }}
                       />
                       <Tooltip
-                        formatter={(value: number) => [`${value} mm`, "Thickness"]}
+                        formatter={(value: number) => [
+                          metricCfg.unit
+                            ? `${value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })} ${metricCfg.unit}`
+                            : value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals }),
+                          metricCfg.label,
+                        ]}
                         labelFormatter={(label: number) =>
-                          `${cfg.label}: ${typeof label === "number" ? label.toLocaleString(undefined, { maximumFractionDigits: 2 }) : label}`
+                          `${paramCfg.label}: ${typeof label === "number"
+                            ? label.toLocaleString(undefined, { maximumFractionDigits: 3 })
+                            : label}`
                         }
                       />
                       <Line
                         type="monotone"
-                        dataKey="thickness_mm"
+                        dataKey="y"
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         dot={{ r: 4 }}
