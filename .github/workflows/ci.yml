@@ -59,7 +59,7 @@ jobs:
   build:
     if: github.event_name == 'push'
     needs: lint
-    runs-on: windows-latest
+    runs-on: self-hosted
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
