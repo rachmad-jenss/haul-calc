@@ -92,6 +92,14 @@ export default function SensitivityAnalysis() {
       toast.error("Min must be less than Max.");
       return;
     }
+    if (metric === "cost_total" && costScenarios.length === 0) {
+      toast.error("At least one cost scenario is required to sweep cost.");
+      return;
+    }
+    if (metric === "cesa" && (param === "subgrade_cbr" || param === "design_coverages")) {
+      toast.error("CESA is not affected by subgrade CBR or design coverages — choose design life or trips/day.");
+      return;
+    }
     const clampedSteps = Math.max(3, Math.min(20, steps));
     const runId = ++runIdRef.current;
 
