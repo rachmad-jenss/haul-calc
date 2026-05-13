@@ -90,22 +90,9 @@ jobs:
           rustup update stable --no-self-update
           rustup default stable
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: 'pip'
-          cache-dependency-path: python-sidecar/requirements.txt
-
-      - name: Install Python deps
-        working-directory: python-sidecar
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
       - name: Build sidecar
-        shell: powershell
-        run: powershell -ExecutionPolicy Bypass -File python-sidecar/build.ps1
+        shell: cmd
+        run: powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
