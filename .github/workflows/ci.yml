@@ -76,12 +76,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
+        shell: pwsh
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
 
       - name: Setup Python
         uses: actions/setup-python@v5
