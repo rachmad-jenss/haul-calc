@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calculator } from "lucide-react";
+import { Plus, Trash2, Calculator, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { CustomVehicleModal } from "@/components/CustomVehicleModal";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { Metric } from "@/components/FormFields";
@@ -15,11 +16,19 @@ import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 export default function FleetTraffic() {
-  const { fleet, designLifeYears, cesaResult, setFleet, setDesignLifeYears, setCesaResult } =
-    useCalcStore();
+  const {
+    fleet,
+    designLifeYears,
+    cesaResult,
+    customVehicles,
+    setFleet,
+    setDesignLifeYears,
+    setCesaResult,
+  } = useCalcStore();
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [running, setRunning] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   useEffect(() => {
     haulPave
@@ -34,8 +43,18 @@ export default function FleetTraffic() {
     setFleet(fleet.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
+  const allVehicles: Vehicle[] = [
+    ...vehicles,
+    ...customVehicles.map((cv) => ({
+      id: cv.id,
+      name: cv.name + " (custom)",
+      gvw_kn: cv.gvw_kn,
+      axles: cv.axles,
+    })),
+  ];
+
   const addRow = () => {
-    const first = vehicles[0]?.id ?? "cat-797f";
+    const first = allVehicles[0]?.id ?? "cat-797f";
     setFleet([
       ...fleet,
       { _id: crypto.randomUUID(), vehicle_id: first, count: 1, trips_per_day: 20, payload_kn: 3_000 },
@@ -81,10 +100,16 @@ export default function FleetTraffic() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Fleet composition</CardTitle>
-            <Button variant="outline" size="sm" onClick={addRow}>
-              <Plus className="h-4 w-4" />
-              Add row
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowCustomModal(true)}>
+                <UserPlus className="h-4 w-4" />
+                Custom vehicles
+              </Button>
+              <Button variant="outline" size="sm" onClick={addRow}>
+                <Plus className="h-4 w-4" />
+                Add row
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -107,10 +132,10 @@ export default function FleetTraffic() {
                           onChange={(e) => updateRow(idx, { vehicle_id: e.target.value })}
                           className="h-8 w-full rounded border border-input bg-background px-2 text-sm"
                         >
-                          {vehicles.length === 0 ? (
+                          {allVehicles.length === 0 ? (
                             <option value={row.vehicle_id}>{row.vehicle_id}</option>
                           ) : (
-                            vehicles.map((v) => (
+                            allVehicles.map((v) => (
                               <option key={v.id} value={v.id}>
                                 {v.name}
                               </option>
@@ -238,6 +263,7 @@ export default function FleetTraffic() {
           ) : null}
         </div>
       </div>
+      <CustomVehicleModal open={showCustomModal} onOpenChange={setShowCustomModal} />
     </div>
   );
 }

@@ -9,6 +9,13 @@ import type {
   PavementResult,
 } from "@/lib/types";
 
+export interface CustomVehicle {
+  id: string;
+  name: string;
+  gvw_kn: number;
+  axles: number;
+}
+
 interface StubMeta {
   stub: boolean;
   stubMessage?: string;
@@ -36,6 +43,9 @@ export interface CalcStore {
   authorName: string;
   reportSummary: (DesignSummary & StubMeta) | null;
 
+  // Custom vehicles
+  customVehicles: CustomVehicle[];
+
   // File
   activeFileName: string | null;
 
@@ -44,6 +54,8 @@ export interface CalcStore {
 
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
+  addCustomVehicle: (v: Omit<CustomVehicle, "id">) => void;
+  removeCustomVehicle: (id: string) => void;
   setDesignLifeYears: (years: number) => void;
   setCesaResult: (result: CesaResult, stub: boolean, stubMessage?: string) => void;
   setSubgradeCbr: (cbr: number) => void;
@@ -100,6 +112,8 @@ export const useCalcStore = create<CalcStore>()(
       costScenarios: DEFAULT_SCENARIOS,
       costResult: null,
 
+      customVehicles: [],
+
       projectName: "Pit South — Main Haul",
       authorName: "",
       reportSummary: null,
@@ -109,6 +123,17 @@ export const useCalcStore = create<CalcStore>()(
       theme: 'system',
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
+      addCustomVehicle: (v) =>
+        set((s) => ({
+          customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
+        })),
+      removeCustomVehicle: (id) =>
+        set((s) => ({
+          customVehicles: s.customVehicles.filter((c) => c.id !== id),
+          fleet: s.fleet.filter((f) => f.vehicle_id !== id),
+          cesaResult: null,
+          reportSummary: null,
+        })),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
         set({ cesaResult: { ...result, stub, stubMessage } }),
@@ -152,6 +177,7 @@ export const useCalcStore = create<CalcStore>()(
         trhResult: state.trhResult,
         costScenarios: state.costScenarios,
         costResult: state.costResult,
+        customVehicles: state.customVehicles,
         projectName: state.projectName,
         authorName: state.authorName,
         reportSummary: state.reportSummary,
