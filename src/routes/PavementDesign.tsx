@@ -20,9 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
-import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
+import { cesaRequestSchema, cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
-import type { CallError, PavementResult } from "@/lib/types";
+import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
@@ -30,6 +30,8 @@ const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
 export default function PavementDesign() {
   const {
     cesaResult,
+    fleet,
+    designLifeYears,
     subgradeCbr,
     coverages,
     trhCategory,
@@ -43,11 +45,40 @@ export default function PavementDesign() {
   } = useCalcStore();
 
   const [running, setRunning] = useState(false);
+  const [compareResult, setCompareResult] = useState<(CompareMethodsResult & { stub: boolean; stubMessage?: string }) | null>(null);
+  const [comparing, setComparing] = useState(false);
 
   const importFromCesa = () => {
     if (cesaResult) {
       setCoverages(cesaResult.design_coverages);
       toast.success("Design coverages imported from CESA result.");
+    }
+  };
+
+  const compare = async () => {
+    const cesaParsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
+    if (!cesaParsed.success) {
+      toast.error(firstError(cesaParsed.error));
+      return;
+    }
+    const cbrParsed = cbrRequestSchema.safeParse({ subgrade_cbr: subgradeCbr, design_coverages: coverages });
+    if (!cbrParsed.success) {
+      toast.error(firstError(cbrParsed.error));
+      return;
+    }
+    setComparing(true);
+    try {
+      const res = await haulPave.compareMethods({
+        subgrade_cbr: cbrParsed.data.subgrade_cbr,
+        fleet: cesaParsed.data.fleet,
+        design_life_years: cesaParsed.data.design_life_years,
+      });
+      setCompareResult({ ...res.data, stub: res.stub, stubMessage: res.stubMessage });
+    } catch (err) {
+      const e = err as CallError;
+      toast.error(`compare_methods failed: ${e.message}`);
+    } finally {
+      setComparing(false);
     }
   };
 
@@ -159,6 +190,7 @@ export default function PavementDesign() {
               <TabsList>
                 <TabsTrigger value="cbr">USACE CBR</TabsTrigger>
                 <TabsTrigger value="trh14">TRH 14</TabsTrigger>
+                <TabsTrigger value="compare">Compare</TabsTrigger>
               </TabsList>
               <TabsContent value="cbr" className="space-y-3">
                 {cbrResult?.stub ? <StubBanner message={cbrResult.stubMessage} /> : null}
@@ -168,9 +200,100 @@ export default function PavementDesign() {
                 {trhResult?.stub ? <StubBanner message={trhResult.stubMessage} /> : null}
                 <PavementChart result={trhResult ?? undefined} />
               </TabsContent>
+              <TabsContent value="compare" className="space-y-3">
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={compare} disabled={comparing}>
+                    <Calculator className="h-4 w-4" />
+                    {comparing ? "Comparing..." : "Run comparison"}
+                  </Button>
+                </div>
+                {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
+                <MethodComparisonPanel result={compareResult ?? undefined} />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+const CONFIDENCE_COLOR: Record<string, string> = {
+  high: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  low: "bg-red-100 text-red-800",
+};
+
+function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
+  if (!result) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Click "Run comparison" to compare USACE CBR and TRH 14 methods side-by-side.
+      </p>
+    );
+  }
+
+  if (!result.usace || !result.trh14) {
+    return (
+      <p className="text-sm text-destructive">
+        Comparison result is incomplete. Please try again.
+      </p>
+    );
+  }
+
+  const winner = result.usace.total_thickness_mm <= result.trh14.total_thickness_mm ? "usace" : "trh14";
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        {(["usace", "trh14"] as const).map((key) => {
+          const m = result[key];
+          const isWinner = key === winner;
+          return (
+            <div
+              key={key}
+              className={`rounded-lg border p-4 ${isWinner ? "border-primary bg-primary/5" : ""}`}
+            >
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {key === "usace" ? "USACE CBR" : "TRH 14"}
+                </span>
+                {isWinner && (
+                  <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <div className="mb-1 font-mono text-2xl font-bold">
+                {formatNumber(m.total_thickness_mm, 0)} mm
+              </div>
+              <div className="text-xs text-muted-foreground">{m.method}</div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[m.confidence]}`}>
+                  {m.confidence} confidence
+                </span>
+                {m.material_class && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                    Class {m.material_class}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-sm">
+        <span className="text-muted-foreground">Δ Thickness:</span>
+        <span className="font-mono font-semibold">{formatNumber(Math.abs(result.delta_mm), 0)} mm</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">Subgrade CBR:</span>
+        <span className="font-mono font-semibold">{result.subgrade_cbr}%</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">Overall:</span>
+        <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
+          {result.confidence}
+        </span>
       </div>
     </div>
   );

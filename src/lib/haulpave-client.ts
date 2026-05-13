@@ -2,11 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   CallError,
   CallResult,
+  CbrRequest,
   CesaRequest,
   CesaResult,
-  CbrRequest,
+  CompareMethodsResult,
   CostComparison,
   CostScenario,
+  DesignPavementResult,
   DesignSummary,
   PavementResult,
   Trh14Request,
@@ -36,6 +38,10 @@ export const haulPave = {
   trh14Thickness: (req: Trh14Request) => call<PavementResult>("trh14_thickness", req),
   compareScenarios: (scenarios: Omit<CostScenario, "_id">[]) =>
     call<CostComparison>("compare_scenarios", { scenarios }),
+  compareMethods: (req: CesaRequest & Pick<CbrRequest, "subgrade_cbr">) =>
+    call<CompareMethodsResult>("compare_methods", req),
+  designPavement: (req: CesaRequest & Pick<CbrRequest, "subgrade_cbr">) =>
+    call<DesignPavementResult>("design_pavement", req),
   buildSummary: (inputs: Record<string, unknown>) =>
     call<DesignSummary>("build_summary", inputs),
   listVehicles: () => call<Vehicle[]>("list_vehicles", {}),

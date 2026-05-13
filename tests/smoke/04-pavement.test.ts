@@ -38,4 +38,14 @@ test.describe("Pavement Design page", () => {
     expect(text?.toLowerCase()).toMatch(/mm|layer|total|thickness/);
     await page.screenshot({ path: SS("04-pavement-trh-tab") });
   });
+
+  test("Compare tab shows side-by-side comparison", async ({ page }) => {
+    await page.getByRole("tab", { name: /compare/i }).click();
+    await page.getByRole("button", { name: /run comparison/i }).click();
+    await page.waitForTimeout(3000);
+    const text = await page.locator("main").textContent();
+    expect(text?.toLowerCase()).toMatch(/usace|trh 14|recommended/i);
+    expect(text?.toLowerCase()).toMatch(/mm/);
+    await page.screenshot({ path: SS("04-pavement-compare-tab") });
+  });
 });
