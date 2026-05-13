@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -61,6 +61,7 @@ function linspace(min: number, max: number, n: number): number[] {
 
 export default function SensitivityAnalysis() {
   const { subgradeCbr, coverages, fleet } = useCalcStore();
+  const runIdRef = useRef(0);
 
   const [param, setParam] = useState<SensParam>("subgrade_cbr");
   const [minVal, setMinVal] = useState<number>(PARAM_CONFIG.subgrade_cbr.defaultMin);
@@ -77,11 +78,16 @@ export default function SensitivityAnalysis() {
   };
 
   const runAnalysis = async () => {
+    if (![minVal, maxVal, steps].every(Number.isFinite)) {
+      toast.error("Please enter valid numeric values.");
+      return;
+    }
     if (minVal >= maxVal) {
       toast.error("Min must be less than Max.");
       return;
     }
     const clampedSteps = Math.max(3, Math.min(20, steps));
+    const runId = ++runIdRef.current;
 
     setRunning(true);
     setChartData([]);
@@ -122,11 +128,15 @@ export default function SensitivityAnalysis() {
       });
 
       const results = await Promise.all(promises);
-      setChartData(results);
+      if (runId === runIdRef.current) {
+        setChartData(results);
+      }
     } catch (err) {
       toast.error(`Analysis failed: ${String(err)}`);
     } finally {
-      setRunning(false);
+      if (runId === runIdRef.current) {
+        setRunning(false);
+      }
     }
   };
 
@@ -159,6 +169,7 @@ export default function SensitivityAnalysis() {
               <select
                 id="sens-param"
                 value={param}
+                disabled={running}
                 onChange={(e) => handleParamChange(e.target.value as SensParam)}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
@@ -180,6 +191,7 @@ export default function SensitivityAnalysis() {
                 id="sens-min"
                 type="number"
                 value={minVal}
+                disabled={running}
                 onChange={(e) => setMinVal(Number(e.target.value))}
               />
             </div>
@@ -192,6 +204,7 @@ export default function SensitivityAnalysis() {
                 id="sens-max"
                 type="number"
                 value={maxVal}
+                disabled={running}
                 onChange={(e) => setMaxVal(Number(e.target.value))}
               />
             </div>
@@ -204,6 +217,7 @@ export default function SensitivityAnalysis() {
                 min={3}
                 max={20}
                 value={steps}
+                disabled={running}
                 onChange={(e) =>
                   setSteps(Math.max(3, Math.min(20, Number(e.target.value))))
                 }
