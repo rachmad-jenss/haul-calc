@@ -7,6 +7,7 @@ import {
   Settings as SettingsIcon,
   FolderOpen,
   Save,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/pavement", label: "Pavement Design", icon: Layers },
   { to: "/economics", label: "Economics", icon: Coins },
   { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/sensitivity", label: "Sensitivity", icon: TrendingUp },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
