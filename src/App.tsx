@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Save,
   TrendingUp,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -16,6 +17,7 @@ import { saveProject, openProject } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/fleet", label: "Fleet & Traffic", icon: Truck },
   { to: "/pavement", label: "Pavement Design", icon: Layers },
   { to: "/economics", label: "Economics", icon: Coins },

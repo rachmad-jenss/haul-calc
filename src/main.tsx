@@ -4,6 +4,7 @@ import { RouterProvider, createHashRouter, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import App from "@/App";
+import Dashboard from "@/routes/Dashboard";
 import FleetTraffic from "@/routes/FleetTraffic";
 import PavementDesign from "@/routes/PavementDesign";
 import Economics from "@/routes/Economics";
@@ -17,7 +18,8 @@ const router = createHashRouter([
     path: "/",
     element: <App />,
     children: [
-      { index: true, element: <Navigate to="/fleet" replace /> },
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: "dashboard", element: <Dashboard /> },
       { path: "fleet", element: <FleetTraffic /> },
       { path: "pavement", element: <PavementDesign /> },
       { path: "economics", element: <Economics /> },
