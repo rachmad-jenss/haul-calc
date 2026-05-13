@@ -110,6 +110,40 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
                 "maintenance_cost_usd_per_year": round((0.144 + 30.4 * rr) * km_yr, 0),
             })
         return {"scenarios": results}
+    if method == "compare_methods":
+        cbr = params.get("subgrade_cbr", 8.0)
+        return {
+            "usace": {
+                "method": "USACE TM 5-822-12 CBR design curves",
+                "total_thickness_mm": 625,
+                "total_coverages": 1_050_000,
+                "total_cesa": 4.21e10,
+                "confidence": "high",
+            },
+            "trh14": {
+                "method": "TRH 14 (CSRA 1985) design catalog",
+                "total_thickness_mm": 525,
+                "total_coverages": 1_050_000,
+                "material_class": "G5",
+                "confidence": "medium",
+            },
+            "delta_mm": 100,
+            "subgrade_cbr": cbr,
+            "confidence": "high",
+        }
+    if method == "design_pavement":
+        cbr = params.get("subgrade_cbr", 8.0)
+        return {
+            "method": "USACE TM 5-822-12 CBR design curves",
+            "total_thickness_mm": 625,
+            "subgrade_cbr": cbr,
+            "confidence": "high",
+            "layers": [
+                {"name": "Surface (asphalt)", "thickness_mm": 88, "cbr": None},
+                {"name": "Base course (crushed stone)", "thickness_mm": 288, "cbr": 80},
+                {"name": "Sub-base (gravel)", "thickness_mm": 250, "cbr": 30},
+            ],
+        }
     if method == "build_summary":
         from datetime import datetime, timezone
         return {

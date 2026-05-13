@@ -81,6 +81,38 @@ export interface DesignSummary {
   results: Record<string, unknown>;
 }
 
+export interface MethodResult {
+  method: string;
+  total_thickness_mm: number;
+  total_coverages: number;
+  total_cesa?: number;
+  confidence: "high" | "medium" | "low";
+  material_class?: string;
+}
+
+export interface CompareMethodsResult {
+  usace: MethodResult;
+  trh14: MethodResult;
+  delta_mm: number;
+  subgrade_cbr: number;
+  confidence: "high" | "medium" | "low";
+}
+
+export interface PavementLayerFull {
+  name: string;
+  thickness_mm: number;
+  material_class?: string;
+  cbr?: number | null;
+}
+
+export interface DesignPavementResult {
+  method: string;
+  total_thickness_mm: number;
+  layers: PavementLayerFull[];
+  subgrade_cbr: number;
+  confidence: "high" | "medium" | "low";
+}
+
 export interface CallError {
   code: string;
   message: string;
