@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Truck,
   Layers,
@@ -32,8 +33,20 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') { root.classList.add('dark'); return; }
-    if (theme === 'light') { root.classList.remove('dark'); return; }
+    if (theme === 'dark') { root.classList.add('dark'); }
+    else if (theme === 'light') { root.classList.remove('dark'); }
+
+    // Sync native window title bar with the selected theme.
+    // Pass null for 'system' so Tauri defers to the OS setting.
+    try {
+      const nativeTheme = theme === 'system' ? null : theme;
+      getCurrentWindow().setTheme(nativeTheme);
+    } catch {
+      // Not in a Tauri context (e.g. browser / test env) — ignore.
+    }
+
+    if (theme !== 'system') return;
+
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = (e: MediaQueryListEvent | MediaQueryList) => {
       if (e.matches) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
