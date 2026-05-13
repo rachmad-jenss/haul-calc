@@ -76,7 +76,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Setup Rust
-        shell: pwsh
         run: |
           rustup update stable --no-self-update
           rustup default stable
@@ -95,8 +94,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build sidecar
-        shell: pwsh
-        run: pwsh python-sidecar/build.ps1
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File python-sidecar/build.ps1
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
