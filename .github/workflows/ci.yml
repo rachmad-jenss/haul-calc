@@ -3,9 +3,23 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'src-tauri/**'
+      - 'python-sidecar/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'src-tauri/**'
+      - 'python-sidecar/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ci-${{ github.ref }}
