@@ -92,7 +92,9 @@ jobs:
 
       - name: Build sidecar
         shell: cmd
-        run: powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
+        run: |
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
+          powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
