@@ -21,11 +21,9 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
   const Icon = ICONS[theme];
   return (
     <button
-      type="button"
       onClick={onToggle}
       className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       title={TITLES[theme]}
-      aria-label={TITLES[theme]}
     >
       <Icon className="h-3.5 w-3.5" />
     </button>
