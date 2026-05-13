@@ -1,7 +1,7 @@
 import { test, expect, navigate, SS } from "../fixtures";
 
 test.describe("Sidebar navigation", () => {
-  test("shows all 5 nav items", async ({ page }) => {
+  test("shows all nav items", async ({ page }) => {
     const nav = page.locator("nav");
     await expect(nav).toContainText("Fleet & Traffic");
     await expect(nav).toContainText("Pavement Design");
@@ -12,7 +12,7 @@ test.describe("Sidebar navigation", () => {
   });
 
   test("navigates to each page without crash", async ({ page }) => {
-    for (const route of ["/pavement", "/economics", "/reports", "/settings", "/fleet"]) {
+    for (const route of ["/dashboard", "/fleet", "/pavement", "/economics", "/reports", "/sensitivity", "/settings"]) {
       await navigate(page, route);
       await expect(page.locator("main")).toBeVisible();
     }
