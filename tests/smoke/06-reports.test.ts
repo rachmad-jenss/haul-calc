@@ -24,7 +24,7 @@ test.describe("Reports page", () => {
   test("Export JSON button is visible after generate", async ({ page }) => {
     await page.getByRole("button", { name: /generate/i }).click();
     await page.waitForTimeout(5000);
-    const exportBtn = page.getByRole("button", { name: /export/i });
+    const exportBtn = page.getByRole("button", { name: /export json/i });
     await expect(exportBtn).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: SS("06-reports-export-btn") });
   });
