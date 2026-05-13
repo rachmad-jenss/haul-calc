@@ -61,6 +61,9 @@ jobs:
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: cmd
     steps:
       - uses: actions/checkout@v4
 
