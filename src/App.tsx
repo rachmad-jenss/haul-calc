@@ -32,7 +32,7 @@ export default function App() {
     if (theme === 'light') { root.classList.remove('dark'); return; }
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = (e: MediaQueryListEvent | MediaQueryList) => {
-      e.matches ? root.classList.add('dark') : root.classList.remove('dark');
+      if (e.matches) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
     };
     apply(mq);
     mq.addEventListener('change', apply);
