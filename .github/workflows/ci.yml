@@ -81,7 +81,10 @@ jobs:
       - name: Setup Rust
         shell: cmd
         run: |
+          echo PATH before: %PATH%
           set PATH=C:\Users\Legion\.cargo\bin;%PATH%
+          echo PATH after: %PATH%
+          where rustup
           rustup update stable --no-self-update
           rustup default stable
 
