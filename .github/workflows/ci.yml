@@ -78,7 +78,12 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
+      - name: Add Cargo to PATH
+        shell: cmd
+        run: echo C:\Users\Legion\.cargo\bin>> %GITHUB_PATH%
+
       - name: Setup Rust
+        shell: cmd
         run: |
           rustup update stable --no-self-update
           rustup default stable
