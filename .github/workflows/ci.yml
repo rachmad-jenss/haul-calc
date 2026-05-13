@@ -81,10 +81,12 @@ jobs:
       - name: Setup Rust
         shell: cmd
         run: |
-          echo PATH before: %PATH%
-          set PATH=C:\Users\Legion\.cargo\bin;%PATH%
-          echo PATH after: %PATH%
-          where rustup
+          if not exist "C:\Windows\ServiceProfiles\NetworkService\.cargo\bin\rustup.exe" (
+            curl -sSf -o "%TEMP%\rustup-init.exe" https://win.rustup.rs/x86_64
+            "%TEMP%\rustup-init.exe" -y --default-toolchain stable --no-modify-path
+            del "%TEMP%\rustup-init.exe"
+          )
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
           rustup update stable --no-self-update
           rustup default stable
 
@@ -128,7 +130,7 @@ jobs:
       - name: Build Tauri app
         shell: cmd
         run: |
-          set PATH=C:\Users\Legion\.cargo\bin;%PATH%
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
           pnpm tauri build
 
       - name: Upload installers
