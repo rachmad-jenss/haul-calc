@@ -14,7 +14,7 @@ interface StubMeta {
   stubMessage?: string;
 }
 
-interface CalcStore {
+export interface CalcStore {
   // Fleet & Traffic
   fleet: FleetEntry[];
   designLifeYears: number;
@@ -36,6 +36,9 @@ interface CalcStore {
   authorName: string;
   reportSummary: (DesignSummary & StubMeta) | null;
 
+  // File
+  activeFileName: string | null;
+
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
   setDesignLifeYears: (years: number) => void;
@@ -50,6 +53,7 @@ interface CalcStore {
   setProjectName: (name: string) => void;
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
+  loadFromSnapshot: (data: Partial<CalcStore>) => void;
 }
 
 const DEFAULT_FLEET: FleetEntry[] = [
@@ -96,6 +100,8 @@ export const useCalcStore = create<CalcStore>()(
       authorName: "",
       reportSummary: null,
 
+      activeFileName: null,
+
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
@@ -114,6 +120,7 @@ export const useCalcStore = create<CalcStore>()(
       setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
+      loadFromSnapshot: (data) => set({ ...data }),
     }),
     {
       name: "haul-calc-store",
@@ -141,6 +148,7 @@ export const useCalcStore = create<CalcStore>()(
         projectName: state.projectName,
         authorName: state.authorName,
         reportSummary: state.reportSummary,
+        activeFileName: state.activeFileName,
       }),
     },
   ),

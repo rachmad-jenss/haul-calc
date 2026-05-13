@@ -5,8 +5,12 @@ import {
   Coins,
   FileText,
   Settings as SettingsIcon,
+  FolderOpen,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCalcStore } from "@/lib/store";
+import { saveProject, openProject } from "@/lib/project-file";
 
 const NAV = [
   { to: "/fleet", label: "Fleet & Traffic", icon: Truck },
@@ -17,14 +21,46 @@ const NAV = [
 ] as const;
 
 export default function App() {
+  const store = useCalcStore();
+  const { activeFileName, loadFromSnapshot } = store;
+
+  const displayName = activeFileName
+    ? activeFileName.length > 20
+      ? activeFileName.slice(0, 20) + "…"
+      : activeFileName
+    : null;
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       <aside className="flex w-60 shrink-0 flex-col border-r bg-card">
-        <div className="flex h-14 items-center border-b px-4">
-          <span className="text-base font-semibold tracking-tight">Haul Calc</span>
-          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-            v0.1
-          </span>
+        <div className="flex h-14 flex-col justify-center border-b px-4 gap-1">
+          <div className="flex items-center">
+            <span className="text-base font-semibold tracking-tight">Haul Calc</span>
+            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+              v0.1
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => openProject(loadFromSnapshot).catch(console.error)}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              title="Open project"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => saveProject(store).catch(console.error)}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              title="Save project"
+            >
+              <Save className="h-3.5 w-3.5" />
+            </button>
+            {displayName && (
+              <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>
+                {displayName}
+              </span>
+            )}
+          </div>
         </div>
         <nav className="flex-1 space-y-1 p-2">
           {NAV.map(({ to, label, icon: Icon }) => (
