@@ -14,6 +14,7 @@ import { haulPave } from "@/lib/haulpave-client";
 import { cesaRequestSchema, cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
+import { convertThickness, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 export default function PavementDesign() {
@@ -289,6 +290,8 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 }
 
 function PavementChart({ result }: { result?: PavementResult }) {
+  const { unitSystem } = useCalcStore();
+
   if (!result) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -296,12 +299,16 @@ function PavementChart({ result }: { result?: PavementResult }) {
       </p>
     );
   }
+
+  const displayThickness = convertThickness(result.total_thickness_mm, unitSystem);
+  const thicknessLabel = unitLabels[unitSystem].thickness;
+
   return (
     <div className="space-y-3">
       <div className="text-sm text-muted-foreground">
         Method: <span className="font-medium text-foreground">{result.method}</span>
         {" · "}
-        Total: <span className="font-mono">{result.total_thickness_mm} mm</span>
+        Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span>
       </div>
       <PavementCrossSection result={result} />
     </div>

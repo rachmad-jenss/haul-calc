@@ -8,6 +8,7 @@ import type {
   FleetEntry,
   PavementResult,
 } from "@/lib/types";
+import type { UnitSystem } from "@/lib/unit-convert";
 
 export interface CustomVehicle {
   id: string;
@@ -52,6 +53,9 @@ export interface CalcStore {
   // Theme
   theme: 'light' | 'dark' | 'system';
 
+  // Unit system
+  unitSystem: UnitSystem;
+
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
   addCustomVehicle: (v: Omit<CustomVehicle, "id">) => void;
@@ -70,6 +74,7 @@ export interface CalcStore {
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setUnitSystem: (system: UnitSystem) => void;
 }
 
 const DEFAULT_FLEET: FleetEntry[] = [
@@ -122,6 +127,8 @@ export const useCalcStore = create<CalcStore>()(
 
       theme: 'system',
 
+      unitSystem: 'SI',
+
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
       addCustomVehicle: (v) =>
         set((s) => ({
@@ -153,16 +160,20 @@ export const useCalcStore = create<CalcStore>()(
         set({ reportSummary: { ...result, stub, stubMessage } }),
       loadFromSnapshot: (data) => set({ ...data }),
       setTheme: (theme) => set({ theme }),
+      setUnitSystem: (unitSystem) => set({ unitSystem }),
     }),
     {
       name: "haul-calc-store",
-      version: 1,
+      version: 2,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
           s.costScenarios = (s.costScenarios as Record<string, unknown>[]).map((sc) =>
             "_id" in sc ? sc : { ...sc, _id: crypto.randomUUID() },
           );
+        }
+        if (fromVersion < 2) {
+          if (!s.unitSystem) s.unitSystem = 'SI';
         }
         return s;
       },
@@ -183,6 +194,7 @@ export const useCalcStore = create<CalcStore>()(
         reportSummary: state.reportSummary,
         activeFileName: state.activeFileName,
         theme: state.theme,
+        unitSystem: state.unitSystem,
       }),
     },
   ),
