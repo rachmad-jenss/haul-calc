@@ -6,7 +6,9 @@ import { Row } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { haulPave, type SidecarStatus } from "@/lib/haulpave-client";
+import { useCalcStore } from "@/lib/store";
 import type { CallError } from "@/lib/types";
+import type { UnitSystem } from "@/lib/unit-convert";
 
 interface Status {
   loaded: boolean;
@@ -17,6 +19,7 @@ interface Status {
 }
 
 export default function Settings() {
+  const { unitSystem, setUnitSystem } = useCalcStore();
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [restarting, setRestarting] = useState(false);
@@ -131,7 +134,7 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <Row label="Unit system">
-              <span className="font-medium text-foreground">SI (locked for v1)</span>
+              <UnitSystemToggle value={unitSystem} onChange={setUnitSystem} />
             </Row>
             <Row label="Currency">
               <span className="font-medium text-foreground">USD</span>
@@ -145,6 +148,34 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function UnitSystemToggle({
+  value,
+  onChange,
+}: {
+  value: UnitSystem;
+  onChange: (system: UnitSystem) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {(["SI", "Imperial"] as const).map((sys) => (
+        <label key={sys} className="flex cursor-pointer items-center gap-1.5">
+          <input
+            type="radio"
+            name="unit-system"
+            value={sys}
+            checked={value === sys}
+            onChange={() => onChange(sys)}
+            className="accent-primary"
+          />
+          <span className="font-medium text-foreground">
+            {sys === "SI" ? "SI (metric)" : "Imperial"}
+          </span>
+        </label>
+      ))}
     </div>
   );
 }

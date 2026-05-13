@@ -13,6 +13,7 @@ import { haulPave } from "@/lib/haulpave-client";
 import { cesaRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
+import { convertPayload, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 export default function FleetTraffic() {
@@ -21,6 +22,7 @@ export default function FleetTraffic() {
     designLifeYears,
     cesaResult,
     customVehicles,
+    unitSystem,
     setFleet,
     setDesignLifeYears,
     setCesaResult,
@@ -119,7 +121,7 @@ export default function FleetTraffic() {
                     <th className="px-2 py-2 font-medium">Vehicle</th>
                     <th className="px-2 py-2 font-medium">Count</th>
                     <th className="px-2 py-2 font-medium">Trips/day</th>
-                    <th className="px-2 py-2 font-medium">Payload (kN)</th>
+                    <th className="px-2 py-2 font-medium">Payload ({unitLabels[unitSystem].payload})</th>
                     <th className="w-10" />
                   </tr>
                 </thead>
@@ -166,16 +168,23 @@ export default function FleetTraffic() {
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <Input
-                          type="number"
-                          min={0}
-                          value={row.payload_kn}
-                          onChange={(e) =>
-                            updateRow(idx, {
-                              payload_kn: parseNumericInput(e.target.value, row.payload_kn),
-                            })
-                          }
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={row.payload_kn}
+                            onChange={(e) =>
+                              updateRow(idx, {
+                                payload_kn: parseNumericInput(e.target.value, row.payload_kn),
+                              })
+                            }
+                          />
+                          {unitSystem === 'Imperial' && (
+                            <span className="shrink-0 text-xs text-muted-foreground">
+                              {formatNumber(convertPayload(row.payload_kn, unitSystem), 1)} kips
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-2">
                         <Button
