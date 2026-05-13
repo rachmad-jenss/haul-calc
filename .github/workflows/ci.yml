@@ -78,13 +78,10 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Add Cargo to PATH
-        shell: cmd
-        run: echo C:\Users\Legion\.cargo\bin>> %GITHUB_PATH%
-
       - name: Setup Rust
         shell: cmd
         run: |
+          set PATH=C:\Users\Legion\.cargo\bin;%PATH%
           rustup update stable --no-self-update
           rustup default stable
 
@@ -126,7 +123,10 @@ jobs:
             tests/screenshots/
 
       - name: Build Tauri app
-        run: pnpm tauri build
+        shell: cmd
+        run: |
+          set PATH=C:\Users\Legion\.cargo\bin;%PATH%
+          pnpm tauri build
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
