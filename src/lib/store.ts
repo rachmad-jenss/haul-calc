@@ -122,7 +122,12 @@ export const useCalcStore = create<CalcStore>()(
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
         })),
       removeCustomVehicle: (id) =>
-        set((s) => ({ customVehicles: s.customVehicles.filter((c) => c.id !== id) })),
+        set((s) => ({
+          customVehicles: s.customVehicles.filter((c) => c.id !== id),
+          fleet: s.fleet.filter((f) => f.vehicle_id !== id),
+          cesaResult: null,
+          reportSummary: null,
+        })),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
         set({ cesaResult: { ...result, stub, stubMessage } }),

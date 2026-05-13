@@ -26,13 +26,19 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
 
   if (!open) return null;
 
+  const handleClose = () => {
+    setForm(EMPTY_FORM);
+    setErrors({});
+    onOpenChange(false);
+  };
+
   const validate = (): boolean => {
     const errs: Partial<FormState> = {};
     if (!form.name.trim()) errs.name = "Name is required";
     const gvw = parseFloat(form.gvw_kn);
     if (isNaN(gvw) || gvw <= 0) errs.gvw_kn = "GVW must be > 0";
-    const axles = parseInt(form.axles, 10);
-    if (isNaN(axles) || axles < 2 || axles > 12) errs.axles = "Axles must be 2–12";
+    const axles = Number(form.axles);
+    if (!Number.isInteger(axles) || axles < 2 || axles > 12) errs.axles = "Axles must be an integer from 2 to 12";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -43,7 +49,7 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
     addCustomVehicle({
       name: form.name.trim(),
       gvw_kn: parseFloat(form.gvw_kn),
-      axles: parseInt(form.axles, 10),
+      axles: Number(form.axles),
     });
     toast.success(`Custom vehicle "${form.name.trim()}" added`);
     setForm(EMPTY_FORM);
@@ -58,17 +64,24 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="custom-vehicles-title"
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") handleClose();
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onOpenChange(false);
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="w-full max-w-md rounded-lg border bg-background p-6 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Custom Vehicles</h2>
+          <h2 id="custom-vehicles-title" className="text-lg font-semibold">Custom Vehicles</h2>
           <button
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Close"
           >
@@ -111,6 +124,7 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
                 type="number"
                 min={2}
                 max={12}
+                step={1}
                 value={form.axles}
                 onChange={(e) => setForm((f) => ({ ...f, axles: e.target.value }))}
               />
