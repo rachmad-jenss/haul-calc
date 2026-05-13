@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
-import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
+import { cesaRequestSchema, cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
@@ -56,8 +56,9 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    if (!fleet.length) {
-      toast.error("Add fleet entries first before comparing methods.");
+    const cesaParsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
+    if (!cesaParsed.success) {
+      toast.error(firstError(cesaParsed.error));
       return;
     }
     const cbrParsed = cbrRequestSchema.safeParse({ subgrade_cbr: subgradeCbr, design_coverages: coverages });
@@ -69,8 +70,8 @@ export default function PavementDesign() {
     try {
       const res = await haulPave.compareMethods({
         subgrade_cbr: cbrParsed.data.subgrade_cbr,
-        fleet,
-        design_life_years: designLifeYears,
+        fleet: cesaParsed.data.fleet,
+        design_life_years: cesaParsed.data.design_life_years,
       });
       setCompareResult({ ...res.data, stub: res.stub, stubMessage: res.stubMessage });
     } catch (err) {
@@ -228,6 +229,14 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
     return (
       <p className="text-sm text-muted-foreground">
         Click "Run comparison" to compare USACE CBR and TRH 14 methods side-by-side.
+      </p>
+    );
+  }
+
+  if (!result.usace || !result.trh14) {
+    return (
+      <p className="text-sm text-destructive">
+        Comparison result is incomplete. Please try again.
       </p>
     );
   }
