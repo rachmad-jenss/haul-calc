@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, FileOutput } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
+import { generatePdf } from "@/lib/pdf-generator";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,31 @@ export default function Reports() {
     }
   };
 
+  const exportPdf = async () => {
+    if (!reportSummary) return;
+    try {
+      const blob = generatePdf({
+        projectName,
+        authorName,
+        generatedAt: new Date().toISOString(),
+        cesaResult,
+        cbrResult,
+        trhResult,
+        costResult,
+      });
+      const path = await save({
+        defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+      });
+      if (!path) return;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      await writeFile(path, bytes);
+      toast.success(`Saved to ${path}`);
+    } catch (err) {
+      toast.error(`PDF export failed: ${(err as Error).message}`);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
@@ -97,6 +123,10 @@ export default function Reports() {
             <Button variant="outline" onClick={generate} disabled={running}>
               <FileText className="h-4 w-4" />
               {running ? "Generating..." : "Generate summary"}
+            </Button>
+            <Button variant="outline" onClick={exportPdf} disabled={!reportSummary}>
+              <FileOutput className="h-4 w-4" />
+              Export PDF
             </Button>
             <Button onClick={exportJson} disabled={!reportSummary}>
               <Download className="h-4 w-4" />
