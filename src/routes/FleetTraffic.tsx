@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calculator, UserPlus } from "lucide-react";
+import { Plus, Trash2, Calculator, UserPlus, FileUp } from "lucide-react";
 import { toast } from "sonner";
+import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
@@ -31,6 +32,7 @@ export default function FleetTraffic() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [running, setRunning] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [showCsvModal, setShowCsvModal] = useState(false);
 
   useEffect(() => {
     haulPave
@@ -106,6 +108,10 @@ export default function FleetTraffic() {
               <Button variant="outline" size="sm" onClick={() => setShowCustomModal(true)}>
                 <UserPlus className="h-4 w-4" />
                 Custom vehicles
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowCsvModal(true)}>
+                <FileUp className="h-4 w-4" />
+                Import CSV
               </Button>
               <Button variant="outline" size="sm" onClick={addRow}>
                 <Plus className="h-4 w-4" />
@@ -273,6 +279,14 @@ export default function FleetTraffic() {
         </div>
       </div>
       <CustomVehicleModal open={showCustomModal} onOpenChange={setShowCustomModal} />
+      <CsvImportModal
+        open={showCsvModal}
+        onOpenChange={setShowCsvModal}
+        onImport={(entries) => {
+          setFleet(entries);
+          toast.success(`Imported ${entries.length} fleet row${entries.length > 1 ? "s" : ""}.`);
+        }}
+      />
     </div>
   );
 }
