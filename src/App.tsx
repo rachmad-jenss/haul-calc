@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Truck,
@@ -11,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import { saveProject, openProject } from "@/lib/project-file";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
   { to: "/fleet", label: "Fleet & Traffic", icon: Truck },
@@ -22,7 +24,20 @@ const NAV = [
 
 export default function App() {
   const store = useCalcStore();
-  const { activeFileName, loadFromSnapshot } = store;
+  const { activeFileName, loadFromSnapshot, theme, setTheme } = store;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') { root.classList.add('dark'); return; }
+    if (theme === 'light') { root.classList.remove('dark'); return; }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = (e: MediaQueryListEvent | MediaQueryList) => {
+      e.matches ? root.classList.add('dark') : root.classList.remove('dark');
+    };
+    apply(mq);
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [theme]);
 
   const displayName = activeFileName
     ? activeFileName.length > 20
@@ -82,15 +97,26 @@ export default function App() {
           ))}
         </nav>
         <div className="border-t p-3 text-[11px] text-muted-foreground">
-          Powered by{" "}
-          <a
-            href="https://github.com/rachmad-jenss/haul-pave"
-            target="_blank"
-            rel="noreferrer"
-            className="underline"
-          >
-            haul-pave
-          </a>
+          <div className="flex items-center justify-between">
+            <span>
+              Powered by{" "}
+              <a
+                href="https://github.com/rachmad-jenss/haul-pave"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                haul-pave
+              </a>
+            </span>
+            <ThemeToggle
+              theme={theme}
+              onToggle={() => {
+                const next = { light: 'dark', dark: 'system', system: 'light' } as const;
+                setTheme(next[theme]);
+              }}
+            />
+          </div>
         </div>
       </aside>
 

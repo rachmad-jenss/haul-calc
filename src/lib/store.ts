@@ -39,6 +39,9 @@ export interface CalcStore {
   // File
   activeFileName: string | null;
 
+  // Theme
+  theme: 'light' | 'dark' | 'system';
+
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
   setDesignLifeYears: (years: number) => void;
@@ -54,6 +57,7 @@ export interface CalcStore {
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 const DEFAULT_FLEET: FleetEntry[] = [
@@ -102,6 +106,8 @@ export const useCalcStore = create<CalcStore>()(
 
       activeFileName: null,
 
+      theme: 'system',
+
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
@@ -121,6 +127,7 @@ export const useCalcStore = create<CalcStore>()(
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
       loadFromSnapshot: (data) => set({ ...data }),
+      setTheme: (theme) => set({ theme }),
     }),
     {
       name: "haul-calc-store",
@@ -149,6 +156,7 @@ export const useCalcStore = create<CalcStore>()(
         authorName: state.authorName,
         reportSummary: state.reportSummary,
         activeFileName: state.activeFileName,
+        theme: state.theme,
       }),
     },
   ),
