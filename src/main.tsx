@@ -13,9 +13,7 @@ import Settings from "@/routes/Settings";
 import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
 import "@/styles/globals.css";
 
-function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
-  return <ErrorBoundary>{children}</ErrorBoundary>;
-}
+const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;
 
 const router = createHashRouter([
   {
@@ -23,13 +21,13 @@ const router = createHashRouter([
     element: <App />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: <RouteErrorBoundary><Dashboard /></RouteErrorBoundary> },
-      { path: "fleet", element: <RouteErrorBoundary><FleetTraffic /></RouteErrorBoundary> },
-      { path: "pavement", element: <RouteErrorBoundary><PavementDesign /></RouteErrorBoundary> },
-      { path: "economics", element: <RouteErrorBoundary><Economics /></RouteErrorBoundary> },
-      { path: "reports", element: <RouteErrorBoundary><Reports /></RouteErrorBoundary> },
-      { path: "sensitivity", element: <RouteErrorBoundary><SensitivityAnalysis /></RouteErrorBoundary> },
-      { path: "settings", element: <RouteErrorBoundary><Settings /></RouteErrorBoundary> },
+      { path: "dashboard", element: wrap(<Dashboard />) },
+      { path: "fleet", element: wrap(<FleetTraffic />) },
+      { path: "pavement", element: wrap(<PavementDesign />) },
+      { path: "economics", element: wrap(<Economics />) },
+      { path: "reports", element: wrap(<Reports />) },
+      { path: "sensitivity", element: wrap(<SensitivityAnalysis />) },
+      { path: "settings", element: wrap(<Settings />) },
     ],
   },
 ]);
