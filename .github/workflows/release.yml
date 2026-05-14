@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: self-hosted
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        shell: cmd
+        run: |
+          if not exist "C:\Windows\ServiceProfiles\NetworkService\.cargo\bin\rustup.exe" (
+            curl -sSf -o "%TEMP%\rustup-init.exe" https://win.rustup.rs/x86_64
+            "%TEMP%\rustup-init.exe" -y --default-toolchain stable --no-modify-path
+            del "%TEMP%\rustup-init.exe"
+          )
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
+          rustup update stable --no-self-update
+          rustup default stable
+
+      - name: Build sidecar
+        shell: cmd
+        run: |
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
+          powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Unblock bundler tools
+        shell: cmd
+        run: |
+          set TAURI_CACHE=C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri
+          if exist "%TAURI_CACHE%" (
+            powershell.exe -ExecutionPolicy Bypass -Command "Get-ChildItem -Path 'C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri' -Recurse -File | Unblock-File"
+            echo Bundler tools unblocked
+          ) else (
+            echo No cached bundler tools found
+          )
+
+      - name: Build Tauri app and create GitHub Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATH: C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;${{ env.PATH }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Haul Calc ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          includeUpdaterJson: true
