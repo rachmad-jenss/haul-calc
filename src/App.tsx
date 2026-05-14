@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   Truck,
   Layers,
@@ -15,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
-import { saveProject, openProject } from "@/lib/project-file";
+import { saveProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
@@ -32,6 +34,27 @@ const NAV = [
 export default function App() {
   const store = useCalcStore();
   const { activeFileName, theme, setTheme } = store;
+
+  // Open a .hcalc file passed as a CLI arg at launch (double-click in File Explorer).
+  // Uses a drainable slot so React StrictMode double-invoke is safe.
+  useEffect(() => {
+    invoke<string | null>("take_pending_file_path")
+      .then((path) => { if (path) return openProjectFromPath(path, store); })
+      .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Wake-up signal from single-instance plugin when second launch carries a .hcalc file.
+  // Drains the same buffered slot instead of relying on the event payload.
+  useEffect(() => {
+    const unlisten = listen<null>("file-open", () => {
+      invoke<string | null>("take_pending_file_path")
+        .then((path) => { if (path) return openProjectFromPath(path, store); })
+        .catch(console.error);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
