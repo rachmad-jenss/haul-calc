@@ -25,7 +25,7 @@ import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 export default function Economics() {
-  const { costScenarios, costResult, setCostScenarios, setCostResult } = useCalcStore();
+  const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult } = useCalcStore();
   const [running, setRunning] = useState(false);
 
   const update = (id: string, patch: Partial<CostScenario>) =>
@@ -150,8 +150,13 @@ export default function Economics() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Comparison</CardTitle>
+            {costResult && economicsDirty && (
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                Stale
+              </span>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             {costResult?.stub ? <StubBanner message={costResult.stubMessage} /> : null}
