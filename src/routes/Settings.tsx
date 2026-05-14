@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, XCircle, RefreshCw, RotateCcw, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2, XCircle, RefreshCw, RotateCcw, Loader2, Download } from "lucide-react";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Row } from "@/components/FormFields";
@@ -18,11 +20,24 @@ interface Status {
   sidecarStatus: SidecarStatus;
 }
 
+type UpdateState =
+  | { phase: "idle" }
+  | { phase: "checking" }
+  | { phase: "up-to-date" }
+  | { phase: "available"; version: string; date: string | undefined; body: string | undefined }
+  | { phase: "downloading"; percent: number }
+  | { phase: "ready" }
+  | { phase: "error"; message: string };
+
 export default function Settings() {
   const { unitSystem, setUnitSystem } = useCalcStore();
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [updateState, setUpdateState] = useState<UpdateState>({ phase: "idle" });
+  const [relaunching, setRelaunching] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pendingUpdate = useRef<any>(null);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -66,6 +81,68 @@ export default function Settings() {
     }
   };
 
+  const checkForUpdates = async () => {
+    setUpdateState({ phase: "checking" });
+    pendingUpdate.current = null;
+    try {
+      const update = await check();
+      if (!update) {
+        setUpdateState({ phase: "up-to-date" });
+        return;
+      }
+      pendingUpdate.current = update;
+      setUpdateState({
+        phase: "available",
+        version: update.version,
+        date: update.date ?? undefined,
+        body: update.body ?? undefined,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setUpdateState({ phase: "error", message: msg });
+      toast.error(`Update check failed: ${msg}`);
+    }
+  };
+
+  const installUpdate = async () => {
+    const update = pendingUpdate.current;
+    if (!update) return;
+    pendingUpdate.current = null;
+    setUpdateState({ phase: "downloading", percent: 0 });
+    try {
+      let downloaded = 0;
+      let total = 0;
+      await update.downloadAndInstall((event: { event: string; data: { contentLength?: number; chunkLength: number } }) => {
+        if (event.event === "Started") {
+          total = event.data.contentLength ?? 0;
+        } else if (event.event === "Progress") {
+          downloaded += event.data.chunkLength;
+          setUpdateState({
+            phase: "downloading",
+            percent: total > 0 ? Math.round((downloaded / total) * 100) : 0,
+          });
+        } else if (event.event === "Finished") {
+          setUpdateState({ phase: "ready" });
+        }
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setUpdateState({ phase: "error", message: msg });
+      toast.error(`Update failed: ${msg}`);
+    }
+  };
+
+  const doRelaunch = async () => {
+    setRelaunching(true);
+    try {
+      await relaunch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Restart failed: ${msg}`);
+      setRelaunching(false);
+    }
+  };
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -99,7 +176,7 @@ export default function Settings() {
         }
       />
 
-      <div className="grid flex-1 gap-4 overflow-auto p-6 lg:grid-cols-2">
+      <div className="grid flex-1 auto-rows-min gap-4 overflow-auto p-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Sidecar</CardTitle>
@@ -125,6 +202,21 @@ export default function Settings() {
             <Row label="Bridge version">
               <span className="font-mono">{status?.bridgeVersion ?? "—"}</span>
             </Row>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Updates</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <UpdatePanel
+              state={updateState}
+              relaunching={relaunching}
+              onCheck={checkForUpdates}
+              onInstall={installUpdate}
+              onRelaunch={doRelaunch}
+            />
           </CardContent>
         </Card>
 
@@ -176,6 +268,113 @@ function UnitSystemToggle({
           </span>
         </label>
       ))}
+    </div>
+  );
+}
+
+function UpdatePanel({
+  state,
+  relaunching,
+  onCheck,
+  onInstall,
+  onRelaunch,
+}: {
+  state: UpdateState;
+  relaunching: boolean;
+  onCheck: () => void;
+  onInstall: () => void;
+  onRelaunch: () => void;
+}) {
+  if (state.phase === "idle") {
+    return (
+      <Button variant="outline" onClick={onCheck} className="w-full">
+        <Download className="h-4 w-4" />
+        Check for Updates
+      </Button>
+    );
+  }
+  if (state.phase === "checking") {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Checking for updates…
+      </div>
+    );
+  }
+  if (state.phase === "up-to-date") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <CheckCircle2 className="h-4 w-4" />
+          You&apos;re on the latest version.
+        </div>
+        <Button variant="outline" size="sm" onClick={onCheck}>
+          Check again
+        </Button>
+      </div>
+    );
+  }
+  if (state.phase === "available") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 font-medium">
+          <Download className="h-4 w-4 text-primary" />
+          Version {state.version} available
+          {state.date && (
+            <span className="font-normal text-muted-foreground">
+              ({new Date(state.date).toLocaleDateString()})
+            </span>
+          )}
+        </div>
+        {state.body && (
+          <p className="text-xs text-muted-foreground line-clamp-3">{state.body}</p>
+        )}
+        <Button onClick={onInstall} className="w-full">
+          <Download className="h-4 w-4" />
+          Download &amp; Install
+        </Button>
+      </div>
+    );
+  }
+  if (state.phase === "downloading") {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Downloading… {state.percent > 0 ? `${state.percent}%` : ""}
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${state.percent}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
+  if (state.phase === "ready") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <CheckCircle2 className="h-4 w-4" />
+          Update installed. Restart to apply.
+        </div>
+        <Button onClick={onRelaunch} disabled={relaunching} className="w-full">
+          {relaunching ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {relaunching ? "Restarting…" : "Restart Now"}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-destructive">
+        <XCircle className="h-4 w-4" />
+        {state.message}
+      </div>
+      <Button variant="outline" size="sm" onClick={onCheck}>
+        Try again
+      </Button>
     </div>
   );
 }
