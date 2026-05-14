@@ -78,6 +78,7 @@ export interface CalcStore {
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
+  setActiveFileName: (name: string | null) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setUnitSystem: (system: UnitSystem) => void;
 }
@@ -170,6 +171,7 @@ export const useCalcStore = create<CalcStore>()(
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
       loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false }),
+      setActiveFileName: (activeFileName) => set({ activeFileName }),
       setTheme: (theme) => set({ theme }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
     }),

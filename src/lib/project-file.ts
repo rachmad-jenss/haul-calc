@@ -49,7 +49,7 @@ export async function saveProject(store: CalcStore): Promise<void> {
   await writeTextFile(filePath, JSON.stringify(snapshot, null, 2));
 
   const parts = filePath.replace(/\\/g, "/").split("/");
-  store.loadFromSnapshot({ activeFileName: parts[parts.length - 1] });
+  store.setActiveFileName(parts[parts.length - 1]);
 }
 
 export async function openProject(
