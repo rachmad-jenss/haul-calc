@@ -11,6 +11,7 @@ import Economics from "@/routes/Economics";
 import Reports from "@/routes/Reports";
 import Settings from "@/routes/Settings";
 import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
+import Compare from "@/routes/Compare";
 import "@/styles/globals.css";
 
 const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;
@@ -27,6 +28,7 @@ const router = createHashRouter([
       { path: "economics", element: wrap(<Economics />) },
       { path: "reports", element: wrap(<Reports />) },
       { path: "sensitivity", element: wrap(<SensitivityAnalysis />) },
+      { path: "compare", element: wrap(<Compare />) },
       { path: "settings", element: wrap(<Settings />) },
     ],
   },

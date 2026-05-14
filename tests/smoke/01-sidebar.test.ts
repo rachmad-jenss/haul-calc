@@ -7,12 +7,13 @@ test.describe("Sidebar navigation", () => {
     await expect(nav).toContainText("Pavement Design");
     await expect(nav).toContainText("Economics");
     await expect(nav).toContainText("Reports");
+    await expect(nav).toContainText("Compare");
     await expect(nav).toContainText("Settings");
     await page.screenshot({ path: SS("01-sidebar") });
   });
 
   test("navigates to each page without crash", async ({ page }) => {
-    for (const route of ["/dashboard", "/fleet", "/pavement", "/economics", "/reports", "/sensitivity", "/settings"]) {
+    for (const route of ["/dashboard", "/fleet", "/pavement", "/economics", "/reports", "/sensitivity", "/compare", "/settings"]) {
       await navigate(page, route);
       await expect(page.locator("main")).toBeVisible();
     }

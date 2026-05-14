@@ -11,6 +11,7 @@ import {
   Save,
   TrendingUp,
   LayoutDashboard,
+  GitCompareArrows,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -24,6 +25,7 @@ const NAV = [
   { to: "/economics", label: "Economics", icon: Coins },
   { to: "/reports", label: "Reports", icon: FileText },
   { to: "/sensitivity", label: "Sensitivity", icon: TrendingUp },
+  { to: "/compare", label: "Compare", icon: GitCompareArrows },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
