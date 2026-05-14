@@ -29,7 +29,7 @@ const NAV = [
 
 export default function App() {
   const store = useCalcStore();
-  const { activeFileName, loadFromSnapshot, theme, setTheme } = store;
+  const { activeFileName, theme, setTheme } = store;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,7 +42,7 @@ export default function App() {
         saveProject(useCalcStore.getState()).catch(console.error);
       } else if (e.key === "o") {
         e.preventDefault();
-        openProject(useCalcStore.getState().loadFromSnapshot).catch(console.error);
+        openProject(useCalcStore.getState()).catch(console.error);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -92,7 +92,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => openProject(loadFromSnapshot).catch(console.error)}
+              onClick={() => openProject(store).catch(console.error)}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Open project"
             >

@@ -53,6 +53,7 @@ export interface CalcStore {
 
   // File
   activeFileName: string | null;
+  recentFiles: string[];
 
   // Theme
   theme: 'light' | 'dark' | 'system';
@@ -79,6 +80,7 @@ export interface CalcStore {
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
   setActiveFileName: (name: string | null) => void;
+  pushRecentFile: (filePath: string) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setUnitSystem: (system: UnitSystem) => void;
 }
@@ -134,6 +136,7 @@ export const useCalcStore = create<CalcStore>()(
       reportSummary: null,
 
       activeFileName: null,
+      recentFiles: [],
 
       theme: 'system',
 
@@ -172,12 +175,16 @@ export const useCalcStore = create<CalcStore>()(
         set({ reportSummary: { ...result, stub, stubMessage } }),
       loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false }),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
+      pushRecentFile: (filePath) =>
+        set((s) => ({
+          recentFiles: [filePath, ...s.recentFiles.filter((f) => f !== filePath)].slice(0, 5),
+        })),
       setTheme: (theme) => set({ theme }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
     }),
     {
       name: "haul-calc-store",
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -195,6 +202,9 @@ export const useCalcStore = create<CalcStore>()(
           s.cesaDirty = false;
           s.pavementDirty = false;
           s.economicsDirty = false;
+        }
+        if (fromVersion < 5) {
+          s.recentFiles = [];
         }
         return s;
       },
@@ -218,6 +228,7 @@ export const useCalcStore = create<CalcStore>()(
         authorName: state.authorName,
         reportSummary: state.reportSummary,
         activeFileName: state.activeFileName,
+        recentFiles: state.recentFiles,
         theme: state.theme,
         unitSystem: state.unitSystem,
       }),
