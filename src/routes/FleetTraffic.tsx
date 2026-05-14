@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calculator, UserPlus, FileUp } from "lucide-react";
+import { Plus, Trash2, Calculator, UserPlus, FileUp, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -178,6 +178,12 @@ export default function FleetTraffic() {
                             })
                           }
                         />
+                        {row.trips_per_day > 100 && (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            High — verify trip count
+                          </p>
+                        )}
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex items-center gap-1.5">
@@ -197,6 +203,18 @@ export default function FleetTraffic() {
                             </span>
                           )}
                         </div>
+                        {row.payload_kn > 5_000 && (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Exceeds typical max (~5 000 kN)
+                          </p>
+                        )}
+                        {row.payload_kn > 0 && row.payload_kn < 200 && (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Very low — verify units (kN)
+                          </p>
+                        )}
                       </td>
                       <td className="px-2 py-2">
                         <Button

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator, ArrowDownToLine } from "lucide-react";
+import { Calculator, ArrowDownToLine, AlertTriangle } from "lucide-react";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -125,14 +125,28 @@ export default function PavementDesign() {
             <CardTitle>Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <NumField
-              id="subgrade-cbr"
-              label="Subgrade CBR (%)"
-              value={subgradeCbr}
-              onChange={setSubgradeCbr}
-              min={1}
-              max={50}
-            />
+            <div className="space-y-1">
+              <NumField
+                id="subgrade-cbr"
+                label="Subgrade CBR (%)"
+                value={subgradeCbr}
+                onChange={setSubgradeCbr}
+                min={1}
+                max={50}
+              />
+              {subgradeCbr < 3 && (
+                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  Very weak subgrade — consider soil improvement
+                </p>
+              )}
+              {subgradeCbr > 30 && (
+                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  CBR &gt; 30% is unusually strong for native subgrade
+                </p>
+              )}
+            </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <Label htmlFor="coverages">Design coverages</Label>
@@ -154,6 +168,18 @@ export default function PavementDesign() {
                 value={coverages}
                 onChange={(e) => setCoverages(parseNumericInput(e.target.value, coverages))}
               />
+              {coverages > 2_000_000 && (
+                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  Very high coverages — verify CESA computation
+                </p>
+              )}
+              {coverages > 0 && coverages < 10_000 && (
+                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  Very low coverages — verify fleet traffic inputs
+                </p>
+              )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="category">TRH 14 category</Label>
