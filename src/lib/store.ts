@@ -45,6 +45,12 @@ export interface LccaResult {
   breakEvenYear: number | null; // null if < 2 scenarios
 }
 
+export interface BoqGeometry {
+  roadLengthKm: number;
+  roadWidthM: number;
+  shoulderWidthM: number; // per side
+}
+
 interface StubMeta {
   stub: boolean;
   stubMessage?: string;
@@ -92,6 +98,10 @@ export interface CalcStore {
 
   // Unit system
   unitSystem: UnitSystem;
+
+  // BoQ road geometry
+  boqGeometry: BoqGeometry;
+  setBoqGeometry: (geometry: BoqGeometry) => void;
 
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
@@ -184,6 +194,8 @@ export const useCalcStore = create<CalcStore>()(
 
       unitSystem: 'SI',
 
+      boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
+
       setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
       setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null }),
       addCustomVehicle: (v) =>
@@ -225,6 +237,7 @@ export const useCalcStore = create<CalcStore>()(
         })),
       setTheme: (theme) => set({ theme }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
+      setBoqGeometry: (boqGeometry) => set({ boqGeometry }),
     }),
     {
       name: "haul-calc-store",
@@ -253,6 +266,7 @@ export const useCalcStore = create<CalcStore>()(
         if (fromVersion < 6) {
           s.lccaInputs = { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] };
           s.lccaResult = null;
+          s.boqGeometry = { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 };
         }
         return s;
       },
@@ -281,6 +295,7 @@ export const useCalcStore = create<CalcStore>()(
         recentFiles: state.recentFiles,
         theme: state.theme,
         unitSystem: state.unitSystem,
+        boqGeometry: state.boqGeometry,
       }),
     },
   ),
@@ -306,6 +321,7 @@ export const useCalcStore = create<CalcStore>()(
         costResult: state.costResult,
         economicsDirty: state.economicsDirty,
         reportSummary: state.reportSummary,
+        boqGeometry: state.boqGeometry,
       }),
     },
   ),
