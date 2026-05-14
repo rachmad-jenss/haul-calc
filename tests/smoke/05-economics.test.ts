@@ -18,6 +18,17 @@ test.describe("Economics page", () => {
     await page.screenshot({ path: SS("05-economics-chart") });
   });
 
+  test("Export PNG button absent before compare, visible after", async ({ page }) => {
+    // No results yet — button must not exist
+    await expect(page.getByRole("button", { name: /export png/i })).toHaveCount(0);
+
+    // Run comparison, then button must appear
+    await page.getByRole("button", { name: /compare/i }).click();
+    await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: /export png/i })).toBeVisible();
+    await page.screenshot({ path: SS("05-economics-export-btn") });
+  });
+
   test("add scenario increases card count", async ({ page }) => {
     // Scenarios are rendered as div cards, not table rows
     const before = await page.locator("[class*='rounded'][class*='border'][class*='p-3']").count();
