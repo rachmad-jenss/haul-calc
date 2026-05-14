@@ -26,6 +26,7 @@ export interface CalcStore {
   // Fleet & Traffic
   fleet: FleetEntry[];
   designLifeYears: number;
+  workingDaysPerYear: number;
   cesaResult: (CesaResult & StubMeta) | null;
 
   // Pavement Design
@@ -61,6 +62,7 @@ export interface CalcStore {
   addCustomVehicle: (v: Omit<CustomVehicle, "id">) => void;
   removeCustomVehicle: (id: string) => void;
   setDesignLifeYears: (years: number) => void;
+  setWorkingDaysPerYear: (days: number) => void;
   setCesaResult: (result: CesaResult, stub: boolean, stubMessage?: string) => void;
   setSubgradeCbr: (cbr: number) => void;
   setCoverages: (coverages: number) => void;
@@ -106,6 +108,7 @@ export const useCalcStore = create<CalcStore>()(
     (set) => ({
       fleet: DEFAULT_FLEET,
       designLifeYears: 10,
+      workingDaysPerYear: 250,
       cesaResult: null,
 
       subgradeCbr: 8,
@@ -130,6 +133,7 @@ export const useCalcStore = create<CalcStore>()(
       unitSystem: 'SI',
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
+      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null }),
       addCustomVehicle: (v) =>
         set((s) => ({
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
@@ -164,7 +168,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -175,11 +179,15 @@ export const useCalcStore = create<CalcStore>()(
         if (fromVersion < 2) {
           if (!s.unitSystem) s.unitSystem = 'SI';
         }
+        if (fromVersion < 3) {
+          if (s.workingDaysPerYear == null) s.workingDaysPerYear = 250;
+        }
         return s;
       },
       partialize: (state) => ({
         fleet: state.fleet,
         designLifeYears: state.designLifeYears,
+        workingDaysPerYear: state.workingDaysPerYear,
         cesaResult: state.cesaResult,
         subgradeCbr: state.subgradeCbr,
         coverages: state.coverages,
