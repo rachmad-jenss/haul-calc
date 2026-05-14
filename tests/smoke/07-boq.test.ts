@@ -24,7 +24,7 @@ test.describe("Material BoQ section", () => {
     // Navigate to pavement page and run calculation to populate cbrResult
     await navigate(page, "/pavement");
     await page.waitForTimeout(500);
-    await page.getByRole("button", { name: /design/i }).first().click();
+    await page.getByRole("button", { name: /compute/i }).first().click();
     await page.waitForTimeout(3000);
 
     // Now go back to reports
