@@ -21,6 +21,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# Signing keys (never commit)
+~/.tauri/
+*.key
+*.key.pub
+
 # Rust / Tauri
 src-tauri/target/
 src-tauri/Cargo.lock
