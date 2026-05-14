@@ -37,7 +37,13 @@ export default function App() {
       if (!(e.ctrlKey || e.metaKey)) return;
       const t = e.target;
       if (t instanceof HTMLElement && (t.matches("input, textarea, select") || t.isContentEditable)) return;
-      if (e.key === "s") {
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        useCalcStore.temporal.getState().undo();
+      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        useCalcStore.temporal.getState().redo();
+      } else if (e.key === "s") {
         e.preventDefault();
         saveProject(useCalcStore.getState()).catch(console.error);
       } else if (e.key === "o") {

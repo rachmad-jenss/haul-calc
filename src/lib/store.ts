@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { temporal } from "zundo";
 import type {
   CesaResult,
   CostComparison,
@@ -110,8 +111,9 @@ const DEFAULT_SCENARIOS: CostScenario[] = [
 ];
 
 export const useCalcStore = create<CalcStore>()(
-  persist(
-    (set) => ({
+  temporal(
+    persist(
+      (set) => ({
       fleet: DEFAULT_FLEET,
       designLifeYears: 10,
       workingDaysPerYear: 250,
@@ -231,6 +233,22 @@ export const useCalcStore = create<CalcStore>()(
         recentFiles: state.recentFiles,
         theme: state.theme,
         unitSystem: state.unitSystem,
+      }),
+    },
+  ),
+    {
+      limit: 20,
+      partialize: (state) => ({
+        fleet: state.fleet,
+        designLifeYears: state.designLifeYears,
+        workingDaysPerYear: state.workingDaysPerYear,
+        subgradeCbr: state.subgradeCbr,
+        coverages: state.coverages,
+        trhCategory: state.trhCategory,
+        costScenarios: state.costScenarios,
+        customVehicles: state.customVehicles,
+        projectName: state.projectName,
+        authorName: state.authorName,
       }),
     },
   ),
