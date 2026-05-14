@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
 
@@ -63,12 +64,14 @@ export default function SensitivityAnalysis() {
   const { subgradeCbr, coverages, designLifeYears, fleet, costScenarios } = useCalcStore();
   const runIdRef = useRef(0);
 
+  const chartContainerRef = useRef<HTMLDivElement>(null);
   const [param, setParam] = useState<SensParam>("subgrade_cbr");
   const [metric, setMetric] = useState<SensMetric>("total_thickness_mm");
   const [minVal, setMinVal] = useState<number>(PARAM_CONFIG.subgrade_cbr.defaultMin);
   const [maxVal, setMaxVal] = useState<number>(PARAM_CONFIG.subgrade_cbr.defaultMax);
   const [steps, setSteps] = useState<number>(10);
   const [running, setRunning] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
   const handleParamChange = (newParam: SensParam) => {
@@ -189,6 +192,21 @@ export default function SensitivityAnalysis() {
     }
   };
 
+  const handleExport = async () => {
+    if (!chartContainerRef.current) return;
+    setExporting(true);
+    try {
+      await exportChartToPng(
+        chartContainerRef.current,
+        `haul-calc-sensitivity-${param}-vs-${metric}`,
+      );
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const paramCfg = PARAM_CONFIG[param];
   const metricCfg = METRIC_CONFIG[metric];
   const hasData = chartData.length > 0;
@@ -305,8 +323,20 @@ export default function SensitivityAnalysis() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Results — {metricCfg.label}</CardTitle>
+            {hasData && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-7 gap-1 px-2 text-xs"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                <Download className="h-3 w-3" />
+                {exporting ? "Exporting…" : "Export PNG"}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="flex h-[calc(100%-4rem)] flex-col">
             {!hasData ? (
@@ -320,7 +350,7 @@ export default function SensitivityAnalysis() {
                     {chartData.length - validPoints} point(s) failed and were skipped.
                   </p>
                 )}
-                <div className="flex-1 min-h-[300px]">
+                <div className="flex-1 min-h-[300px]" ref={chartContainerRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData.filter((p) => p.y !== null)}

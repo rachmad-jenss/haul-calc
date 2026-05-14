@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, Trash2, Calculator } from "lucide-react";
+import { Plus, Trash2, Calculator, Download } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { compareRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
@@ -27,6 +28,8 @@ import { formatCurrency } from "@/lib/utils";
 export default function Economics() {
   const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult } = useCalcStore();
   const [running, setRunning] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const update = (id: string, patch: Partial<CostScenario>) =>
     setCostScenarios(costScenarios.map((s) => (s._id === id ? { ...s, ...patch } : s)));
@@ -62,6 +65,18 @@ export default function Economics() {
       toast.error(`compare_scenarios failed: ${e.message}`);
     } finally {
       setRunning(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!chartRef.current) return;
+    setExporting(true);
+    try {
+      await exportChartToPng(chartRef.current, "haul-calc-economics-comparison");
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -157,6 +172,18 @@ export default function Economics() {
                 Stale
               </span>
             )}
+            {chartData.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-7 gap-1 px-2 text-xs"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                <Download className="h-3 w-3" />
+                {exporting ? "Exporting…" : "Export PNG"}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             {costResult?.stub ? <StubBanner message={costResult.stubMessage} /> : null}
@@ -166,7 +193,7 @@ export default function Economics() {
               </p>
             ) : (
               <>
-                <div className="h-72 w-full">
+                <div className="h-72 w-full" ref={chartRef}>
                   <ResponsiveContainer>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
