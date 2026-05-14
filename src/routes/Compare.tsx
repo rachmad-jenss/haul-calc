@@ -49,31 +49,34 @@ export default function Compare() {
     if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) return;
 
     setLoading(true);
-    const existing = new Set(projects.map((p) => p.filePath));
-    const newProjects: LoadedProject[] = [];
+    try {
+      const existing = new Set(projects.map((p) => p.filePath));
+      const newProjects: LoadedProject[] = [];
 
-    for (const fp of filePaths) {
-      if (existing.has(fp)) continue;
-      if (projects.length + newProjects.length >= 4) {
-        toast.warning("Maximum 4 projects for comparison.");
-        break;
+      for (const fp of filePaths) {
+        if (existing.has(fp)) continue;
+        if (projects.length + newProjects.length >= 4) {
+          toast.warning("Maximum 4 projects for comparison.");
+          break;
+        }
+        try {
+          const text = await readTextFile(fp);
+          const snapshot = parseSnapshot(text);
+          const parts = fp.replace(/\\/g, "/").split("/");
+          newProjects.push({
+            filePath: fp,
+            fileName: parts[parts.length - 1],
+            snapshot,
+          });
+        } catch {
+          toast.error(`Failed to load: ${fp}`);
+        }
       }
-      try {
-        const text = await readTextFile(fp);
-        const snapshot = parseSnapshot(text);
-        const parts = fp.replace(/\\/g, "/").split("/");
-        newProjects.push({
-          filePath: fp,
-          fileName: parts[parts.length - 1],
-          snapshot,
-        });
-      } catch {
-        toast.error(`Failed to load: ${fp}`);
-      }
+
+      setProjects((prev) => [...prev, ...newProjects]);
+    } finally {
+      setLoading(false);
     }
-
-    setProjects((prev) => [...prev, ...newProjects]);
-    setLoading(false);
   };
 
   const removeProject = (filePath: string) => {
@@ -174,7 +177,7 @@ export default function Compare() {
               />
               <Row
                 label="TRH 14 category"
-                textValues={projects.map((p) => (p.snapshot as Record<string, unknown>).trhCategory as string ?? "—")}
+                textValues={projects.map((p) => p.snapshot.trhCategory ?? "—")}
               />
             </ComparisonSection>
 
