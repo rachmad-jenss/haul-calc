@@ -29,11 +29,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "licenseFile": "../LICENSE",
     "nsis": {
       "installerIcon": "icons/icon.ico",
       "displayLanguageSelector": false,
-      "license": "../LICENSE",
-      "shortcutName": "Haul Calc"
+      "startMenuFolder": "Haul Calc"
     },
     "icon": [
       "icons/32x32.png",
