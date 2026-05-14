@@ -38,10 +38,12 @@
     "active": true,
     "targets": ["nsis"],
     "licenseFile": "../LICENSE",
-    "nsis": {
-      "installerIcon": "icons/icon.ico",
-      "displayLanguageSelector": false,
-      "startMenuFolder": "Haul Calc"
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "displayLanguageSelector": false,
+        "startMenuFolder": "Haul Calc"
+      }
     },
     "icon": [
       "icons/32x32.png",
