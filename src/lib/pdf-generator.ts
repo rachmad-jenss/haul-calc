@@ -1,6 +1,8 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { CesaResult, PavementResult, CostComparison } from "@/lib/types";
+import type { CesaResult, PavementResult, CostComparison, PavementLayer } from "@/lib/types";
+import { computeBoq } from "@/lib/boq";
+import type { BoqGeometry } from "@/lib/store";
 
 export interface PdfData {
   projectName: string;
@@ -10,6 +12,8 @@ export interface PdfData {
   cbrResult: (PavementResult & { stub?: boolean }) | null;
   trhResult: (PavementResult & { stub?: boolean }) | null;
   costResult: (CostComparison & { stub?: boolean }) | null;
+  boqGeometry?: BoqGeometry;
+  boqLayers?: PavementLayer[];
 }
 
 const COLORS = {
@@ -176,6 +180,34 @@ export function generatePdf(data: PdfData): Blob {
           fmt(total),
         ];
       }),
+      headStyles: { fillColor: COLORS.headerBg, textColor: COLORS.primary, fontStyle: "bold" },
+      styles: { fontSize: 8, cellPadding: 2 },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  // Material BoQ
+  if (data.boqLayers && data.boqGeometry && data.boqLayers.length > 0) {
+    doc.addPage();
+    y = 20;
+    y = sectionTitle(doc, "Material Bill of Quantities", y);
+    y = keyValue(doc, "Road Length", `${data.boqGeometry.roadLengthKm} km`, y);
+    y = keyValue(doc, "Road Width", `${data.boqGeometry.roadWidthM} m`, y);
+    y = keyValue(doc, "Shoulder Width", `${data.boqGeometry.shoulderWidthM} m/side`, y);
+    y += 4;
+
+    const boqRows = computeBoq(data.boqLayers, data.boqGeometry);
+    autoTable(doc, {
+      startY: y,
+      head: [["Layer", "Thickness (mm)", "Area (m²)", "Volume (m³)", "Density (t/m³)", "Mass (t)"]],
+      body: boqRows.map((r) => [
+        r.layer,
+        r.thicknessMm.toFixed(0),
+        r.areaM2.toFixed(1),
+        r.volumeM3.toFixed(1),
+        r.densityTm3.toFixed(1),
+        r.massT.toFixed(1),
+      ]),
       headStyles: { fillColor: COLORS.headerBg, textColor: COLORS.primary, fontStyle: "bold" },
       styles: { fontSize: 8, cellPadding: 2 },
       margin: { left: 14, right: 14 },

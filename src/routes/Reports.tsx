@@ -4,8 +4,10 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 import { generatePdf } from "@/lib/pdf-generator";
+import { computeBoq, type BoqRow } from "@/lib/boq";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
+import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,9 +25,11 @@ export default function Reports() {
     projectName,
     authorName,
     reportSummary,
+    boqGeometry,
     setProjectName,
     setAuthorName,
     setReportSummary,
+    setBoqGeometry,
   } = useCalcStore();
 
   const [running, setRunning] = useState(false);
@@ -91,6 +95,7 @@ export default function Reports() {
   const exportPdf = async () => {
     if (!reportSummary) return;
     try {
+      const boqLayers = (cbrResult ?? trhResult)?.layers ?? [];
       const blob = generatePdf({
         projectName,
         authorName,
@@ -99,6 +104,8 @@ export default function Reports() {
         cbrResult,
         trhResult,
         costResult,
+        boqGeometry,
+        boqLayers,
       });
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,
@@ -136,7 +143,8 @@ export default function Reports() {
         }
       />
 
-      <div className="grid flex-1 gap-4 overflow-auto p-6 lg:grid-cols-[360px,1fr]">
+      <div className="flex flex-1 flex-col gap-4 overflow-auto p-6">
+        <div className="grid gap-4 lg:grid-cols-[360px,1fr]">
         <Card>
           <CardHeader>
             <CardTitle>Metadata</CardTitle>
@@ -192,6 +200,17 @@ export default function Reports() {
             )}
           </CardContent>
         </Card>
+        </div>
+
+        {(cbrResult || trhResult) && (
+          <BoqSection
+            layers={(cbrResult ?? trhResult)!.layers}
+            geometry={boqGeometry}
+            onGeometryChange={(field, value) =>
+              setBoqGeometry({ ...boqGeometry, [field]: value })
+            }
+          />
+        )}
       </div>
     </div>
   );
@@ -205,5 +224,87 @@ function DataBadge({ label, active }: { label: string; active: boolean }) {
       />
       <span className={active ? "text-foreground" : ""}>{label}</span>
     </div>
+  );
+}
+
+function BoqSection({
+  layers,
+  geometry,
+  onGeometryChange,
+}: {
+  layers: { name: string; thickness_mm: number; cbr: number | null }[];
+  geometry: { roadLengthKm: number; roadWidthM: number; shoulderWidthM: number };
+  onGeometryChange: (field: "roadLengthKm" | "roadWidthM" | "shoulderWidthM", value: number) => void;
+}) {
+  const rows: BoqRow[] = computeBoq(layers, geometry);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Material BoQ</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          <NumField
+            id="boq-length"
+            label="Road length (km)"
+            value={geometry.roadLengthKm}
+            min={0.1}
+            onChange={(v) => onGeometryChange("roadLengthKm", v)}
+          />
+          <NumField
+            id="boq-width"
+            label="Road width (m)"
+            value={geometry.roadWidthM}
+            min={1}
+            onChange={(v) => onGeometryChange("roadWidthM", v)}
+          />
+          <NumField
+            id="boq-shoulder"
+            label="Shoulder width/side (m)"
+            value={geometry.shoulderWidthM}
+            min={0}
+            onChange={(v) => onGeometryChange("shoulderWidthM", v)}
+          />
+        </div>
+
+        <div className="overflow-auto rounded-md border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
+                <th className="px-3 py-2 text-left">Layer</th>
+                <th className="px-3 py-2 text-right">Thickness (mm)</th>
+                <th className="px-3 py-2 text-right">Area (m²)</th>
+                <th className="px-3 py-2 text-right">Volume (m³)</th>
+                <th className="px-3 py-2 text-right">Density (t/m³)</th>
+                <th className="px-3 py-2 text-right">Mass (t)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="px-3 py-2">{row.layer}</td>
+                  <td className="px-3 py-2 text-right font-mono">{row.thicknessMm.toFixed(0)}</td>
+                  <td className="px-3 py-2 text-right font-mono">{row.areaM2.toFixed(1)}</td>
+                  <td className="px-3 py-2 text-right font-mono">{row.volumeM3.toFixed(1)}</td>
+                  <td className="px-3 py-2 text-right font-mono">{row.densityTm3.toFixed(1)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-semibold">{row.massT.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t bg-muted/50 font-semibold">
+                <td className="px-3 py-2 text-xs text-muted-foreground" colSpan={5}>
+                  Total mass
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {rows.reduce((acc, r) => acc + r.massT, 0).toFixed(1)} t
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
