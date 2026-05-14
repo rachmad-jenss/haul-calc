@@ -32,6 +32,21 @@ export default function App() {
   const { activeFileName, loadFromSnapshot, theme, setTheme } = store;
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === "s") {
+        e.preventDefault();
+        saveProject(useCalcStore.getState()).catch(console.error);
+      } else if (e.key === "o") {
+        e.preventDefault();
+        openProject(useCalcStore.getState().loadFromSnapshot).catch(console.error);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') { root.classList.add('dark'); }
     else if (theme === 'light') { root.classList.remove('dark'); }
