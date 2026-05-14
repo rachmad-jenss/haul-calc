@@ -133,7 +133,7 @@ export const useCalcStore = create<CalcStore>()(
       unitSystem: 'SI',
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, reportSummary: null }),
-      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null }),
+      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, reportSummary: null }),
       addCustomVehicle: (v) =>
         set((s) => ({
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],

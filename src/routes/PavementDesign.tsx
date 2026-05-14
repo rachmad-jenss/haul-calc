@@ -22,6 +22,7 @@ export default function PavementDesign() {
     cesaResult,
     fleet,
     designLifeYears,
+    workingDaysPerYear,
     subgradeCbr,
     coverages,
     trhCategory,
@@ -46,7 +47,7 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    const cesaParsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
+    const cesaParsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears, working_days_per_year: workingDaysPerYear });
     if (!cesaParsed.success) {
       toast.error(firstError(cesaParsed.error));
       return;
