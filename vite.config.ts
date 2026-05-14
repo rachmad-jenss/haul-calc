@@ -1,6 +1,9 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { readFileSync } from "node:fs";
+
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8")) as { version: string };
 
 const host = process.env.TAURI_DEV_HOST;
 const isDebug = !!process.env.TAURI_ENV_DEBUG;
@@ -8,6 +11,9 @@ const isDebug = !!process.env.TAURI_ENV_DEBUG;
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react() as unknown as Plugin],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
