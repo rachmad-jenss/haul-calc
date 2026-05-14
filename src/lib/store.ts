@@ -18,6 +18,33 @@ export interface CustomVehicle {
   axles: number;
 }
 
+export interface LccaScenarioInput {
+  _id: string;          // reuses costScenarios[i]._id for linkage
+  name: string;         // read from costScenarios
+  constructionCostUsd: number;
+  resurfacingCostUsd: number;
+  resurfacingIntervalYears: number;
+}
+
+export interface LccaInputs {
+  discountRate: number;        // e.g. 0.10 for 10%
+  analysisPeriodYears: number; // e.g. 20
+  scenarios: LccaScenarioInput[];
+}
+
+export interface LccaScenarioResult {
+  _id: string;
+  name: string;
+  npvUsd: number;
+  annualEquivalentCostUsd: number;
+  cashflows: { year: number; nominalUsd: number; pv: number }[];
+}
+
+export interface LccaResult {
+  scenarios: LccaScenarioResult[];
+  breakEvenYear: number | null; // null if < 2 scenarios
+}
+
 interface StubMeta {
   stub: boolean;
   stubMessage?: string;
@@ -43,6 +70,10 @@ export interface CalcStore {
   costScenarios: CostScenario[];
   costResult: (CostComparison & StubMeta) | null;
   economicsDirty: boolean;
+
+  // LCCA
+  lccaInputs: LccaInputs;
+  lccaResult: LccaResult | null;
 
   // Reports
   projectName: string;
@@ -76,6 +107,8 @@ export interface CalcStore {
   setTrhResult: (result: PavementResult, stub: boolean, stubMessage?: string) => void;
   setCostScenarios: (scenarios: CostScenario[]) => void;
   setCostResult: (result: CostComparison, stub: boolean, stubMessage?: string) => void;
+  setLccaInputs: (inputs: LccaInputs) => void;
+  setLccaResult: (result: LccaResult) => void;
   setProjectName: (name: string) => void;
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
@@ -131,6 +164,13 @@ export const useCalcStore = create<CalcStore>()(
       costResult: null,
       economicsDirty: false,
 
+      lccaInputs: {
+        discountRate: 0.10,
+        analysisPeriodYears: 20,
+        scenarios: [],
+      },
+      lccaResult: null,
+
       customVehicles: [],
 
       projectName: "Pit South — Main Haul",
@@ -171,6 +211,8 @@ export const useCalcStore = create<CalcStore>()(
       setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null }),
       setCostResult: (result, stub, stubMessage) =>
         set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),
+      setLccaInputs: (lccaInputs) => set({ lccaInputs, lccaResult: null }),
+      setLccaResult: (lccaResult) => set({ lccaResult }),
       setProjectName: (projectName) => set({ projectName, reportSummary: null }),
       setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
@@ -186,7 +228,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -208,6 +250,10 @@ export const useCalcStore = create<CalcStore>()(
         if (fromVersion < 5) {
           s.recentFiles = [];
         }
+        if (fromVersion < 6) {
+          s.lccaInputs = { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] };
+          s.lccaResult = null;
+        }
         return s;
       },
       partialize: (state) => ({
@@ -225,6 +271,8 @@ export const useCalcStore = create<CalcStore>()(
         costScenarios: state.costScenarios,
         costResult: state.costResult,
         economicsDirty: state.economicsDirty,
+        lccaInputs: state.lccaInputs,
+        lccaResult: state.lccaResult,
         customVehicles: state.customVehicles,
         projectName: state.projectName,
         authorName: state.authorName,
