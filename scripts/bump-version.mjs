@@ -31,8 +31,9 @@ function readVersions() {
   const cargo = readFileSync(FILES.cargo, "utf-8");
   const tauri = JSON.parse(readFileSync(FILES.tauri, "utf-8"));
 
-  const cargoMatch = cargo.match(/^version\s*=\s*"([^"]+)"/m);
-  if (!cargoMatch) throw new Error("Could not find version in Cargo.toml");
+  // Scope to [package] section — [^\[]* stops at the next section header
+  const cargoMatch = cargo.match(/^\[package\][^\[]*?version\s*=\s*"([^"]+)"/ms);
+  if (!cargoMatch) throw new Error("Could not find version in Cargo.toml [package] section");
 
   return {
     pkg: pkg.version,
@@ -63,9 +64,9 @@ function applyVersion(newVersion) {
   pkg.version = newVersion;
   writeFileSync(FILES.pkg, JSON.stringify(pkg, null, 2) + "\n");
 
-  // Cargo.toml — replace only the first `version = "..."` (package section)
+  // Cargo.toml — scope replacement to [package] section, stops at next `[`
   const cargo = readFileSync(FILES.cargo, "utf-8");
-  const updatedCargo = cargo.replace(/^(version\s*=\s*")[^"]+(")/m, `$1${newVersion}$2`);
+  const updatedCargo = cargo.replace(/(^\[package\][^\[]*?version\s*=\s*")[^"]+(")/ms, `$1${newVersion}$2`);
   writeFileSync(FILES.cargo, updatedCargo);
 
   // tauri.conf.json
