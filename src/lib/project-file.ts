@@ -2,7 +2,7 @@ import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import type { CalcStore } from "@/lib/store";
 
-type Snapshot = {
+export type Snapshot = {
   version: number;
   savedAt: string;
   fleet: CalcStore["fleet"];
@@ -44,7 +44,7 @@ function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void 
   store.pushRecentFile(filePath);
 }
 
-function parseSnapshot(text: string): Snapshot {
+export function parseSnapshot(text: string): Snapshot {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
