@@ -33,7 +33,10 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
       if (!(e.ctrlKey || e.metaKey)) return;
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.matches("input, textarea, select") || t.isContentEditable)) return;
       if (e.key === "s") {
         e.preventDefault();
         saveProject(useCalcStore.getState()).catch(console.error);
