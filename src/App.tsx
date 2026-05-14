@@ -96,7 +96,7 @@ export default function App() {
           <div className="flex items-center">
             <span className="text-base font-semibold tracking-tight">Haul Calc</span>
             <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-              v0.1
+              v{__APP_VERSION__}
             </span>
           </div>
           <div className="flex items-center gap-1">
