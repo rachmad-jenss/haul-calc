@@ -23,6 +23,7 @@ export default function FleetTraffic() {
     designLifeYears,
     workingDaysPerYear,
     cesaResult,
+    cesaDirty,
     customVehicles,
     unitSystem,
     setFleet,
@@ -249,8 +250,13 @@ export default function FleetTraffic() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center gap-2">
               <CardTitle>CESA result</CardTitle>
+              {cesaResult && cesaDirty && (
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  Stale
+                </span>
+              )}
             </CardHeader>
             <CardContent className="space-y-3">
               {cesaResult?.stub ? <StubBanner message={cesaResult.stubMessage} /> : null}
