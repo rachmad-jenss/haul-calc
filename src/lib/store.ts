@@ -169,7 +169,7 @@ export const useCalcStore = create<CalcStore>()(
       setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
-      loadFromSnapshot: (data) => set({ ...data }),
+      loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false }),
       setTheme: (theme) => set({ theme }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
     }),
