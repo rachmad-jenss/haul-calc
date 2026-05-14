@@ -20,6 +20,7 @@ export interface FleetEntry {
 export interface CesaRequest {
   fleet: FleetEntry[];
   design_life_years: number;
+  working_days_per_year?: number;
 }
 
 export interface CesaResult {

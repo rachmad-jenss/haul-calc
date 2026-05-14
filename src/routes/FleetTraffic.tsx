@@ -21,11 +21,13 @@ export default function FleetTraffic() {
   const {
     fleet,
     designLifeYears,
+    workingDaysPerYear,
     cesaResult,
     customVehicles,
     unitSystem,
     setFleet,
     setDesignLifeYears,
+    setWorkingDaysPerYear,
     setCesaResult,
   } = useCalcStore();
 
@@ -70,7 +72,11 @@ export default function FleetTraffic() {
   };
 
   const compute = async () => {
-    const parsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears });
+    const parsed = cesaRequestSchema.safeParse({
+      fleet,
+      design_life_years: designLifeYears,
+      working_days_per_year: workingDaysPerYear,
+    });
     if (!parsed.success) {
       toast.error(firstError(parsed.error));
       return;
@@ -219,6 +225,20 @@ export default function FleetTraffic() {
                   value={designLifeYears}
                   onChange={(e) =>
                     setDesignLifeYears(parseNumericInput(e.target.value, designLifeYears))
+                  }
+                  className="w-32"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="working-days">Working days/year</Label>
+                <Input
+                  id="working-days"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={workingDaysPerYear}
+                  onChange={(e) =>
+                    setWorkingDaysPerYear(parseNumericInput(e.target.value, workingDaysPerYear))
                   }
                   className="w-32"
                 />

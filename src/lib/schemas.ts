@@ -13,6 +13,7 @@ export const cesaRequestSchema = z.object({
     .array(fleetEntrySchema)
     .min(1, "Add at least one vehicle to the fleet"),
   design_life_years: z.number().int().min(1, "Design life must be ≥ 1 year").max(50),
+  working_days_per_year: z.number().int().min(1).max(365).optional(),
 });
 
 export const cbrRequestSchema = z.object({
