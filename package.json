@@ -14,7 +14,8 @@
     "build:sidecar": "pwsh python-sidecar/build.ps1",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test:e2e": "node tests/run-e2e.mjs"
+    "test:e2e": "node tests/run-e2e.mjs",
+    "version:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
