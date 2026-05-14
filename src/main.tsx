@@ -13,19 +13,21 @@ import Settings from "@/routes/Settings";
 import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
 import "@/styles/globals.css";
 
+const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;
+
 const router = createHashRouter([
   {
     path: "/",
     element: <App />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: <Dashboard /> },
-      { path: "fleet", element: <FleetTraffic /> },
-      { path: "pavement", element: <PavementDesign /> },
-      { path: "economics", element: <Economics /> },
-      { path: "reports", element: <Reports /> },
-      { path: "sensitivity", element: <SensitivityAnalysis /> },
-      { path: "settings", element: <Settings /> },
+      { path: "dashboard", element: wrap(<Dashboard />) },
+      { path: "fleet", element: wrap(<FleetTraffic />) },
+      { path: "pavement", element: wrap(<PavementDesign />) },
+      { path: "economics", element: wrap(<Economics />) },
+      { path: "reports", element: wrap(<Reports />) },
+      { path: "sensitivity", element: wrap(<SensitivityAnalysis />) },
+      { path: "settings", element: wrap(<Settings />) },
     ],
   },
 ]);
