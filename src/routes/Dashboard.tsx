@@ -1,10 +1,14 @@
-import { Truck, Layers, Coins, FileText } from "lucide-react";
+import { Clock, Truck, Layers, Coins, FileText, FolderOpen } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { openProjectFromPath } from "@/lib/project-file";
 import { useCalcStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
 
 export default function Dashboard() {
+  const store = useCalcStore();
   const {
     fleet,
     designLifeYears,
@@ -18,7 +22,8 @@ export default function Dashboard() {
     projectName,
     authorName,
     reportSummary,
-  } = useCalcStore();
+    recentFiles,
+  } = store;
 
   const totalVehicles = fleet.reduce((sum, entry) => sum + entry.count, 0);
 
@@ -32,6 +37,12 @@ export default function Dashboard() {
         return best;
       }, null)
     : null;
+
+  const handleOpenRecent = (filePath: string) => {
+    openProjectFromPath(filePath, store).catch((err) => {
+      toast.error(`Failed to open: ${(err as Error).message}`);
+    });
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -136,6 +147,38 @@ export default function Dashboard() {
                 {reportSummary ? "Generated" : "Not generated"}
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="sm:col-span-2">
+          <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Recent Files</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No recent files.</p>
+            ) : (
+              <ul className="space-y-1">
+                {recentFiles.map((filePath) => {
+                  const name = filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
+                  return (
+                    <li key={filePath} className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm" title={filePath}>{name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 shrink-0 gap-1 px-2 text-xs"
+                        onClick={() => handleOpenRecent(filePath)}
+                      >
+                        <FolderOpen className="h-3 w-3" />
+                        Open
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

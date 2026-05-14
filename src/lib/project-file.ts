@@ -20,6 +20,43 @@ type Snapshot = {
   reportSummary: CalcStore["reportSummary"];
 };
 
+type OpenStore = Pick<CalcStore, "loadFromSnapshot" | "pushRecentFile">;
+
+function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  const fileName = parts[parts.length - 1];
+  store.loadFromSnapshot({
+    fleet: snap.fleet,
+    designLifeYears: snap.designLifeYears,
+    cesaResult: snap.cesaResult,
+    subgradeCbr: snap.subgradeCbr,
+    coverages: snap.coverages,
+    trhCategory: snap.trhCategory,
+    cbrResult: snap.cbrResult,
+    trhResult: snap.trhResult,
+    costScenarios: snap.costScenarios,
+    costResult: snap.costResult,
+    projectName: snap.projectName,
+    authorName: snap.authorName,
+    reportSummary: snap.reportSummary,
+    activeFileName: fileName,
+  });
+  store.pushRecentFile(filePath);
+}
+
+function parseSnapshot(text: string): Snapshot {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("File tidak valid atau corrupt.");
+  }
+  if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
+    throw new Error("File tidak valid atau corrupt.");
+  }
+  return parsed as Snapshot;
+}
+
 export async function saveProject(store: CalcStore): Promise<void> {
   const filePath = await save({
     filters: [{ name: "HaulCalc Project", extensions: ["hcalc"] }],
@@ -50,11 +87,10 @@ export async function saveProject(store: CalcStore): Promise<void> {
 
   const parts = filePath.replace(/\\/g, "/").split("/");
   store.setActiveFileName(parts[parts.length - 1]);
+  store.pushRecentFile(filePath);
 }
 
-export async function openProject(
-  loadFromSnapshot: CalcStore["loadFromSnapshot"],
-): Promise<void> {
+export async function openProject(store: OpenStore): Promise<void> {
   const filePath = await open({
     filters: [{ name: "HaulCalc Project", extensions: ["hcalc"] }],
     multiple: false,
@@ -62,41 +98,11 @@ export async function openProject(
 
   if (!filePath || Array.isArray(filePath)) return;
 
-  const text = await readTextFile(filePath);
+  const snap = parseSnapshot(await readTextFile(filePath));
+  loadSnapshot(snap, filePath, store);
+}
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("File tidak valid atau corrupt.");
-  }
-
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    !("version" in parsed)
-  ) {
-    throw new Error("File tidak valid atau corrupt.");
-  }
-
-  const snap = parsed as Snapshot;
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  const fileName = parts[parts.length - 1];
-
-  loadFromSnapshot({
-    fleet: snap.fleet,
-    designLifeYears: snap.designLifeYears,
-    cesaResult: snap.cesaResult,
-    subgradeCbr: snap.subgradeCbr,
-    coverages: snap.coverages,
-    trhCategory: snap.trhCategory,
-    cbrResult: snap.cbrResult,
-    trhResult: snap.trhResult,
-    costScenarios: snap.costScenarios,
-    costResult: snap.costResult,
-    projectName: snap.projectName,
-    authorName: snap.authorName,
-    reportSummary: snap.reportSummary,
-    activeFileName: fileName,
-  });
+export async function openProjectFromPath(filePath: string, store: OpenStore): Promise<void> {
+  const snap = parseSnapshot(await readTextFile(filePath));
+  loadSnapshot(snap, filePath, store);
 }
