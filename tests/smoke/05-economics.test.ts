@@ -38,4 +38,37 @@ test.describe("Economics page", () => {
     expect(after).toBeGreaterThan(before);
     await page.screenshot({ path: SS("05-economics-added") });
   });
+
+  // ---------- LCCA tab ----------
+
+  test("LCCA tab renders discount rate and analysis period fields", async ({ page }) => {
+    await page.getByRole("tab", { name: /lcca/i }).click();
+    await page.waitForTimeout(300);
+    await expect(page.getByText(/discount rate/i)).toBeVisible();
+    await expect(page.getByText(/analysis period/i)).toBeVisible();
+    await page.screenshot({ path: SS("05-lcca-initial") });
+  });
+
+  test("LCCA tab shows scenario cost inputs synced from Operating Cost scenarios", async ({ page }) => {
+    await page.getByRole("tab", { name: /lcca/i }).click();
+    await page.waitForTimeout(300);
+    // Default scenarios are "Asphalt 100 mm" and "Gravel 250 mm"
+    await expect(page.getByText(/asphalt/i).first()).toBeVisible();
+    await expect(page.getByText(/gravel/i).first()).toBeVisible();
+    await page.screenshot({ path: SS("05-lcca-scenarios") });
+  });
+
+  test("LCCA Compute shows NPV results table and charts", async ({ page }) => {
+    await page.getByRole("tab", { name: /lcca/i }).click();
+    await page.waitForTimeout(300);
+    await page.getByRole("button", { name: /compute lcca/i }).click();
+    await page.waitForTimeout(500);
+    // Results table heading
+    await expect(page.getByText(/lcca results/i)).toBeVisible();
+    // NPV column header (use role to avoid strict-mode collision with chart legend/badge)
+    await expect(page.getByRole("columnheader", { name: "NPV" })).toBeVisible();
+    // Charts rendered
+    await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 10_000 });
+    await page.screenshot({ path: SS("05-lcca-results") });
+  });
 });
