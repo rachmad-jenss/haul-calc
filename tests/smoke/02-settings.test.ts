@@ -17,4 +17,9 @@ test.describe("Settings page", () => {
     const text = await page.locator("main").textContent();
     expect(text).toMatch(/\d+\.\d+/);
   });
+
+  test("shows Updates card with check button", async ({ page }) => {
+    await expect(page.locator("main")).toContainText("Updates");
+    await expect(page.getByRole("button", { name: "Check for Updates" })).toBeVisible();
+  });
 });
