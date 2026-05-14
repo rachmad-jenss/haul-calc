@@ -52,6 +52,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "fileAssociations": [
+      {
+        "ext": ["hcalc"],
+        "name": "HaulCalc Project",
+        "mimeType": "application/x-haulcalc",
+        "description": "HaulCalc Project File",
+        "role": "Editor"
+      }
+    ],
     "externalBin": ["binaries/haulpave-bridge"],
     "resources": ["../public/sample_fleet.json"],
     "category": "Business",

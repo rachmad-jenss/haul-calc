@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
+
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -44,6 +45,24 @@ impl From<CallOk> for CallEnvelope {
             stub_message: ok.stub_message,
         }
     }
+}
+
+static PENDING_FILE_PATH: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+
+pub fn set_pending_file_path(path: Option<String>) {
+    *PENDING_FILE_PATH
+        .get_or_init(|| Mutex::new(None))
+        .lock()
+        .unwrap() = path;
+}
+
+/// Drains the pending path — returns it once and clears it.
+/// Safe to call multiple times (React StrictMode) and from concurrent contexts.
+#[tauri::command]
+pub fn take_pending_file_path() -> Option<String> {
+    PENDING_FILE_PATH
+        .get()
+        .and_then(|m| m.lock().unwrap().take())
 }
 
 #[tauri::command]
