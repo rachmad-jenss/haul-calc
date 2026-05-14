@@ -75,3 +75,51 @@ jobs:
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
           includeUpdaterJson: true
+
+      - name: Upload updater artifacts and latest.json
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $bundleDir = "src-tauri\target\release\bundle"
+          $nsisDir   = "$bundleDir\nsis"
+          $tag       = "${{ github.ref_name }}"
+          $version   = $tag.TrimStart('v')
+          $repo      = "${{ github.repository }}"
+
+          # Find the .nsis.zip and its .sig
+          $zipFile = Get-ChildItem "$nsisDir\*.nsis.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+          $sigFile = Get-ChildItem "$nsisDir\*.nsis.zip.sig" -ErrorAction SilentlyContinue | Select-Object -First 1
+
+          if (-not $zipFile) { Write-Host "No .nsis.zip found — skipping latest.json"; exit 0 }
+          if (-not $sigFile) { Write-Host "No .nsis.zip.sig found — skipping latest.json"; exit 0 }
+
+          $sig      = (Get-Content $sigFile.FullName -Raw).Trim()
+          $zipName  = $zipFile.Name
+          $dlUrl    = "https://github.com/$repo/releases/download/$tag/$zipName"
+          $pubDate  = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+
+          # Upload .nsis.zip to the release
+          Write-Host "Uploading $zipName to release $tag..."
+          gh release upload $tag $zipFile.FullName --clobber
+
+          # Build latest.json
+          $json = @{
+            version  = $version
+            notes    = "See the assets to download and install this version."
+            pub_date = $pubDate
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $sig
+                url       = $dlUrl
+              }
+            }
+          } | ConvertTo-Json -Depth 5
+
+          $jsonPath = "$env:TEMP\latest.json"
+          $json | Set-Content $jsonPath -Encoding UTF8
+          Write-Host "latest.json content:`n$json"
+
+          Write-Host "Uploading latest.json to release $tag..."
+          gh release upload $tag $jsonPath --clobber
+          Write-Host "Done."
