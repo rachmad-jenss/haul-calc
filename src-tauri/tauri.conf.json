@@ -39,6 +39,7 @@
     "targets": [
       "nsis"
     ],
+    "createUpdaterArtifacts": true,
     "licenseFile": "../LICENSE",
     "windows": {
       "nsis": {
