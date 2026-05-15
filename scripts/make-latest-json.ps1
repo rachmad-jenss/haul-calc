@@ -41,4 +41,4 @@ Write-Host "Uploading latest.json to release $Tag..."
 gh release upload $Tag $jsonPath --clobber
 if ($LASTEXITCODE -ne 0) { Write-Error "gh release upload latest.json failed"; exit 1 }
 
-Write-Host "Done — latest.json uploaded successfully."
+Write-Host "Done - latest.json uploaded successfully."
