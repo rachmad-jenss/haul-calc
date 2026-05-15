@@ -6,6 +6,12 @@ Desktop GUI (Windows) for **mining haul road pavement calculations**, powered by
 [![CI](https://github.com/rachmad-jenss/haul-calc/actions/workflows/ci.yml/badge.svg)](https://github.com/rachmad-jenss/haul-calc/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## Download
+
+Grab the latest installer from the [Releases](https://github.com/rachmad-jenss/haul-calc/releases/latest) page (`Haul.Calc_*_x64-setup.exe`).
+
+The app auto-updates — once installed, use **Settings → Updates → Check for Updates** to get new versions.
+
 ## Stack
 
 - **Tauri 2** — native desktop shell (Rust)
@@ -20,6 +26,11 @@ Desktop GUI (Windows) for **mining haul road pavement calculations**, powered by
 - USACE CBR pavement thickness
 - TRH 14 pavement thickness
 - Multi-scenario operating-cost comparison (tires, fuel, maintenance) using rolling-resistance model
+- Life-Cycle Cost Analysis (LCCA) with NPV and AEC computation
+- Multi-project comparison for side-by-side benchmarking
+- Sensitivity analysis with what-if parameter sweeps
+- Material Bill of Quantities (BoQ) in Reports with PDF export
+- Save/load projects as `.hcalc` files — double-click to open directly
 - Versioned design summary export (JSON)
 
 **Out of scope:** geometric design (gradient, super-elevation, sight distance, curves), full haul-cycle / productivity simulation.
@@ -54,9 +65,7 @@ pnpm install
 pnpm tauri build
 ```
 
-Outputs land in `src-tauri/target/release/bundle/`:
-- `msi/HaulCalc_*.msi`
-- `nsis/HaulCalc_*-setup.exe`
+Output lands in `src-tauri/target/release/bundle/nsis/Haul Calc_*_x64-setup.exe`.
 
 ## Running tests
 
@@ -79,7 +88,7 @@ haul-calc/
 │   ├── bridge.py             JSON-RPC stdio bridge wrapping haulpave
 │   ├── requirements.txt
 │   └── build.ps1             PyInstaller build script
-└── tests/smoke/              Playwright E2E smoke tests (6 suites)
+└── tests/smoke/              Playwright E2E smoke tests
 ```
 
 ## How the bridge works
@@ -109,4 +118,4 @@ The UI renders a yellow `<StubBanner>` whenever a response is flagged as a stub.
 
 ## License
 
-MIT
+MIT — Copyright (c) 2026 Rahmad J E. N. S. S.

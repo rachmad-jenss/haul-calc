@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-15
+
+### Added
+- Auto-updater (tauri-plugin-updater) — Check for Updates in Settings with signed release artifacts
+- `.hcalc` file association — double-click a project file to open it directly in HaulCalc
+- Dynamic version display in sidebar from `package.json`
+- NSIS installer branding — custom icon, license page, Start Menu folder
+
+### Changed
+- Version bumped to 1.0.0 (first production release)
+- NSIS-only bundle (MSI/WiX removed)
+- Tag-triggered GitHub Release workflow with automated signing and `latest.json` upload
+
 ## [0.1.0] - 2026-05-14
 
 ### Added
@@ -65,5 +78,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native title bar now correctly syncs with app theme changes
 - `type=button` and `aria-label` added to ThemeToggle for accessibility
 
-[Unreleased]: https://github.com/rachmad-jenss/haul-calc/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rachmad-jenss/haul-calc/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/rachmad-jenss/haul-calc/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/rachmad-jenss/haul-calc/releases/tag/v0.1.0
