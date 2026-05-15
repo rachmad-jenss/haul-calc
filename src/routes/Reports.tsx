@@ -3,13 +3,14 @@ import { Download, FileText, FileOutput } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
-import { generatePdf } from "@/lib/pdf-generator";
+import { generatePdf, DEFAULT_SECTIONS, type IncludeSections } from "@/lib/pdf-generator";
 import { computeBoq, type BoqRow } from "@/lib/boq";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
@@ -33,8 +34,12 @@ export default function Reports() {
   } = useCalcStore();
 
   const [running, setRunning] = useState(false);
+  const [sections, setSections] = useState<IncludeSections>({ ...DEFAULT_SECTIONS });
 
   const hasData = !!(cesaResult || cbrResult || trhResult || costResult);
+
+  const toggleSection = (key: keyof IncludeSections) =>
+    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const generate = async () => {
     setRunning(true);
@@ -106,6 +111,7 @@ export default function Reports() {
         costResult,
         boqGeometry,
         boqLayers,
+        includeSections: sections,
       });
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,
@@ -179,6 +185,47 @@ export default function Reports() {
                 </p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-foreground">PDF sections</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <SectionToggle
+                  id="sec-cesa"
+                  label="CESA Analysis"
+                  checked={sections.cesa}
+                  disabled={!cesaResult}
+                  onToggle={() => toggleSection("cesa")}
+                />
+                <SectionToggle
+                  id="sec-cbr"
+                  label="CBR Thickness"
+                  checked={sections.cbr}
+                  disabled={!cbrResult}
+                  onToggle={() => toggleSection("cbr")}
+                />
+                <SectionToggle
+                  id="sec-trh14"
+                  label="TRH 14 Thickness"
+                  checked={sections.trh14}
+                  disabled={!trhResult}
+                  onToggle={() => toggleSection("trh14")}
+                />
+                <SectionToggle
+                  id="sec-cost"
+                  label="Cost Comparison"
+                  checked={sections.cost}
+                  disabled={!costResult}
+                  onToggle={() => toggleSection("cost")}
+                />
+                <SectionToggle
+                  id="sec-boq"
+                  label="Material BoQ"
+                  checked={sections.boq}
+                  disabled={!(cbrResult || trhResult)}
+                  onToggle={() => toggleSection("boq")}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -223,6 +270,37 @@ function DataBadge({ label, active }: { label: string; active: boolean }) {
         className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
       />
       <span className={active ? "text-foreground" : ""}>{label}</span>
+    </div>
+  );
+}
+
+function SectionToggle({
+  id,
+  label,
+  checked,
+  disabled,
+  onToggle,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className={`flex items-center gap-2 ${disabled ? "opacity-40" : ""}`}>
+      <Checkbox
+        id={id}
+        checked={checked && !disabled}
+        disabled={disabled}
+        onCheckedChange={onToggle}
+      />
+      <label
+        htmlFor={id}
+        className={`text-xs ${disabled ? "cursor-not-allowed" : "cursor-pointer"} select-none`}
+      >
+        {label}
+      </label>
     </div>
   );
 }
