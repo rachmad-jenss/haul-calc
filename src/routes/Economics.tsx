@@ -41,7 +41,7 @@ export default function Economics() {
         title="Economics"
         description="Compare operating cost and life-cycle cost across pavement scenarios."
       />
-      <Tabs defaultValue="opex" className="flex flex-1 flex-col overflow-auto px-6 pb-6">
+      <Tabs defaultValue="opex" className="flex flex-1 flex-col overflow-auto p-6">
         <TabsList className="mb-4 w-fit">
           <TabsTrigger value="opex">Operating Cost</TabsTrigger>
           <TabsTrigger value="lcca">LCCA</TabsTrigger>
