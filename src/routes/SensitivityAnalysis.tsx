@@ -338,19 +338,19 @@ export default function SensitivityAnalysis() {
               </Button>
             )}
           </CardHeader>
-          <CardContent className="flex h-[calc(100%-4rem)] flex-col">
+          <CardContent>
             {!hasData ? (
-              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
                 Configure inputs and click "Run analysis" to see the sensitivity curve.
               </div>
             ) : (
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-2">
                 {validPoints < chartData.length && (
                   <p className="text-xs text-amber-600">
                     {chartData.length - validPoints} point(s) failed and were skipped.
                   </p>
                 )}
-                <div className="flex-1 min-h-[300px]" ref={chartContainerRef}>
+                <div className="h-[400px]" ref={chartContainerRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData.filter((p) => p.y !== null)}
