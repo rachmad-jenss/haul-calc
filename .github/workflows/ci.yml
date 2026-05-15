@@ -57,7 +57,7 @@ jobs:
         run: pnpm build
 
   build:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.repository == 'rachmad-jenss/haul-calc'
     needs: lint
     runs-on: self-hosted
     timeout-minutes: 45
