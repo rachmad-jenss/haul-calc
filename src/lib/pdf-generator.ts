@@ -4,6 +4,22 @@ import type { CesaResult, PavementResult, CostComparison, PavementLayer } from "
 import { computeBoq } from "@/lib/boq";
 import type { BoqGeometry } from "@/lib/store";
 
+export interface IncludeSections {
+  cesa: boolean;
+  cbr: boolean;
+  trh14: boolean;
+  cost: boolean;
+  boq: boolean;
+}
+
+export const DEFAULT_SECTIONS: IncludeSections = {
+  cesa: true,
+  cbr: true,
+  trh14: true,
+  cost: true,
+  boq: true,
+};
+
 export interface PdfData {
   projectName: string;
   authorName: string;
@@ -14,6 +30,7 @@ export interface PdfData {
   costResult: (CostComparison & { stub?: boolean }) | null;
   boqGeometry?: BoqGeometry;
   boqLayers?: PavementLayer[];
+  includeSections?: IncludeSections;
 }
 
 const COLORS = {
@@ -92,8 +109,10 @@ export function generatePdf(data: PdfData): Blob {
   doc.text(meta, pageW / 2, y, { align: "center" });
   y += 12;
 
+  const inc = { ...DEFAULT_SECTIONS, ...data.includeSections };
+
   // CESA Analysis
-  if (data.cesaResult) {
+  if (data.cesaResult && inc.cesa) {
     y = sectionTitle(doc, "CESA Analysis", y);
     y = keyValue(doc, "CESA", data.cesaResult.cesa.toLocaleString("en-US", { maximumFractionDigits: 0 }), y);
     y = keyValue(doc, "Design Coverages", data.cesaResult.design_coverages.toLocaleString("en-US", { maximumFractionDigits: 0 }), y);
@@ -117,7 +136,7 @@ export function generatePdf(data: PdfData): Blob {
   }
 
   // CBR Thickness (USACE)
-  if (data.cbrResult) {
+  if (data.cbrResult && inc.cbr) {
     y = sectionTitle(doc, "CBR Thickness (USACE)", y);
     y = keyValue(doc, "Method", data.cbrResult.method, y);
     y = keyValue(doc, "Total Thickness", `${data.cbrResult.total_thickness_mm} mm`, y);
@@ -139,7 +158,7 @@ export function generatePdf(data: PdfData): Blob {
   }
 
   // TRH 14 Thickness
-  if (data.trhResult) {
+  if (data.trhResult && inc.trh14) {
     y = sectionTitle(doc, "TRH 14 Thickness", y);
     y = keyValue(doc, "Method", data.trhResult.method, y);
     y = keyValue(doc, "Total Thickness", `${data.trhResult.total_thickness_mm} mm`, y);
@@ -161,7 +180,7 @@ export function generatePdf(data: PdfData): Blob {
   }
 
   // Operating Cost Comparison
-  if (data.costResult) {
+  if (data.costResult && inc.cost) {
     y = sectionTitle(doc, "Operating Cost Comparison", y);
 
     const fmt = (v: number) =>
@@ -187,7 +206,7 @@ export function generatePdf(data: PdfData): Blob {
   }
 
   // Material BoQ
-  if (data.boqLayers && data.boqGeometry && data.boqLayers.length > 0) {
+  if (data.boqLayers && data.boqGeometry && data.boqLayers.length > 0 && inc.boq) {
     doc.addPage();
     y = 20;
     y = sectionTitle(doc, "Material Bill of Quantities", y);
