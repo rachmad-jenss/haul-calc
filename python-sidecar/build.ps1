@@ -40,6 +40,7 @@ pyinstaller `
   --onefile `
   --console `
   --name "haulpave-bridge" `
+  --collect-data haulpave `
   --distpath "$binDir" `
   --workpath "build" `
   --specpath "build" `
