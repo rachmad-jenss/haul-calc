@@ -28,7 +28,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWRLYhEwcfD8BWVZpAehYWjXXQtvc6nHxV/1lA7Lrj4pYQnJJ6cAG6Ed",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVGQ0YwNzEzMDExNjI0QgpSV1JMWWhFd2NmRDhCV1ZacEFlaFlXalhYUXR2YzZuSHhWLzFsQTdMcmo0cFlRbkpKNmNBRzZFZAo=",
       "endpoints": [
         "https://github.com/rachmad-jenss/haul-calc/releases/latest/download/latest.json"
       ]
