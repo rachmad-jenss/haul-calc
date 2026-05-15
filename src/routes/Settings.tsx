@@ -239,6 +239,42 @@ export default function Settings() {
             </Row>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>About</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <Row label="App version">
+              <span className="font-mono font-medium text-foreground">
+                {(globalThis as Record<string, unknown>).__APP_VERSION__ as string ?? "—"}
+              </span>
+            </Row>
+            <Row label="License">
+              <span className="font-medium text-foreground">MIT</span>
+            </Row>
+            <Row label="Source code">
+              <a
+                href="https://github.com/rachmad-jenss/haul-calc"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                github.com/rachmad-jenss/haul-calc
+              </a>
+            </Row>
+            <Row label="Powered by">
+              <a
+                href="https://github.com/rachmad-jenss/haul-pave"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                haul-pave
+              </a>
+            </Row>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
