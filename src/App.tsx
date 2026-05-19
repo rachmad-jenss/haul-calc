@@ -122,18 +122,22 @@ export default function App() {
   useEffect(() => {
     let unlisten: (() => void) | null = null;
     
-    getCurrentWindow().onCloseRequested(async (event) => {
-      if (useCalcStore.getState().isProjectDirty) {
-        event.preventDefault();
-        const confirmed = await ask("You have unsaved changes. Are you sure you want to exit without saving?", {
-          title: "Unsaved Changes",
-          kind: "warning",
-        });
-        if (confirmed) {
-          getCurrentWindow().destroy();
+    try {
+      getCurrentWindow().onCloseRequested(async (event) => {
+        if (useCalcStore.getState().isProjectDirty) {
+          event.preventDefault();
+          const confirmed = await ask("You have unsaved changes. Are you sure you want to exit without saving?", {
+            title: "Unsaved Changes",
+            kind: "warning",
+          });
+          if (confirmed) {
+            getCurrentWindow().destroy();
+          }
         }
-      }
-    }).then((fn) => { unlisten = fn; }).catch(console.error);
+      }).then((fn) => { unlisten = fn; }).catch(console.error);
+    } catch (e) {
+      // Ignore if not in Tauri context
+    }
 
     return () => {
       if (unlisten) unlisten();
