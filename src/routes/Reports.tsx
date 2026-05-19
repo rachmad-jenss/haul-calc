@@ -316,10 +316,38 @@ function BoqSection({
 }) {
   const rows: BoqRow[] = computeBoq(layers, geometry);
 
+  const exportCsv = async () => {
+    if (!rows.length) return;
+    try {
+      const path = await save({
+        defaultPath: "material_boq.csv",
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (!path) return;
+      
+      const header = ["Layer", "Thickness (mm)", "Area (m2)", "Volume (m3)", "Density (t/m3)", "Mass (t)"];
+      const lines = [header.join(",")];
+      let totalMass = 0;
+      for (const r of rows) {
+        lines.push(`"${r.layer}",${r.thicknessMm.toFixed(0)},${r.areaM2.toFixed(1)},${r.volumeM3.toFixed(1)},${r.densityTm3.toFixed(1)},${r.massT.toFixed(1)}`);
+        totalMass += r.massT;
+      }
+      lines.push(`"Total mass",,,,,${totalMass.toFixed(1)}`);
+      await writeTextFile(path, lines.join("\n"));
+      toast.success(`Saved to ${path}`);
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
+    }
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Material BoQ</CardTitle>
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
+          <Download className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-3">
