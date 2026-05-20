@@ -88,18 +88,32 @@ export default function FleetTraffic() {
       if (!res.ok) { toast.error("Failed to load sample fleet."); return; }
       const data = await res.json();
       if (!data.fleet || !Array.isArray(data.fleet)) { toast.error("Invalid sample data."); return; }
-      const entries = data.fleet.map((f: { vehicle_id: string; count: number; trips_per_day: number; payload_kn: number }) => ({
-        _id: crypto.randomUUID(),
-        vehicle_id: f.vehicle_id,
-        count: f.count,
-        trips_per_day: f.trips_per_day,
-        payload_kn: f.payload_kn,
-      }));
+      const entries: FleetEntry[] = [];
+      for (const f of data.fleet) {
+        if (typeof f.vehicle_id !== "string" || f.vehicle_id.length === 0 ||
+            !Number.isFinite(f.count) || f.count < 1 ||
+            !Number.isFinite(f.trips_per_day) || f.trips_per_day < 1 ||
+            !Number.isFinite(f.payload_kn) || f.payload_kn <= 0) {
+          toast.error("Sample data contains invalid entries.");
+          return;
+        }
+        entries.push({
+          _id: crypto.randomUUID(),
+          vehicle_id: f.vehicle_id,
+          count: f.count,
+          trips_per_day: f.trips_per_day,
+          payload_kn: f.payload_kn,
+        });
+      }
       setFleet(entries);
-      if (data.design_life_years) setDesignLifeYears(data.design_life_years);
+      if (typeof data.design_life_years === "number") {
+        setDesignLifeYears(data.design_life_years);
+        toast.info(`Design life set to ${data.design_life_years} years.`);
+      }
       toast.success(`Loaded ${entries.length} sample vehicles.`);
     } catch (err) {
-      toast.error(`Failed to load sample: ${String(err)}`);
+      toast.error("Failed to load sample fleet. Check console for details.");
+      console.error(err);
     }
   };
 
