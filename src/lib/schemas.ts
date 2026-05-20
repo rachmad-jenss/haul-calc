@@ -4,7 +4,7 @@ export const fleetEntrySchema = z.object({
   _id: z.string(),
   vehicle_id: z.string().min(1, "Vehicle ID required"),
   count: z.number().int().min(1, "Count must be at least 1"),
-  trips_per_day: z.number().min(0.1, "Trips per day must be > 0"),
+  trips_per_day: z.number().min(1, "Trips per day must be at least 1"),
   payload_kn: z.number().min(1, "Payload must be > 0 kN"),
 });
 

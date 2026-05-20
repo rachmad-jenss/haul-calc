@@ -273,7 +273,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -302,6 +302,20 @@ export const useCalcStore = create<CalcStore>()(
         }
         if (fromVersion < 7) {
           s.isProjectDirty = false;
+        }
+        if (fromVersion < 8) {
+          if (Array.isArray(s.fleet)) {
+            s.fleet = (s.fleet as { trips_per_day: number }[]).map((f) => ({
+              ...f,
+              trips_per_day: Math.max(1, f.trips_per_day ?? 1),
+            }));
+          }
+          if (Array.isArray(s.costScenarios)) {
+            s.costScenarios = (s.costScenarios as { trips_per_day: number }[]).map((sc) => ({
+              ...sc,
+              trips_per_day: Math.max(1, sc.trips_per_day ?? 1),
+            }));
+          }
         }
         return s;
       },
