@@ -135,7 +135,7 @@ export default function App() {
           }
         }
       }).then((fn) => { unlisten = fn; }).catch(console.error);
-    } catch (e) {
+    } catch {
       // Ignore if not in Tauri context
     }
 
