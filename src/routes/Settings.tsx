@@ -222,6 +222,19 @@ export default function Settings() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Keyboard Shortcuts</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm">
+            <Row label="New project"><span className="font-mono text-foreground">Ctrl+N</span></Row>
+            <Row label="Open project"><span className="font-mono text-foreground">Ctrl+O</span></Row>
+            <Row label="Save project"><span className="font-mono text-foreground">Ctrl+S</span></Row>
+            <Row label="Undo"><span className="font-mono text-foreground">Ctrl+Z</span></Row>
+            <Row label="Redo"><span className="font-mono text-foreground">Ctrl+Y</span></Row>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Conventions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
