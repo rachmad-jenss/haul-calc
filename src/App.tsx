@@ -76,10 +76,14 @@ export default function App() {
       } else if (e.key === "o") {
         e.preventDefault();
         openProject(useCalcStore.getState()).catch(console.error);
+      } else if (key === "n") {
+        e.preventDefault();
+        handleNewProject();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -145,8 +149,8 @@ export default function App() {
   }, []);
 
   const handleNewProject = async () => {
-    if (isProjectDirty) {
-      const confirmed = await ask("You have unsaved changes. Create a new project anyway?", {
+    if (useCalcStore.getState().isProjectDirty) {
+      const confirmed = await ask("You have unsaved changes. Start a new project anyway?", {
         title: "Unsaved Changes",
         kind: "warning",
       });
