@@ -104,6 +104,9 @@ export default function SensitivityAnalysis() {
       return;
     }
     const clampedSteps = Math.max(3, Math.min(20, steps));
+    if (clampedSteps !== steps) {
+      toast.info(`Steps clamped to ${clampedSteps} (range 3–20).`);
+    }
     const runId = ++runIdRef.current;
 
     setRunning(true);
