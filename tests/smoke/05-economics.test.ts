@@ -29,6 +29,16 @@ test.describe("Economics page", () => {
     await page.screenshot({ path: SS("05-economics-export-btn") });
   });
 
+  test("Export CSV button absent before compare, visible and functional after in Opex Tab", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /export csv/i })).toHaveCount(0);
+    await page.getByRole("button", { name: /compare/i }).click();
+    await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 15_000 });
+    const csvBtn = page.getByRole("button", { name: /export csv/i });
+    await expect(csvBtn).toBeVisible();
+    await csvBtn.click();
+    await expect(page.locator("body")).toContainText(/saved/i);
+  });
+
   test("add scenario increases card count", async ({ page }) => {
     // Scenarios are rendered as div cards, not table rows
     const before = await page.locator("[class*='rounded'][class*='border'][class*='p-3']").count();
@@ -70,5 +80,18 @@ test.describe("Economics page", () => {
     // Charts rendered
     await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: SS("05-lcca-results") });
+  });
+
+  test("LCCA Compute shows Export CSV button and works", async ({ page }) => {
+    await page.getByRole("tab", { name: /lcca/i }).click();
+    await page.waitForTimeout(300);
+    // Export CSV button should be absent initially
+    await expect(page.getByRole("button", { name: /export csv/i })).toHaveCount(0);
+    await page.getByRole("button", { name: /compute lcca/i }).click();
+    await page.waitForTimeout(500);
+    const csvBtn = page.getByRole("button", { name: /export csv/i });
+    await expect(csvBtn).toBeVisible();
+    await csvBtn.click();
+    await expect(page.locator("body")).toContainText(/saved/i);
   });
 });

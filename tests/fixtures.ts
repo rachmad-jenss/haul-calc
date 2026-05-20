@@ -103,6 +103,15 @@ const TAURI_MOCK = `(function () {
         setTimeout(function() {
           if (cmd === "get_sidecar_status") { return resolve("running"); }
           if (cmd === "restart_sidecar")    { return resolve(undefined); }
+          if (cmd === "plugin:dialog|save") { return resolve("mocked_file.csv"); }
+          if (cmd === "plugin:fs|write_text_file") { return resolve(undefined); }
+          if (cmd === "plugin:dialog|message") {
+            var buttons = args && args.buttons;
+            if (typeof buttons === "object" && "ok" in buttons) {
+              return resolve(buttons.ok);
+            }
+            return resolve("Yes");
+          }
           if (cmd !== "haul_pave_call") {
             return reject({ code: "UNKNOWN_CMD", message: "Unknown command: " + cmd, stub: false });
           }
