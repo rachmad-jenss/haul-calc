@@ -13,6 +13,8 @@ import {
 } from "recharts";
 import { Plus, Trash2, Calculator, Download } from "lucide-react";
 import { toast } from "sonner";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { NumField } from "@/components/FormFields";
@@ -28,7 +30,7 @@ import { compareRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, toSafeCsvCell } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Economics page — two tabs: Operating Cost and LCCA
@@ -113,6 +115,34 @@ function OpexTab() {
       toast.error(`Export failed: ${String(err)}`);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    if (!costResult?.scenarios?.length) return;
+    try {
+      const path = await save({
+        defaultPath: "opex_comparison.csv",
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (!path) return;
+      
+      const header = ["Scenario", "Tires (USD/yr)", "Fuel (USD/yr)", "Maintenance (USD/yr)", "Total (USD/yr)"];
+      const lines = [header.join(",")];
+      for (const s of costResult.scenarios) {
+        const total = s.tire_cost_usd_per_year + s.fuel_cost_usd_per_year + s.maintenance_cost_usd_per_year;
+        lines.push([
+          toSafeCsvCell(s.name),
+          s.tire_cost_usd_per_year.toFixed(2),
+          s.fuel_cost_usd_per_year.toFixed(2),
+          s.maintenance_cost_usd_per_year.toFixed(2),
+          total.toFixed(2),
+        ].join(","));
+      }
+      await writeTextFile(path, lines.join("\n"));
+      toast.success(`Saved to ${path}`);
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
     }
   };
 
@@ -204,16 +234,27 @@ function OpexTab() {
               </span>
             )}
             {chartData.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-7 gap-1 px-2 text-xs"
-                onClick={handleExport}
-                disabled={exporting}
-              >
-                <Download className="h-3 w-3" />
-                {exporting ? "Exporting…" : "Export PNG"}
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExportCsv}
+                >
+                  <Download className="h-3 w-3" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExport}
+                  disabled={exporting}
+                >
+                  <Download className="h-3 w-3" />
+                  {exporting ? "Exporting…" : "Export PNG"}
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-3">
@@ -343,6 +384,31 @@ function LccaTab() {
     }
   };
 
+  const handleExportCsv = async () => {
+    if (!lccaResult?.scenarios?.length) return;
+    try {
+      const path = await save({
+        defaultPath: "lcca_summary.csv",
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (!path) return;
+      
+      const header = ["Scenario", "NPV (USD)", "Annual Equivalent Cost (USD/yr)"];
+      const lines = [header.join(",")];
+      for (const s of lccaResult.scenarios) {
+        lines.push([
+          toSafeCsvCell(s.name),
+          s.npvUsd.toFixed(2),
+          s.annualEquivalentCostUsd.toFixed(2),
+        ].join(","));
+      }
+      await writeTextFile(path, lines.join("\n"));
+      toast.success(`Saved to ${path}`);
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
+    }
+  };
+
   // Build NPV bar chart data
   const npvChartData = lccaResult?.scenarios.map((s) => ({
     name: s.name,
@@ -453,16 +519,27 @@ function LccaTab() {
                   Break-even at year {lccaResult.breakEvenYear}
                 </span>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-7 gap-1 px-2 text-xs"
-                onClick={handleExport}
-                disabled={exporting}
-              >
-                <Download className="h-3 w-3" />
-                {exporting ? "Exporting…" : "Export PNG"}
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExportCsv}
+                >
+                  <Download className="h-3 w-3" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExport}
+                  disabled={exporting}
+                >
+                  <Download className="h-3 w-3" />
+                  {exporting ? "Exporting…" : "Export PNG"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <LccaSummaryTable rows={lccaResult.scenarios} />

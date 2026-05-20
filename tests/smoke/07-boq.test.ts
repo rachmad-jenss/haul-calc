@@ -37,4 +37,22 @@ test.describe("Material BoQ section", () => {
     await expect(page.locator("main")).toContainText("Material BoQ");
     await page.screenshot({ path: SS("07-boq-visible") });
   });
+
+  test("Export BoQ CSV button works after running pavement calculation", async ({ page }) => {
+    // Navigate to pavement page and run calculation to populate cbrResult
+    await navigate(page, "/pavement");
+    await page.waitForTimeout(500);
+    await page.getByRole("button", { name: /compute/i }).first().click();
+    await page.waitForTimeout(3000);
+
+    // Now go back to reports
+    await navigate(page, "/reports");
+    await page.waitForTimeout(1000);
+
+    // Export CSV button should be visible and clickable
+    const csvBtn = page.getByRole("button", { name: /export csv/i });
+    await expect(csvBtn).toBeVisible({ timeout: 5000 });
+    await csvBtn.click();
+    await expect(page.locator("body")).toContainText(/saved/i);
+  });
 });
