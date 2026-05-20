@@ -68,6 +68,7 @@ function OpexTab() {
     useCalcStore();
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showData, setShowData] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const update = (id: string, patch: Partial<CostScenario>) =>
@@ -239,6 +240,14 @@ function OpexTab() {
                   variant="ghost"
                   size="sm"
                   className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => setShowData(!showData)}
+                >
+                  {showData ? "Hide Data" : "Show Data"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
                   onClick={handleExportCsv}
                 >
                   <Download className="h-3 w-3" />
@@ -279,7 +288,11 @@ function OpexTab() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <SummaryTable rows={costResult?.scenarios ?? []} />
+                {showData && (
+                  <div className="overflow-x-auto">
+                    <SummaryTable rows={costResult?.scenarios ?? []} />
+                  </div>
+                )}
               </>
             )}
           </CardContent>
@@ -340,6 +353,7 @@ const SCENARIO_COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 function LccaTab() {
   const { costScenarios, lccaInputs, lccaResult, setLccaInputs, setLccaResult } = useCalcStore();
   const [exporting, setExporting] = useState(false);
+  const [showData, setShowData] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Sync scenario list from costScenarios whenever we need it
@@ -524,6 +538,14 @@ function LccaTab() {
                   variant="ghost"
                   size="sm"
                   className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => setShowData(!showData)}
+                >
+                  {showData ? "Hide Data" : "Show Data"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
                   onClick={handleExportCsv}
                 >
                   <Download className="h-3 w-3" />
@@ -542,7 +564,11 @@ function LccaTab() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <LccaSummaryTable rows={lccaResult.scenarios} />
+              {showData && (
+                <div className="overflow-x-auto">
+                  <LccaSummaryTable rows={lccaResult.scenarios} />
+                </div>
+              )}
             </CardContent>
           </Card>
 

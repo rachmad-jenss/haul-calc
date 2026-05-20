@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Plus, Trash2, Calculator, UserPlus, FileUp, FileJson, AlertTriangle, Copy } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Plus, Trash2, Calculator, UserPlus, FileUp, FileJson, AlertTriangle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -79,6 +79,14 @@ export default function FleetTraffic() {
     if (!row) return;
     const newFleet = [...fleet];
     newFleet.splice(idx + 1, 0, { ...row, _id: crypto.randomUUID() });
+    setFleet(newFleet);
+  };
+
+  const moveRow = (idx: number, direction: -1 | 1) => {
+    const target = idx + direction;
+    if (target < 0 || target >= fleet.length) return;
+    const newFleet = [...fleet];
+    [newFleet[idx], newFleet[target]] = [newFleet[target], newFleet[idx]];
     setFleet(newFleet);
   };
 
@@ -307,6 +315,24 @@ export default function FleetTraffic() {
                         )}
                       </td>
                       <td className="px-2 py-2 flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={idx === 0}
+                          onClick={() => moveRow(idx, -1)}
+                          aria-label="Move row up"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={idx === fleet.length - 1}
+                          onClick={() => moveRow(idx, 1)}
+                          aria-label="Move row down"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

@@ -72,6 +72,7 @@ export default function SensitivityAnalysis() {
   const [steps, setSteps] = useState<number>(10);
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showData, setShowData] = useState(true);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
   const handleParamChange = (newParam: SensParam) => {
@@ -329,16 +330,26 @@ export default function SensitivityAnalysis() {
           <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Results — {metricCfg.label}</CardTitle>
             {hasData && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-7 gap-1 px-2 text-xs"
-                onClick={handleExport}
-                disabled={exporting}
-              >
-                <Download className="h-3 w-3" />
-                {exporting ? "Exporting…" : "Export PNG"}
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => setShowData(!showData)}
+                >
+                  {showData ? "Hide Data" : "Show Data"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExport}
+                  disabled={exporting}
+                >
+                  <Download className="h-3 w-3" />
+                  {exporting ? "Exporting…" : "Export PNG"}
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent>
@@ -419,6 +430,36 @@ export default function SensitivityAnalysis() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
+                {showData && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="text-xs uppercase text-muted-foreground">
+                        <tr>
+                          <th className="px-2 py-1 text-left font-medium">
+                            {paramCfg.label}{paramCfg.unit ? ` (${paramCfg.unit})` : ""}
+                          </th>
+                          <th className="px-2 py-1 text-right font-medium">
+                            {metricCfg.label}{metricCfg.unit ? ` (${metricCfg.unit})` : ""}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chartData.map((p) => (
+                          <tr key={p.x} className="border-t">
+                            <td className="px-2 py-1 font-mono">
+                              {p.x.toLocaleString(undefined, { maximumFractionDigits: 3 })}
+                            </td>
+                            <td className="px-2 py-1 text-right font-mono">
+                              {p.y !== null
+                                ? p.y.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
