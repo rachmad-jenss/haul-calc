@@ -30,7 +30,7 @@ import { compareRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, toSafeCsvCell } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Economics page — two tabs: Operating Cost and LCCA
@@ -131,7 +131,13 @@ function OpexTab() {
       const lines = [header.join(",")];
       for (const s of costResult.scenarios) {
         const total = s.tire_cost_usd_per_year + s.fuel_cost_usd_per_year + s.maintenance_cost_usd_per_year;
-        lines.push(`"${s.name}",${s.tire_cost_usd_per_year.toFixed(2)},${s.fuel_cost_usd_per_year.toFixed(2)},${s.maintenance_cost_usd_per_year.toFixed(2)},${total.toFixed(2)}`);
+        lines.push([
+          toSafeCsvCell(s.name),
+          s.tire_cost_usd_per_year.toFixed(2),
+          s.fuel_cost_usd_per_year.toFixed(2),
+          s.maintenance_cost_usd_per_year.toFixed(2),
+          total.toFixed(2),
+        ].join(","));
       }
       await writeTextFile(path, lines.join("\n"));
       toast.success(`Saved to ${path}`);
@@ -390,7 +396,11 @@ function LccaTab() {
       const header = ["Scenario", "NPV (USD)", "Annual Equivalent Cost (USD/yr)"];
       const lines = [header.join(",")];
       for (const s of lccaResult.scenarios) {
-        lines.push(`"${s.name}",${s.npvUsd.toFixed(2)},${s.annualEquivalentCostUsd.toFixed(2)}`);
+        lines.push([
+          toSafeCsvCell(s.name),
+          s.npvUsd.toFixed(2),
+          s.annualEquivalentCostUsd.toFixed(2),
+        ].join(","));
       }
       await writeTextFile(path, lines.join("\n"));
       toast.success(`Saved to ${path}`);

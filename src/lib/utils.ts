@@ -27,3 +27,9 @@ export function parseNumericInput(raw: string, fallback: number): number {
   const n = Number(raw);
   return Number.isFinite(n) ? n : fallback;
 }
+
+export function toSafeCsvCell(value: string | number): string {
+  const raw = String(value).replace(/"/g, '""').replace(/\r?\n/g, " ");
+  const neutralized = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return `"${neutralized}"`;
+}

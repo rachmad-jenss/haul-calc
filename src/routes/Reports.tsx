@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
 import type { CallError } from "@/lib/types";
+import { toSafeCsvCell } from "@/lib/utils";
 
 export default function Reports() {
   const {
@@ -329,7 +330,14 @@ function BoqSection({
       const lines = [header.join(",")];
       let totalMass = 0;
       for (const r of rows) {
-        lines.push(`"${r.layer}",${r.thicknessMm.toFixed(0)},${r.areaM2.toFixed(1)},${r.volumeM3.toFixed(1)},${r.densityTm3.toFixed(1)},${r.massT.toFixed(1)}`);
+        lines.push([
+          toSafeCsvCell(r.layer),
+          r.thicknessMm.toFixed(0),
+          r.areaM2.toFixed(1),
+          r.volumeM3.toFixed(1),
+          r.densityTm3.toFixed(1),
+          r.massT.toFixed(1),
+        ].join(","));
         totalMass += r.massT;
       }
       lines.push(`"Total mass",,,,,${totalMass.toFixed(1)}`);
