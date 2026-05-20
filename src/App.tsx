@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   GitCompareArrows,
 } from "lucide-react";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import { saveProject, openProject, openProjectFromPath } from "@/lib/project-file";
@@ -33,7 +34,7 @@ const NAV = [
 
 export default function App() {
   const store = useCalcStore();
-  const { activeFileName, theme, setTheme } = store;
+  const { activeFileName, theme, setTheme, isProjectDirty, resetProject } = store;
 
   // Open a .hcalc file passed as a CLI arg at launch (double-click in File Explorer).
   // Uses a drainable slot so React StrictMode double-invoke is safe.
@@ -106,6 +107,55 @@ export default function App() {
     return () => mq.removeEventListener('change', apply);
   }, [theme]);
 
+  // Sync window title with active file and dirty state
+  useEffect(() => {
+    try {
+      const baseName = activeFileName ? ` - ${activeFileName}` : "";
+      const dirtyStar = isProjectDirty ? " *" : "";
+      getCurrentWindow().setTitle(`Haul-Calc${baseName}${dirtyStar}`);
+    } catch {
+      // Ignore if not in Tauri
+    }
+  }, [activeFileName, isProjectDirty]);
+
+  // Intercept window close to prompt if dirty
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    
+    try {
+      getCurrentWindow().onCloseRequested(async (event) => {
+        if (useCalcStore.getState().isProjectDirty) {
+          event.preventDefault();
+          const confirmed = await ask("You have unsaved changes. Are you sure you want to exit without saving?", {
+            title: "Unsaved Changes",
+            kind: "warning",
+          });
+          if (confirmed) {
+            getCurrentWindow().destroy();
+          }
+        }
+      }).then((fn) => { unlisten = fn; }).catch(console.error);
+    } catch {
+      // Ignore if not in Tauri context
+    }
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
+
+  const handleNewProject = async () => {
+    if (isProjectDirty) {
+      const confirmed = await ask("You have unsaved changes. Create a new project anyway?", {
+        title: "Unsaved Changes",
+        kind: "warning",
+      });
+      if (!confirmed) return;
+    }
+    resetProject();
+    useCalcStore.temporal.getState().clear();
+  };
+
   const displayName = activeFileName
     ? activeFileName.length > 20
       ? activeFileName.slice(0, 20) + "…"
@@ -124,6 +174,13 @@ export default function App() {
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={handleNewProject}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              title="New project"
+            >
+              <FileText className="h-3.5 w-3.5" />
+            </button>
+            <button
               onClick={() => openProject(store).catch(console.error)}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Open project"
@@ -139,7 +196,7 @@ export default function App() {
             </button>
             {displayName && (
               <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>
-                {displayName}
+                {displayName}{isProjectDirty ? " *" : ""}
               </span>
             )}
           </div>

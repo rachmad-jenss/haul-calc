@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calculator, UserPlus, FileUp, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Calculator, UserPlus, FileUp, AlertTriangle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -72,6 +72,14 @@ export default function FleetTraffic() {
     setFleet(fleet.filter((_, i) => i !== idx));
   };
 
+  const duplicateRow = (idx: number) => {
+    const row = fleet[idx];
+    if (!row) return;
+    const newFleet = [...fleet];
+    newFleet.splice(idx + 1, 0, { ...row, _id: crypto.randomUUID() });
+    setFleet(newFleet);
+  };
+
   const compute = async () => {
     const parsed = cesaRequestSchema.safeParse({
       fleet,
@@ -135,7 +143,7 @@ export default function FleetTraffic() {
                     <th className="px-2 py-2 font-medium">Count</th>
                     <th className="px-2 py-2 font-medium">Trips/day</th>
                     <th className="px-2 py-2 font-medium">Payload ({unitLabels[unitSystem].payload})</th>
-                    <th className="w-10" />
+                    <th className="w-16" />
                   </tr>
                 </thead>
                 <tbody>
@@ -217,7 +225,15 @@ export default function FleetTraffic() {
                           </p>
                         )}
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-2 flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => duplicateRow(idx)}
+                          aria-label="Duplicate row"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

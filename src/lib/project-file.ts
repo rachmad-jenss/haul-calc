@@ -88,6 +88,7 @@ export async function saveProject(store: CalcStore): Promise<void> {
   const parts = filePath.replace(/\\/g, "/").split("/");
   store.setActiveFileName(parts[parts.length - 1]);
   store.pushRecentFile(filePath);
+  store.setProjectDirty(false);
 }
 
 export async function openProject(store: OpenStore): Promise<void> {

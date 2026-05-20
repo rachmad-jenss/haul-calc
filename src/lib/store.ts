@@ -103,6 +103,11 @@ export interface CalcStore {
   boqGeometry: BoqGeometry;
   setBoqGeometry: (geometry: BoqGeometry) => void;
 
+  // Dirty state
+  isProjectDirty: boolean;
+  setProjectDirty: (dirty: boolean) => void;
+  resetProject: () => void;
+
   // Actions
   setFleet: (fleet: FleetEntry[]) => void;
   addCustomVehicle: (v: Omit<CustomVehicle, "id">) => void;
@@ -196,6 +201,33 @@ export const useCalcStore = create<CalcStore>()(
 
       boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
 
+      isProjectDirty: false,
+      setProjectDirty: (isProjectDirty) => set({ isProjectDirty }),
+      resetProject: () => set({
+        fleet: DEFAULT_FLEET,
+        designLifeYears: 10,
+        workingDaysPerYear: 250,
+        cesaResult: null,
+        cesaDirty: false,
+        subgradeCbr: 8,
+        coverages: 1_050_000,
+        trhCategory: "B",
+        cbrResult: null,
+        trhResult: null,
+        pavementDirty: false,
+        costScenarios: DEFAULT_SCENARIOS,
+        costResult: null,
+        economicsDirty: false,
+        lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
+        lccaResult: null,
+        projectName: "Pit South — Main Haul",
+        authorName: "",
+        reportSummary: null,
+        activeFileName: null,
+        boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
+        isProjectDirty: false,
+      }),
+
       setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
       setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null }),
       addCustomVehicle: (v) =>
@@ -229,7 +261,7 @@ export const useCalcStore = create<CalcStore>()(
       setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
-      loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false }),
+      loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       pushRecentFile: (filePath) =>
         set((s) => ({
@@ -241,7 +273,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 6,
+      version: 7,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -267,6 +299,9 @@ export const useCalcStore = create<CalcStore>()(
           s.lccaInputs = { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] };
           s.lccaResult = null;
           s.boqGeometry = { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 };
+        }
+        if (fromVersion < 7) {
+          s.isProjectDirty = false;
         }
         return s;
       },
@@ -296,6 +331,7 @@ export const useCalcStore = create<CalcStore>()(
         theme: state.theme,
         unitSystem: state.unitSystem,
         boqGeometry: state.boqGeometry,
+        isProjectDirty: state.isProjectDirty,
       }),
     },
   ),
@@ -326,3 +362,28 @@ export const useCalcStore = create<CalcStore>()(
     },
   ),
 );
+
+useCalcStore.subscribe((state, prevState) => {
+  if (state.isProjectDirty) return;
+  const fields = [
+    "fleet",
+    "designLifeYears",
+    "workingDaysPerYear",
+    "subgradeCbr",
+    "coverages",
+    "trhCategory",
+    "costScenarios",
+    "projectName",
+    "authorName",
+    "customVehicles",
+    "lccaInputs",
+    "boqGeometry",
+  ] as const;
+
+  for (const f of fields) {
+    if (state[f] !== prevState[f]) {
+      useCalcStore.setState({ isProjectDirty: true });
+      break;
+    }
+  }
+});
