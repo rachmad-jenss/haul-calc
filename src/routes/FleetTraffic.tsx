@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calculator, UserPlus, FileUp, AlertTriangle, Copy } from "lucide-react";
+import { Download, Plus, Trash2, Calculator, UserPlus, FileUp, AlertTriangle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { haulPave } from "@/lib/haulpave-client";
 import { cesaRequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
 import { convertPayload, unitLabels } from "@/lib/unit-convert";
-import { formatNumber, parseNumericInput } from "@/lib/utils";
+import { formatNumber, parseNumericInput, toSafeCsvCell } from "@/lib/utils";
 
 export default function FleetTraffic() {
   const {
@@ -80,7 +82,43 @@ export default function FleetTraffic() {
     setFleet(newFleet);
   };
 
+  const handleExportCsv = async () => {
+    if (fleet.length === 0) {
+      toast.error("No fleet data to export.");
+      return;
+    }
+    try {
+      const path = await save({
+        defaultPath: "fleet_data.csv",
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (!path) return;
+
+      const vehicleMap = new Map(allVehicles.map((v) => [v.id, v.name]));
+      const header = ["Vehicle", "Count", "Trips/day", "Payload (kN)"];
+      const lines = [header.join(",")];
+      for (const row of fleet) {
+        const name = vehicleMap.get(row.vehicle_id) ?? row.vehicle_id;
+        lines.push(
+          [toSafeCsvCell(name), row.count, row.trips_per_day, row.payload_kn].join(",")
+        );
+      }
+      await writeTextFile(path, lines.join("\n"));
+      toast.success(`Saved to ${path}`);
+    } catch (err) {
+      toast.error(`Export failed: ${String(err)}`);
+    }
+  };
+
   const compute = async () => {
+    if (fleet.length === 0) {
+      toast.error("Fleet is empty. Add at least one vehicle row.");
+      return;
+    }
+    if (fleet.some((e) => e.trips_per_day < 1)) {
+      toast.error("All vehicles must have at least 1 trip per day.");
+      return;
+    }
     const parsed = cesaRequestSchema.safeParse({
       fleet,
       design_life_years: designLifeYears,
@@ -123,6 +161,10 @@ export default function FleetTraffic() {
               <Button variant="outline" size="sm" onClick={() => setShowCustomModal(true)}>
                 <UserPlus className="h-4 w-4" />
                 Custom vehicles
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <Download className="h-4 w-4" />
+                Export CSV
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowCsvModal(true)}>
                 <FileUp className="h-4 w-4" />
@@ -179,7 +221,7 @@ export default function FleetTraffic() {
                       <td className="px-2 py-2">
                         <Input
                           type="number"
-                          min={0}
+                          min={1}
                           value={row.trips_per_day}
                           onChange={(e) =>
                             updateRow(idx, {
@@ -218,7 +260,7 @@ export default function FleetTraffic() {
                             Exceeds typical max (~5 000 kN)
                           </p>
                         )}
-                        {row.payload_kn > 0 && row.payload_kn < 200 && (
+                        {unitSystem !== 'Imperial' && row.payload_kn > 0 && row.payload_kn < 200 && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="h-3 w-3 shrink-0" />
                             Very low — verify units (kN)
