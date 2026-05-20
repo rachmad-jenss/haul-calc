@@ -64,6 +64,7 @@ export default function PavementDesign() {
         subgrade_cbr: cbrParsed.data.subgrade_cbr,
         fleet: cesaParsed.data.fleet,
         design_life_years: cesaParsed.data.design_life_years,
+        working_days_per_year: cesaParsed.data.working_days_per_year,
       });
       setCompareResult({ ...res.data, stub: res.stub, stubMessage: res.stubMessage });
     } catch (err) {
@@ -167,7 +168,7 @@ export default function PavementDesign() {
                 type="number"
                 min={1}
                 value={coverages}
-                onChange={(e) => setCoverages(parseNumericInput(e.target.value, coverages))}
+                onChange={(e) => setCoverages(Math.max(1, parseNumericInput(e.target.value, coverages)))}
               />
               {coverages > 2_000_000 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">

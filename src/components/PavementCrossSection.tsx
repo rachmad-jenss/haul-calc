@@ -1,4 +1,6 @@
 import type { PavementResult } from "@/lib/types";
+import { useCalcStore } from "@/lib/store";
+import { convertThickness, unitLabels } from "@/lib/unit-convert";
 
 const LAYER_COLORS = ["#1d4ed8", "#0ea5e9", "#22c55e", "#eab308", "#a16207"];
 
@@ -9,7 +11,10 @@ const TARGET_TOTAL_HEIGHT = 280;
 const MIN_LAYER_HEIGHT = 28;
 
 export function PavementCrossSection({ result }: { result: PavementResult }) {
+  const { unitSystem } = useCalcStore();
   const { layers, total_thickness_mm } = result;
+  const thickLabel = unitLabels[unitSystem].thickness;
+  const displayTotal = convertThickness(total_thickness_mm, unitSystem);
 
   const rawHeights = layers.map((l) =>
     Math.max(MIN_LAYER_HEIGHT, (l.thickness_mm / total_thickness_mm) * TARGET_TOTAL_HEIGHT)
@@ -30,9 +35,10 @@ export function PavementCrossSection({ result }: { result: PavementResult }) {
   const tickCount = 5;
   const ticks: { y: number; label: string }[] = [];
   for (let t = 0; t <= tickCount; t++) {
-    const mm = Math.round((t / tickCount) * total_thickness_mm);
-    const y = mm / mmPerPx;
-    ticks.push({ y, label: `${mm}` });
+    const raw = (t / tickCount) * total_thickness_mm;
+    const display = convertThickness(raw, unitSystem);
+    const y = raw / mmPerPx;
+    ticks.push({ y, label: unitSystem === 'Imperial' ? display.toFixed(1) : `${Math.round(display)}` });
   }
 
   return (
@@ -84,7 +90,7 @@ export function PavementCrossSection({ result }: { result: PavementResult }) {
               fontFamily="monospace"
               opacity={0.9}
             >
-              {layer.thickness_mm} mm{layer.cbr !== null ? ` · CBR ${layer.cbr}%` : ""}
+              {convertThickness(layer.thickness_mm, unitSystem).toFixed(unitSystem === 'Imperial' ? 1 : 0)} {thickLabel}{layer.cbr !== null ? ` · CBR ${layer.cbr}%` : ""}
             </text>
           </g>
         ))}
@@ -132,11 +138,11 @@ export function PavementCrossSection({ result }: { result: PavementResult }) {
           fontFamily="monospace"
           transform={`rotate(-90, 10, ${svgHeight / 2})`}
         >
-          depth (mm)
+          depth ({thickLabel})
         </text>
       </svg>
       <p className="font-mono text-xs text-muted-foreground">
-        Total: {total_thickness_mm} mm
+        Total: {displayTotal.toFixed(unitSystem === 'Imperial' ? 1 : 0)} {thickLabel}
       </p>
     </div>
   );

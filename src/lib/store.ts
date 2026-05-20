@@ -244,7 +244,14 @@ export const useCalcStore = create<CalcStore>()(
         })),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null }),
       setCesaResult: (result, stub, stubMessage) =>
-        set({ cesaResult: { ...result, stub, stubMessage }, cesaDirty: false }),
+        set((s) => ({
+          cesaResult: { ...result, stub, stubMessage },
+          cesaDirty: false,
+          coverages: result.design_coverages,
+          cbrResult: s.coverages !== result.design_coverages ? null : s.cbrResult,
+          trhResult: s.coverages !== result.design_coverages ? null : s.trhResult,
+          pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
+        })),
       setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null }),
       setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null }),
       setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null }),
