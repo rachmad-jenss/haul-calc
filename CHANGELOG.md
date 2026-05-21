@@ -5,9 +5,32 @@ All notable changes to HaulCalc will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-05-21
 
-## [1.0.0] - 2026-05-15
+### Added
+- Fleet CSV export — export current fleet table to CSV file
+- Fleet validation — empty fleet and zero trips pre-checks before CESA computation
+- Keyboard shortcuts — Ctrl+N for new project, Escape to close modals
+- Pavement CrossSection now supports Imperial units (inches)
+- CESA auto-import — coverages field auto-updated when CESA computed
+- Sample fleet loader — one-click load sample_fleet.json
+- Keyboard shortcuts reference card in Settings
+- Sensitivity analysis step count clamping now shows toast notification
+- Chart data table view — toggle Show Data/Hide Data in Economics and Sensitivity
+- Fleet row reorder — ▲/▼ buttons to reorder fleet entries
+
+### Changed
+- Bumped haul-pave dependency from v0.3.0 to v0.4.1
+- Pavement compare methods now correctly passes working_days_per_year
+- Store migration v8: trips_per_day clamped to min 1 for backward compatibility
+- All confidence enum values mapped for consistent badge display
+
+### Fixed
+- Imperial unit false positive warning on fleet payload validation
+- Fleet input clamping — negative values rejected
+- Stale closure in handleNewProject — now reads fresh state from store
+
+## [1.1.0] - 2026-05-19
 
 ### Added
 - Auto-updater (tauri-plugin-updater) — Check for Updates in Settings with signed release artifacts
