@@ -73,6 +73,7 @@ export default function PavementDesign() {
           total_coverages: coverages,
           total_cesa: cesaResult?.cesa ?? undefined,
           confidence: "high",
+          warning: usace.warning,
         },
         trh14: {
           method: trh14.method,
@@ -257,7 +258,7 @@ export default function PavementDesign() {
                   </Button>
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
-                {cbrResult?.warning ? <WarningBanner message={cbrResult.warning} /> : null}
+                {compareResult?.usace.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>

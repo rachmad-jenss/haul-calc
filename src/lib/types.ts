@@ -91,6 +91,7 @@ export interface MethodResult {
   total_cesa?: number;
   confidence: "high" | "medium" | "low";
   material_class?: string;
+  warning?: string;
 }
 
 export interface CompareMethodsResult {
