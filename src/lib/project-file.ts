@@ -59,6 +59,10 @@ export function parseSnapshot(text: string): Snapshot {
   return parsed as Snapshot;
 }
 
+function basenameFromPath(filePath: string): string {
+  return filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
+}
+
 export async function saveProject(store: CalcStore): Promise<void> {
   const existingPath = store.activeFilePath;
   if (existingPath && existingPath.trim().length > 0) {
@@ -82,12 +86,11 @@ export async function saveProject(store: CalcStore): Promise<void> {
     };
     await writeTextFile(existingPath, JSON.stringify(snapshot, null, 2));
     store.setProjectDirty(false);
-    toast.success(`Saved to ${store.activeFileName ?? existingPath}`);
+    toast.success(`Saved to ${store.activeFileName ?? basenameFromPath(existingPath)}`);
     return;
   }
 
   // No existing path — fall back to Save As
-  toast.info("Choose a location to save your project");
   await saveAsProject(store);
 }
 
