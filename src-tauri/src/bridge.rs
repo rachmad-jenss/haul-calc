@@ -117,6 +117,17 @@ impl BridgeClient {
         start_sidecar(app, &self.pending, &self.write_tx, &self.status, &self.generation)
     }
 
+    /// Gracefully kill the sidecar process without restarting.
+    /// Called before app exit or updater install to release the executable lock.
+    pub fn kill(&self) {
+        info!("killing haulpave bridge sidecar");
+        *self.status.lock().unwrap() = SidecarStatus::Crashed;
+        // Dropping the write_tx sender closes the channel, causing the writer
+        // task to exit its loop and call child_owned.kill().
+        *self.write_tx.lock().unwrap() = None;
+        drain_pending(&self.pending);
+    }
+
     pub async fn call(
         &self,
         method: &str,
