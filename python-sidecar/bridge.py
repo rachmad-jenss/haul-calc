@@ -80,7 +80,6 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
                 {"name": "Sub-base (gravel)", "thickness_mm": 350, "cbr": 25},
             ],
             "total_thickness_mm": 625,
-            "warning": None,
         }
     if method == "trh14_thickness":
         return {
@@ -253,25 +252,28 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
     }
 
 
+_USACE_MAX_COVERAGE: float | None = None
+
+
+def _get_usace_max_coverage() -> float:
+    global _USACE_MAX_COVERAGE
+    if _USACE_MAX_COVERAGE is None:
+        from haulpave.pavement import load_curve_data
+        curve_data = load_curve_data("usace_cbr_v1")
+        _USACE_MAX_COVERAGE = float(max(curve_data["coverage_levels"]))
+    return _USACE_MAX_COVERAGE
+
+
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import cbr_thickness_from_coverages, load_curve_data
+    from haulpave.pavement import cbr_thickness_from_coverages
 
     cbr = float(params["subgrade_cbr"])
     coverages = float(params["design_coverages"])
-    curve_data = load_curve_data("usace_cbr_v1")
-    max_coverage = max(curve_data["coverage_levels"])
+    max_coverage = _get_usace_max_coverage()
     thickness = cbr_thickness_from_coverages(cbr, coverages, "usace_cbr_v1")
     t = round(thickness)
 
-    warning = None
-    if coverages > max_coverage:
-        warning = (
-            f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
-            f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
-        )
-
-    # Decompose into rational layer structure (surface < base > sub-base)
-    return {
+    result: dict[str, Any] = {
         "method": "USACE TM 5-822-12 CBR design curves",
         "subgrade_cbr": cbr,
         "layers": [
@@ -280,8 +282,15 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
             {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
         ],
         "total_thickness_mm": t,
-        "warning": warning,
     }
+
+    if coverages > max_coverage:
+        result["warning"] = (
+            f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
+            f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
+        )
+
+    return result
 
 
 # Map TypeScript category A/B/C/D → representative subgrade CBR for TRH14 lookup.

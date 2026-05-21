@@ -257,6 +257,7 @@ export default function PavementDesign() {
                   </Button>
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
+                {cbrResult?.warning ? <WarningBanner message={cbrResult.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>
