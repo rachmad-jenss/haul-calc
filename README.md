@@ -23,17 +23,22 @@ The app auto-updates — once installed, use **Settings → Updates → Check fo
 ## What it covers
 
 - Fleet definition from built-in OEM vehicle registry (CAT 797F, 789D, 785D; KOM 960E) → CESA + design coverages
-- USACE CBR pavement thickness
+- Fleet CSV import/export for round-trip data sharing
+- One-click sample fleet loader for quick starts
+- USACE CBR pavement thickness (SI or Imperial units)
 - TRH 14 pavement thickness
 - Multi-scenario operating-cost comparison (tires, fuel, maintenance) using rolling-resistance model
 - Life-Cycle Cost Analysis (LCCA) with NPV and AEC computation
 - Multi-project comparison for side-by-side benchmarking
-- Sensitivity analysis with what-if parameter sweeps
+- Sensitivity analysis with what-if parameter sweeps and data table view
+- Material Bill of Quantities (BoQ) in Reports with PDF export
+- Keyboard shortcuts: Ctrl+N (new), Ctrl+O (open), Ctrl+S (save), Ctrl+Z/Y (undo/redo)
+- Fleet row ordering with up/down reorder buttons
 - Material Bill of Quantities (BoQ) in Reports with PDF export
 - Save/load projects as `.hcalc` files — double-click to open directly
 - Versioned design summary export (JSON)
 
-**Out of scope:** geometric design (gradient, super-elevation, sight distance, curves), full haul-cycle / productivity simulation.
+**Out of scope (v1):** geometric design (gradient, super-elevation, sight distance, curves), full haul-cycle / productivity simulation.
 
 ## Prerequisites
 
