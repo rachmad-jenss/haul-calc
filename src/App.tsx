@@ -11,11 +11,13 @@ import {
   Settings as SettingsIcon,
   FolderOpen,
   Save,
+  FileOutput,
   TrendingUp,
   LayoutDashboard,
   GitCompareArrows,
 } from "lucide-react";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
@@ -76,13 +78,22 @@ export default function App() {
       } else if (key === "s") {
         e.preventDefault();
         if (e.shiftKey) {
-          saveAsProject(useCalcStore.getState()).catch(console.error);
+          saveAsProject(useCalcStore.getState()).catch((err) => {
+            console.error(err);
+            toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`);
+          });
         } else {
-          saveProject(useCalcStore.getState()).catch(console.error);
+          saveProject(useCalcStore.getState()).catch((err) => {
+            console.error(err);
+            toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+          });
         }
       } else if (key === "o") {
         e.preventDefault();
-        openProject(useCalcStore.getState()).catch(console.error);
+        openProject(useCalcStore.getState()).catch((err) => {
+          console.error(err);
+          toast.error(`Open failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
       } else if (key === "n") {
         e.preventDefault();
         handleNewProject();
@@ -187,23 +198,30 @@ export default function App() {
             <button
               onClick={handleNewProject}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="New project"
+              title="New project (Ctrl+N)"
             >
               <FileText className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => openProject(store).catch(console.error)}
+              onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="Open project"
+              title="Open project (Ctrl+O)"
             >
               <FolderOpen className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => saveProject(store).catch(console.error)}
+              onClick={() => saveProject(store).catch((err) => { console.error(err); toast.error(`Save failed: ${err.message}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="Save project"
+              title="Save (Ctrl+S)"
             >
               <Save className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => saveAsProject(store).catch((err) => { console.error(err); toast.error(`Save As failed: ${err.message}`); })}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              title="Save As (Ctrl+Shift+S)"
+            >
+              <FileOutput className="h-3.5 w-3.5" />
             </button>
             {displayName && (
               <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>

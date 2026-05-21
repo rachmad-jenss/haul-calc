@@ -1,5 +1,6 @@
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { toast } from "sonner";
 import type { CalcStore } from "@/lib/store";
 
 export type Snapshot = {
@@ -58,9 +59,13 @@ export function parseSnapshot(text: string): Snapshot {
   return parsed as Snapshot;
 }
 
+function basenameFromPath(filePath: string): string {
+  return filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
+}
+
 export async function saveProject(store: CalcStore): Promise<void> {
   const existingPath = store.activeFilePath;
-  if (existingPath) {
+  if (existingPath && existingPath.trim().length > 0) {
     // Overwrite existing file directly (no dialog)
     const snapshot: Snapshot = {
       version: 1,
@@ -81,6 +86,7 @@ export async function saveProject(store: CalcStore): Promise<void> {
     };
     await writeTextFile(existingPath, JSON.stringify(snapshot, null, 2));
     store.setProjectDirty(false);
+    toast.success(`Saved to ${store.activeFileName ?? basenameFromPath(existingPath)}`);
     return;
   }
 
@@ -117,10 +123,12 @@ export async function saveAsProject(store: CalcStore): Promise<void> {
   await writeTextFile(filePath, JSON.stringify(snapshot, null, 2));
 
   const parts = filePath.replace(/\\/g, "/").split("/");
-  store.setActiveFileName(parts[parts.length - 1]);
+  const fileName = parts[parts.length - 1];
+  store.setActiveFileName(fileName);
   store.setActiveFilePath(filePath);
   store.pushRecentFile(filePath);
   store.setProjectDirty(false);
+  toast.success(`Saved as ${fileName}`);
 }
 
 export async function openProject(store: OpenStore): Promise<void> {

@@ -66,25 +66,31 @@ export default function PavementDesign() {
       const usace = cbrRes.data;
       const trh14 = trhRes.data;
 
+      const confidenceRank = { low: 0, medium: 1, high: 2 } as const;
+      const overallConfidence =
+        confidenceRank[usace.confidence] <= confidenceRank[trh14.confidence]
+          ? usace.confidence
+          : trh14.confidence;
+
       const compareData: CompareMethodsResult = {
         usace: {
           method: usace.method,
           total_thickness_mm: usace.total_thickness_mm,
           total_coverages: coverages,
           total_cesa: cesaResult?.cesa ?? undefined,
-          confidence: "high",
+          confidence: usace.confidence,
           warning: usace.warning,
         },
         trh14: {
           method: trh14.method,
           total_thickness_mm: trh14.total_thickness_mm,
           total_coverages: coverages,
-          confidence: "medium",
+          confidence: trh14.confidence,
           material_class: trh14.material_class,
         },
         delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
         subgrade_cbr: subgradeCbr,
-        confidence: "high",
+        confidence: overallConfidence,
       };
 
       setCompareResult({
@@ -366,10 +372,13 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   return (
     <div className="space-y-3">
-      <div className="text-sm text-muted-foreground">
-        Method: <span className="font-medium text-foreground">{result.method}</span>
-        {" · "}
-        Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span>
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
+        <span>·</span>
+        <span>Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
+        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
+          {result.confidence} confidence
+        </span>
       </div>
       <PavementCrossSection result={result} />
     </div>
