@@ -252,12 +252,11 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
 
 
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import interpolate_thickness, load_curve_data
+    from haulpave.pavement import cbr_thickness_from_coverages
 
     cbr = float(params["subgrade_cbr"])
     coverages = float(params["design_coverages"])
-    curve_data = load_curve_data("usace_cbr_v1")
-    thickness = interpolate_thickness(curve_data, cbr=cbr, coverages=coverages)
+    thickness = cbr_thickness_from_coverages(cbr, coverages, "usace_cbr_v1")
     t = round(thickness)
 
     # Decompose into rational layer structure (surface < base > sub-base)
@@ -292,7 +291,7 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     coverages = float(params["design_coverages"])
     mat_class = cbr_to_material_class(cbr)
     catalog = _load_catalog()
-    thickness = _interpolate_catalog(
+    thickness, _was_clamped = _interpolate_catalog(
         catalog["thickness_mm"][mat_class],
         catalog["coverage_levels"],
         coverages,
