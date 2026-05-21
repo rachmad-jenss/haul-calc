@@ -73,7 +73,6 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
         return {
             "method": "USACE CBR",
             "subgrade_cbr": params.get("subgrade_cbr", 8),
-            "confidence": "high",
             "layers": [
                 # Surface thinnest, sub-base thickest — correct structural order
                 {"name": "Surface (asphalt)", "thickness_mm": 75, "cbr": None},
@@ -87,7 +86,6 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
             "method": "TRH 14",
             "category": params.get("category", "B"),
             "material_class": "G5",
-            "confidence": "medium",
             "layers": [
                 {"name": "Wearing course (G5)", "thickness_mm": 150, "cbr": None},
                 {"name": "Base (G4)", "thickness_mm": 175, "cbr": 25},
@@ -275,12 +273,9 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
     thickness = cbr_thickness_from_coverages(cbr, coverages, "usace_cbr_v1")
     t = round(thickness)
 
-    is_clamped = coverages > max_coverage
-
     result: dict[str, Any] = {
         "method": "USACE TM 5-822-12 CBR design curves",
         "subgrade_cbr": cbr,
-        "confidence": "medium" if is_clamped else "high",
         "layers": [
             {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
             {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
@@ -289,7 +284,7 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
         "total_thickness_mm": t,
     }
 
-    if is_clamped:
+    if coverages > max_coverage:
         result["warning"] = (
             f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
             f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
@@ -327,7 +322,6 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
         "method": "TRH 14 (CSRA 1985) design catalog",
         "category": category,
         "material_class": mat_class,
-        "confidence": "medium",
         "layers": [
             {"name": f"Wearing course ({mat_class})",
              "thickness_mm": round(t * 0.28), "cbr": None},

@@ -72,14 +72,14 @@ export default function PavementDesign() {
           total_thickness_mm: usace.total_thickness_mm,
           total_coverages: coverages,
           total_cesa: cesaResult?.cesa ?? undefined,
-          confidence: usace.confidence,
+          confidence: "high",
           warning: usace.warning,
         },
         trh14: {
           method: trh14.method,
           total_thickness_mm: trh14.total_thickness_mm,
           total_coverages: coverages,
-          confidence: trh14.confidence,
+          confidence: "medium",
           material_class: trh14.material_class,
         },
         delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
@@ -366,13 +366,10 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
-        <span>·</span>
-        <span>Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
-        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
-          {result.confidence} confidence
-        </span>
+      <div className="text-sm text-muted-foreground">
+        Method: <span className="font-medium text-foreground">{result.method}</span>
+        {" · "}
+        Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span>
       </div>
       <PavementCrossSection result={result} />
     </div>
