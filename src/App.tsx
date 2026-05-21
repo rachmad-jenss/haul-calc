@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAutoUpdate } from "@/hooks/useAutoUpdate";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -33,6 +34,8 @@ const NAV = [
 ] as const;
 
 export default function App() {
+  useAutoUpdate();
+
   const store = useCalcStore();
   const { activeFileName, theme, setTheme, isProjectDirty, resetProject } = store;
 
