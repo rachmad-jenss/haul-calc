@@ -54,6 +54,7 @@ export interface PavementResult {
   material_class?: string;
   layers: PavementLayer[];
   total_thickness_mm: number;
+  confidence: "high" | "medium" | "low";
   warning?: string;
 }
 
