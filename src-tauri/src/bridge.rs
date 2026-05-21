@@ -20,6 +20,7 @@ pub enum SidecarStatus {
     Running,
     Crashed,
     Restarting,
+    Killed, // Intentionally terminated (e.g., before app exit or updater install)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -117,14 +118,18 @@ impl BridgeClient {
         start_sidecar(app, &self.pending, &self.write_tx, &self.status, &self.generation)
     }
 
-    /// Gracefully kill the sidecar process without restarting.
+    /// Forcibly terminate the sidecar process without restarting.
     /// Called before app exit or updater install to release the executable lock.
+    ///
+    /// NOTE: This is best-effort — the async writer task may be cancelled by
+    /// the Tokio runtime shutdown before it completes the kill. The NSIS
+    /// pre-install hook provides a guaranteed fallback.
     pub fn kill(&self) {
         info!("killing haulpave bridge sidecar");
-        *self.status.lock().unwrap() = SidecarStatus::Crashed;
+        *self.status.lock().unwrap_or_else(|e| e.into_inner()) = SidecarStatus::Killed;
         // Dropping the write_tx sender closes the channel, causing the writer
         // task to exit its loop and call child_owned.kill().
-        *self.write_tx.lock().unwrap() = None;
+        *self.write_tx.lock().unwrap_or_else(|e| e.into_inner()) = None;
         drain_pending(&self.pending);
     }
 
