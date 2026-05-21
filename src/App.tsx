@@ -18,7 +18,7 @@ import {
 import { ask } from "@tauri-apps/plugin-dialog";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
-import { saveProject, openProject, openProjectFromPath } from "@/lib/project-file";
+import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
@@ -70,10 +70,14 @@ export default function App() {
       } else if (key === "y" || (key === "z" && e.shiftKey)) {
         e.preventDefault();
         useCalcStore.temporal.getState().redo();
-      } else if (e.key === "s") {
+      } else if (key === "s") {
         e.preventDefault();
-        saveProject(useCalcStore.getState()).catch(console.error);
-      } else if (e.key === "o") {
+        if (e.shiftKey) {
+          saveAsProject(useCalcStore.getState()).catch(console.error);
+        } else {
+          saveProject(useCalcStore.getState()).catch(console.error);
+        }
+      } else if (key === "o") {
         e.preventDefault();
         openProject(useCalcStore.getState()).catch(console.error);
       } else if (key === "n") {

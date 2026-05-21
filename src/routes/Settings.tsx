@@ -228,6 +228,7 @@ export default function Settings() {
             <Row label="New project"><span className="font-mono text-foreground">Ctrl+N</span></Row>
             <Row label="Open project"><span className="font-mono text-foreground">Ctrl+O</span></Row>
             <Row label="Save project"><span className="font-mono text-foreground">Ctrl+S</span></Row>
+            <Row label="Save project as"><span className="font-mono text-foreground">Ctrl+Shift+S</span></Row>
             <Row label="Undo"><span className="font-mono text-foreground">Ctrl+Z</span></Row>
             <Row label="Redo"><span className="font-mono text-foreground">Ctrl+Y</span></Row>
           </CardContent>
