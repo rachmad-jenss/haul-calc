@@ -80,11 +80,13 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
                 {"name": "Sub-base (gravel)", "thickness_mm": 350, "cbr": 25},
             ],
             "total_thickness_mm": 625,
+            "warning": None,
         }
     if method == "trh14_thickness":
         return {
             "method": "TRH 14",
             "category": params.get("category", "B"),
+            "material_class": "G5",
             "layers": [
                 {"name": "Wearing course (G5)", "thickness_mm": 150, "cbr": None},
                 {"name": "Base (G4)", "thickness_mm": 175, "cbr": 25},
@@ -252,12 +254,21 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
 
 
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import cbr_thickness_from_coverages
+    from haulpave.pavement import cbr_thickness_from_coverages, load_curve_data
 
     cbr = float(params["subgrade_cbr"])
     coverages = float(params["design_coverages"])
+    curve_data = load_curve_data("usace_cbr_v1")
+    max_coverage = max(curve_data["coverage_levels"])
     thickness = cbr_thickness_from_coverages(cbr, coverages, "usace_cbr_v1")
     t = round(thickness)
+
+    warning = None
+    if coverages > max_coverage:
+        warning = (
+            f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
+            f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
+        )
 
     # Decompose into rational layer structure (surface < base > sub-base)
     return {
@@ -269,6 +280,7 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
             {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
         ],
         "total_thickness_mm": t,
+        "warning": warning,
     }
 
 
@@ -300,6 +312,7 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     return {
         "method": "TRH 14 (CSRA 1985) design catalog",
         "category": category,
+        "material_class": mat_class,
         "layers": [
             {"name": f"Wearing course ({mat_class})",
              "thickness_mm": round(t * 0.28), "cbr": None},

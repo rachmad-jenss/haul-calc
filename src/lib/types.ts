@@ -51,8 +51,10 @@ export interface PavementResult {
   method: string;
   subgrade_cbr?: number;
   category?: string;
+  material_class?: string;
   layers: PavementLayer[];
   total_thickness_mm: number;
+  warning?: string;
 }
 
 export interface CostScenario {
