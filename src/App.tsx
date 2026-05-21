@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon,
   FolderOpen,
   Save,
+  FileOutput,
   TrendingUp,
   LayoutDashboard,
   GitCompareArrows,
@@ -187,23 +188,30 @@ export default function App() {
             <button
               onClick={handleNewProject}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="New project"
+              title="New project (Ctrl+N)"
             >
               <FileText className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => openProject(store).catch(console.error)}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="Open project"
+              title="Open project (Ctrl+O)"
             >
               <FolderOpen className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => saveProject(store).catch(console.error)}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="Save project"
+              title="Save (Ctrl+S)"
             >
               <Save className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => saveAsProject(store).catch(console.error)}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              title="Save As (Ctrl+Shift+S)"
+            >
+              <FileOutput className="h-3.5 w-3.5" />
             </button>
             {displayName && (
               <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>
