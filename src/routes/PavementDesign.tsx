@@ -4,6 +4,7 @@ import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
+import { WarningBanner } from "@/components/WarningBanner";
 import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
-import { cesaRequestSchema, cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
+import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
 import { convertThickness, unitLabels } from "@/lib/unit-convert";
@@ -20,9 +21,6 @@ import { formatNumber, parseNumericInput } from "@/lib/utils";
 export default function PavementDesign() {
   const {
     cesaResult,
-    fleet,
-    designLifeYears,
-    workingDaysPerYear,
     subgradeCbr,
     coverages,
     trhCategory,
@@ -48,28 +46,55 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    const cesaParsed = cesaRequestSchema.safeParse({ fleet, design_life_years: designLifeYears, working_days_per_year: workingDaysPerYear });
-    if (!cesaParsed.success) {
-      toast.error(firstError(cesaParsed.error));
-      return;
-    }
     const cbrParsed = cbrRequestSchema.safeParse({ subgrade_cbr: subgradeCbr, design_coverages: coverages });
     if (!cbrParsed.success) {
       toast.error(firstError(cbrParsed.error));
       return;
     }
+    const trhParsed = trh14RequestSchema.safeParse({ category: trhCategory, design_coverages: coverages });
+    if (!trhParsed.success) {
+      toast.error(firstError(trhParsed.error));
+      return;
+    }
     setComparing(true);
     try {
-      const res = await haulPave.compareMethods({
-        subgrade_cbr: cbrParsed.data.subgrade_cbr,
-        fleet: cesaParsed.data.fleet,
-        design_life_years: cesaParsed.data.design_life_years,
-        working_days_per_year: cesaParsed.data.working_days_per_year,
+      const [cbrRes, trhRes] = await Promise.all([
+        haulPave.cbrThickness(cbrParsed.data),
+        haulPave.trh14Thickness(trhParsed.data),
+      ]);
+
+      const usace = cbrRes.data;
+      const trh14 = trhRes.data;
+
+      const compareData: CompareMethodsResult = {
+        usace: {
+          method: usace.method,
+          total_thickness_mm: usace.total_thickness_mm,
+          total_coverages: coverages,
+          total_cesa: cesaResult?.cesa ?? undefined,
+          confidence: "high",
+          warning: usace.warning,
+        },
+        trh14: {
+          method: trh14.method,
+          total_thickness_mm: trh14.total_thickness_mm,
+          total_coverages: coverages,
+          confidence: "medium",
+          material_class: trh14.material_class,
+        },
+        delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
+        subgrade_cbr: subgradeCbr,
+        confidence: "high",
+      };
+
+      setCompareResult({
+        ...compareData,
+        stub: cbrRes.stub || trhRes.stub,
+        stubMessage: cbrRes.stubMessage || trhRes.stubMessage,
       });
-      setCompareResult({ ...res.data, stub: res.stub, stubMessage: res.stubMessage });
     } catch (err) {
       const e = err as CallError;
-      toast.error(`compare_methods failed: ${e.message}`);
+      toast.error(`comparison failed: ${e.message}`);
     } finally {
       setComparing(false);
     }
@@ -218,6 +243,7 @@ export default function PavementDesign() {
               </TabsList>
               <TabsContent value="cbr" className="space-y-3">
                 {cbrResult?.stub ? <StubBanner message={cbrResult.stubMessage} /> : null}
+                {cbrResult?.warning ? <WarningBanner message={cbrResult.warning} /> : null}
                 <PavementChart result={cbrResult ?? undefined} />
               </TabsContent>
               <TabsContent value="trh14" className="space-y-3">
@@ -232,6 +258,7 @@ export default function PavementDesign() {
                   </Button>
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
+                {compareResult?.usace.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>
