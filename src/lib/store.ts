@@ -91,10 +91,14 @@ export interface CalcStore {
 
   // File
   activeFileName: string | null;
+  activeFilePath: string | null;
   recentFiles: string[];
 
   // Theme
   theme: 'light' | 'dark' | 'system';
+
+  // Auto-update
+  autoCheckUpdates: boolean;
 
   // Unit system
   unitSystem: UnitSystem;
@@ -131,6 +135,7 @@ export interface CalcStore {
   setActiveFileName: (name: string | null) => void;
   pushRecentFile: (filePath: string) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setAutoCheckUpdates: (enabled: boolean) => void;
   setUnitSystem: (system: UnitSystem) => void;
 }
 
@@ -193,9 +198,12 @@ export const useCalcStore = create<CalcStore>()(
       reportSummary: null,
 
       activeFileName: null,
+      activeFilePath: null,
       recentFiles: [],
 
       theme: 'system',
+
+      autoCheckUpdates: true,
 
       unitSystem: 'SI',
 
@@ -224,8 +232,10 @@ export const useCalcStore = create<CalcStore>()(
         authorName: "",
         reportSummary: null,
         activeFileName: null,
+        activeFilePath: null,
         boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
         isProjectDirty: false,
+        autoCheckUpdates: true,
       }),
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
@@ -275,6 +285,7 @@ export const useCalcStore = create<CalcStore>()(
           recentFiles: [filePath, ...s.recentFiles.filter((f) => f !== filePath)].slice(0, 5),
         })),
       setTheme: (theme) => set({ theme }),
+      setAutoCheckUpdates: (autoCheckUpdates) => set({ autoCheckUpdates }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
       setBoqGeometry: (boqGeometry) => set({ boqGeometry }),
     }),
@@ -350,6 +361,7 @@ export const useCalcStore = create<CalcStore>()(
         activeFileName: state.activeFileName,
         recentFiles: state.recentFiles,
         theme: state.theme,
+        autoCheckUpdates: state.autoCheckUpdates,
         unitSystem: state.unitSystem,
         boqGeometry: state.boqGeometry,
         isProjectDirty: state.isProjectDirty,

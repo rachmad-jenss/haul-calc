@@ -30,7 +30,7 @@ type UpdateState =
   | { phase: "error"; message: string };
 
 export default function Settings() {
-  const { unitSystem, setUnitSystem } = useCalcStore();
+  const { unitSystem, setUnitSystem, autoCheckUpdates, setAutoCheckUpdates } = useCalcStore();
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [restarting, setRestarting] = useState(false);
@@ -241,6 +241,9 @@ export default function Settings() {
             <Row label="Unit system">
               <UnitSystemToggle value={unitSystem} onChange={setUnitSystem} />
             </Row>
+            <Row label="Auto-check updates">
+              <AutoCheckToggle value={autoCheckUpdates} onChange={setAutoCheckUpdates} />
+            </Row>
             <Row label="Currency">
               <span className="font-medium text-foreground">USD</span>
             </Row>
@@ -290,6 +293,26 @@ export default function Settings() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function AutoCheckToggle({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2">
+      <input
+        type="checkbox"
+        checked={value}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-primary"
+      />
+      <span className="text-sm">Check for updates on startup</span>
+    </label>
   );
 }
 
