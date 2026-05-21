@@ -78,13 +78,22 @@ export default function App() {
       } else if (key === "s") {
         e.preventDefault();
         if (e.shiftKey) {
-          saveAsProject(useCalcStore.getState()).catch(console.error);
+          saveAsProject(useCalcStore.getState()).catch((err) => {
+            console.error(err);
+            toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`);
+          });
         } else {
-          saveProject(useCalcStore.getState()).catch(console.error);
+          saveProject(useCalcStore.getState()).catch((err) => {
+            console.error(err);
+            toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+          });
         }
       } else if (key === "o") {
         e.preventDefault();
-        openProject(useCalcStore.getState()).catch(console.error);
+        openProject(useCalcStore.getState()).catch((err) => {
+          console.error(err);
+          toast.error(`Open failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
       } else if (key === "n") {
         e.preventDefault();
         handleNewProject();

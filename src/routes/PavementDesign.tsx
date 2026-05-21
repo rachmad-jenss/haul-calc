@@ -66,6 +66,12 @@ export default function PavementDesign() {
       const usace = cbrRes.data;
       const trh14 = trhRes.data;
 
+      const confidenceRank = { low: 0, medium: 1, high: 2 } as const;
+      const overallConfidence =
+        confidenceRank[usace.confidence] <= confidenceRank[trh14.confidence]
+          ? usace.confidence
+          : trh14.confidence;
+
       const compareData: CompareMethodsResult = {
         usace: {
           method: usace.method,
@@ -84,7 +90,7 @@ export default function PavementDesign() {
         },
         delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
         subgrade_cbr: subgradeCbr,
-        confidence: "high",
+        confidence: overallConfidence,
       };
 
       setCompareResult({
