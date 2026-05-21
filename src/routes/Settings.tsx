@@ -264,7 +264,7 @@ export default function Settings() {
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <Row label="App version">
               <span className="font-mono font-medium text-foreground">
-                {(globalThis as Record<string, unknown>).__APP_VERSION__ as string ?? "—"}
+                {__APP_VERSION__}
               </span>
             </Row>
             <Row label="License">

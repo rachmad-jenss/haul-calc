@@ -458,6 +458,9 @@ _DISPATCH: dict[str, Callable[[dict[str, Any]], Any]] = (
 )
 
 
+BRIDGE_VERSION = "1.2.3"
+
+
 def _dispatch(method: str, params: dict[str, Any]) -> tuple[Any, bool]:
     if method == "health_check":
         return {
@@ -466,7 +469,7 @@ def _dispatch(method: str, params: dict[str, Any]) -> tuple[Any, bool]:
         }, False
     if method == "get_version":
         version = getattr(haulpave, "__version__", None) if haulpave is not None else None
-        return {"haulpave": version, "bridge": "0.1.0"}, version is None
+        return {"haulpave": version, "bridge": BRIDGE_VERSION}, version is None
 
     real_fn = _DISPATCH.get(method)
 
