@@ -20,7 +20,7 @@ export type Snapshot = {
   reportSummary: CalcStore["reportSummary"];
 };
 
-type OpenStore = Pick<CalcStore, "loadFromSnapshot" | "pushRecentFile">;
+type OpenStore = Pick<CalcStore, "loadFromSnapshot" | "pushRecentFile" | "setActiveFilePath">;
 
 function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void {
   const parts = filePath.replace(/\\/g, "/").split("/");
@@ -40,6 +40,7 @@ function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void 
     authorName: snap.authorName,
     reportSummary: snap.reportSummary,
     activeFileName: fileName,
+    activeFilePath: filePath,
   });
   store.pushRecentFile(filePath);
 }
@@ -58,6 +59,36 @@ export function parseSnapshot(text: string): Snapshot {
 }
 
 export async function saveProject(store: CalcStore): Promise<void> {
+  const existingPath = store.activeFilePath;
+  if (existingPath) {
+    // Overwrite existing file directly (no dialog)
+    const snapshot: Snapshot = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      fleet: store.fleet,
+      designLifeYears: store.designLifeYears,
+      cesaResult: store.cesaResult,
+      subgradeCbr: store.subgradeCbr,
+      coverages: store.coverages,
+      trhCategory: store.trhCategory,
+      cbrResult: store.cbrResult,
+      trhResult: store.trhResult,
+      costScenarios: store.costScenarios,
+      costResult: store.costResult,
+      projectName: store.projectName,
+      authorName: store.authorName,
+      reportSummary: store.reportSummary,
+    };
+    await writeTextFile(existingPath, JSON.stringify(snapshot, null, 2));
+    store.setProjectDirty(false);
+    return;
+  }
+
+  // No existing path — fall back to Save As
+  await saveAsProject(store);
+}
+
+export async function saveAsProject(store: CalcStore): Promise<void> {
   const filePath = await save({
     filters: [{ name: "HaulCalc Project", extensions: ["hcalc"] }],
     defaultPath: `${store.projectName || "project"}.hcalc`,
@@ -87,6 +118,7 @@ export async function saveProject(store: CalcStore): Promise<void> {
 
   const parts = filePath.replace(/\\/g, "/").split("/");
   store.setActiveFileName(parts[parts.length - 1]);
+  store.setActiveFilePath(filePath);
   store.pushRecentFile(filePath);
   store.setProjectDirty(false);
 }

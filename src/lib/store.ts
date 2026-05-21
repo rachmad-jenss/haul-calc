@@ -91,6 +91,7 @@ export interface CalcStore {
 
   // File
   activeFileName: string | null;
+  activeFilePath: string | null;
   recentFiles: string[];
 
   // Theme
@@ -129,6 +130,7 @@ export interface CalcStore {
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
   setActiveFileName: (name: string | null) => void;
+  setActiveFilePath: (path: string | null) => void;
   pushRecentFile: (filePath: string) => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setUnitSystem: (system: UnitSystem) => void;
@@ -193,6 +195,7 @@ export const useCalcStore = create<CalcStore>()(
       reportSummary: null,
 
       activeFileName: null,
+      activeFilePath: null,
       recentFiles: [],
 
       theme: 'system',
@@ -224,6 +227,7 @@ export const useCalcStore = create<CalcStore>()(
         authorName: "",
         reportSummary: null,
         activeFileName: null,
+        activeFilePath: null,
         boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
         isProjectDirty: false,
       }),
@@ -270,6 +274,7 @@ export const useCalcStore = create<CalcStore>()(
         set({ reportSummary: { ...result, stub, stubMessage } }),
       loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
+      setActiveFilePath: (activeFilePath) => set({ activeFilePath }),
       pushRecentFile: (filePath) =>
         set((s) => ({
           recentFiles: [filePath, ...s.recentFiles.filter((f) => f !== filePath)].slice(0, 5),
@@ -348,6 +353,7 @@ export const useCalcStore = create<CalcStore>()(
         authorName: state.authorName,
         reportSummary: state.reportSummary,
         activeFileName: state.activeFileName,
+        activeFilePath: state.activeFilePath,
         recentFiles: state.recentFiles,
         theme: state.theme,
         unitSystem: state.unitSystem,
