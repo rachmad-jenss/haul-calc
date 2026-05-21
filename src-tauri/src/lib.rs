@@ -2,7 +2,7 @@ mod bridge;
 mod commands;
 
 use std::sync::Arc;
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, RunEvent};
 use tracing_subscriber::EnvFilter;
 
 use crate::bridge::BridgeClient;
@@ -56,6 +56,15 @@ pub fn run() {
             commands::restart_sidecar,
             commands::take_pending_file_path,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let RunEvent::Exit = event {
+                // Ensure the sidecar is killed before the app exits so the
+                // NSIS updater can overwrite haulpave-bridge.exe.
+                if let Some(client) = app_handle.try_state::<Arc<BridgeClient>>() {
+                    client.kill();
+                }
+            }
+        });
 }
