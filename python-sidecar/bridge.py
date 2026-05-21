@@ -283,15 +283,15 @@ _TRH14_CATEGORY_CBR: dict[str, float] = {
 
 def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     from haulpave.pavement.trh14 import (
-        _interpolate_catalog, _load_catalog, cbr_to_material_class,
+        interpolate_catalog, load_catalog, cbr_to_material_class,
     )
 
     category = str(params.get("category", "B")).upper()
     cbr = _TRH14_CATEGORY_CBR.get(category, 10.0)
     coverages = float(params["design_coverages"])
     mat_class = cbr_to_material_class(cbr)
-    catalog = _load_catalog()
-    thickness, _was_clamped = _interpolate_catalog(
+    catalog = load_catalog()
+    thickness, _was_clamped = interpolate_catalog(
         catalog["thickness_mm"][mat_class],
         catalog["coverage_levels"],
         coverages,
