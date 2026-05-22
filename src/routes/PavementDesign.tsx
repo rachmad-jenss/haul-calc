@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
-import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
+import type { CallError, CompareMethodsResult, MethodResult, PavementResult } from "@/lib/types";
 import { convertThickness, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
@@ -27,9 +27,6 @@ export default function PavementDesign() {
     cbrResult,
     trhResult,
     pavementDirty,
-    fleet,
-    designLifeYears,
-    workingDaysPerYear,
     setSubgradeCbr,
     setCoverages,
     setTrhCategory,
@@ -49,23 +46,41 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    if (!fleet.length) {
-      toast.error("Add at least one vehicle in the Traffic / CESA tab first.");
+    const cbrParsed = cbrRequestSchema.safeParse({
+      subgrade_cbr: subgradeCbr,
+      design_coverages: coverages,
+    });
+    if (!cbrParsed.success) {
+      toast.error(firstError(cbrParsed.error));
+      return;
+    }
+    const trhParsed = trh14RequestSchema.safeParse({
+      category: trhCategory,
+      design_coverages: coverages,
+    });
+    if (!trhParsed.success) {
+      toast.error(firstError(trhParsed.error));
       return;
     }
     setComparing(true);
     try {
-      const res = await haulPave.compareMethods({
-        fleet,
-        design_life_years: designLifeYears,
-        working_days_per_year: workingDaysPerYear,
-        subgrade_cbr: subgradeCbr,
-      });
+      const [cbrRes, trhRes] = await Promise.all([
+        haulPave.cbrThickness(cbrParsed.data),
+        haulPave.trh14Thickness(trhParsed.data),
+      ]);
+
+      const usace = toMethodResult(cbrRes.data, coverages, cesaResult?.cesa);
+      const trh14 = toMethodResult(trhRes.data, coverages);
+      const confidence = minConfidence(usace.confidence, trh14.confidence);
 
       setCompareResult({
-        ...res.data,
-        stub: res.stub,
-        stubMessage: res.stubMessage,
+        usace,
+        trh14,
+        delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
+        subgrade_cbr: subgradeCbr,
+        confidence,
+        stub: cbrRes.stub || trhRes.stub,
+        stubMessage: cbrRes.stubMessage ?? trhRes.stubMessage,
       });
     } catch (err) {
       const e = err as CallError;
@@ -243,6 +258,34 @@ export default function PavementDesign() {
       </div>
     </div>
   );
+}
+
+const CONFIDENCE_RANK: Record<MethodResult["confidence"], number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+};
+
+function minConfidence(
+  ...levels: MethodResult["confidence"][]
+): MethodResult["confidence"] {
+  return levels.reduce((min, c) => (CONFIDENCE_RANK[c] < CONFIDENCE_RANK[min] ? c : min));
+}
+
+function toMethodResult(
+  pavement: PavementResult,
+  designCoverages: number,
+  totalCesa?: number,
+): MethodResult {
+  return {
+    method: pavement.method,
+    total_thickness_mm: pavement.total_thickness_mm,
+    total_coverages: designCoverages,
+    total_cesa: totalCesa,
+    confidence: pavement.confidence,
+    material_class: pavement.material_class,
+    warning: pavement.warning,
+  };
 }
 
 const CONFIDENCE_COLOR: Record<string, string> = {
