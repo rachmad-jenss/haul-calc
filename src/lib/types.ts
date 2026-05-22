@@ -164,7 +164,7 @@ export interface SensitivityRequest {
   working_days_per_year?: number;
   subgrade_cbr: number;
   design_coverages: number;
-  cost_scenarios?: CostScenario[];
+  cost_scenarios?: Omit<CostScenario, "_id">[];
 }
 
 export interface MaterialTemplate {
