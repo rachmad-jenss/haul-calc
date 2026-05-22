@@ -1,7 +1,7 @@
 {
   "name": "haul-calc",
   "private": true,
-  "version": "1.2.3",
+  "version": "1.3.0",
   "type": "module",
   "description": "Desktop GUI for mining haul road pavement calculations powered by haul-pave",
   "scripts": {

@@ -35,6 +35,8 @@ The app auto-updates — once installed, use **Settings → Updates → Check fo
 - Keyboard shortcuts: Ctrl+N (new), Ctrl+O (open), Ctrl+S (save), Ctrl+Z/Y (undo/redo)
 - Fleet row ordering with up/down reorder buttons
 - Material Bill of Quantities (BoQ) in Reports with PDF export
+- Material library with pre-defined templates and custom material support
+- Excel export for economics comparison
 - Save/load projects as `.hcalc` files — double-click to open directly
 - Versioned design summary export (JSON)
 
