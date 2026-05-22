@@ -161,6 +161,7 @@ export interface SensitivityRequest {
   metric: string;
   fleet: FleetEntry[];
   design_life_years: number;
+  working_days_per_year?: number;
   subgrade_cbr: number;
   design_coverages: number;
   cost_scenarios?: CostScenario[];
@@ -221,4 +222,5 @@ export interface EconomicsDetailRequest {
 
 export interface ExcelExportResult {
   bytes_written: number;
+  file_path?: string;
 }

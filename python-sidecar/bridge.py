@@ -559,23 +559,13 @@ def _call_material_to_layer_coefficient(params: dict[str, Any]) -> Any:
 def _call_custom_material(params: dict[str, Any]) -> Any:
     from haulpave.models.materials import CustomMaterial
 
-    existing = params.get("existing_id")
-    if existing:
-        mat = CustomMaterial.update(
-            id=existing,
-            name=params.get("name", ""),
-            material_class=params.get("material_class", "G5"),
-            cbr=float(params.get("cbr", 15.0)),
-            source=str(params.get("source", "user")),
-        )
-    else:
-        mat = CustomMaterial.create(
-            name=params.get("name", "Custom material"),
-            material_class=params.get("material_class", "G5"),
-            cbr=float(params.get("cbr", 15.0)),
-            source=str(params.get("source", "user")),
-        )
-    return _serialize(mat)
+    return _serialize(CustomMaterial(
+        id=params.get("existing_id") or "",
+        name=params.get("name", "Custom material"),
+        material_class=params.get("material_class", "G5"),
+        cbr=float(params.get("cbr", 15.0)),
+        source=str(params.get("source", "user")),
+    ))
 
 
 def _call_compute_economics_detail(params: dict[str, Any]) -> Any:

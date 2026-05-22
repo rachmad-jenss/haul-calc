@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { PageHeader } from "@/components/PageHeader";
+import { StubBanner } from "@/components/StubBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,7 +57,7 @@ interface ChartPoint {
 }
 
 export default function SensitivityAnalysis() {
-  const { subgradeCbr, coverages, designLifeYears, fleet, costScenarios } = useCalcStore();
+  const { subgradeCbr, coverages, designLifeYears, workingDaysPerYear, fleet, costScenarios } = useCalcStore();
   const runIdRef = useRef(0);
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -69,6 +70,7 @@ export default function SensitivityAnalysis() {
   const [exporting, setExporting] = useState(false);
   const [showData, setShowData] = useState(true);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const [stubInfo, setStubInfo] = useState<{ stub: boolean; message?: string }>({ stub: false });
 
   const handleParamChange = (newParam: SensParam) => {
     setParam(newParam);
@@ -107,6 +109,7 @@ export default function SensitivityAnalysis() {
 
     setRunning(true);
     setChartData([]);
+    setStubInfo({ stub: false });
 
     try {
       const req: SensitivityRequest = {
@@ -117,6 +120,7 @@ export default function SensitivityAnalysis() {
         metric,
         fleet,
         design_life_years: designLifeYears,
+        working_days_per_year: workingDaysPerYear,
         subgrade_cbr: subgradeCbr,
         design_coverages: coverages,
         cost_scenarios: costScenarios.map(({ _id: _unused, ...s }) => s),
@@ -130,6 +134,7 @@ export default function SensitivityAnalysis() {
 
       if (runId === runIdRef.current) {
         setChartData(results);
+        setStubInfo({ stub: res.stub, message: res.stubMessage });
       }
     } catch (err) {
       toast.error(`Analysis failed: ${String(err)}`);
@@ -303,6 +308,7 @@ export default function SensitivityAnalysis() {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
+                {stubInfo.stub ? <StubBanner message={stubInfo.message} /> : null}
                 {validPoints < chartData.length && (
                   <p className="text-xs text-amber-600">
                     {chartData.length - validPoints} point(s) failed and were skipped.

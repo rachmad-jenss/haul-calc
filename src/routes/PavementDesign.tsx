@@ -29,6 +29,7 @@ export default function PavementDesign() {
     pavementDirty,
     fleet,
     designLifeYears,
+    workingDaysPerYear,
     setSubgradeCbr,
     setCoverages,
     setTrhCategory,
@@ -57,6 +58,7 @@ export default function PavementDesign() {
       const res = await haulPave.compareMethods({
         fleet,
         design_life_years: designLifeYears,
+        working_days_per_year: workingDaysPerYear,
         subgrade_cbr: subgradeCbr,
       });
 
@@ -232,6 +234,7 @@ export default function PavementDesign() {
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
                 {compareResult?.usace.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
+                {compareResult?.trh14.warning ? <WarningBanner message={compareResult.trh14.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>
