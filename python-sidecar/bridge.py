@@ -591,6 +591,7 @@ def _call_compute_economics_detail(params: dict[str, Any]) -> Any:
 
 
 def _call_export_comparison_to_excel(params: dict[str, Any]) -> Any:
+    import base64
     from haulpave.economics.compare import RoadScenario, export_comparison_to_excel
 
     road_scenarios = []
@@ -610,6 +611,8 @@ def _call_export_comparison_to_excel(params: dict[str, Any]) -> Any:
         with open(file_path, "wb") as f:
             f.write(data)
         return {"bytes_written": len(data), "file_path": file_path}
+    if isinstance(data, bytes):
+        return {"bytes_written": len(data), "file_base64": base64.b64encode(data).decode("ascii")}
     return _serialize(data)
 
 

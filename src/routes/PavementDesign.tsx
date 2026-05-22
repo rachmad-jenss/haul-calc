@@ -233,8 +233,8 @@ export default function PavementDesign() {
                   </Button>
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
-                {compareResult?.usace.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
-                {compareResult?.trh14.warning ? <WarningBanner message={compareResult.trh14.warning} /> : null}
+                {compareResult?.usace?.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
+                {compareResult?.trh14?.warning ? <WarningBanner message={compareResult.trh14.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>
