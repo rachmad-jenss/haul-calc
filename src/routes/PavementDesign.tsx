@@ -27,6 +27,9 @@ export default function PavementDesign() {
     cbrResult,
     trhResult,
     pavementDirty,
+    fleet,
+    designLifeYears,
+    workingDaysPerYear,
     setSubgradeCbr,
     setCoverages,
     setTrhCategory,
@@ -46,57 +49,23 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    const cbrParsed = cbrRequestSchema.safeParse({ subgrade_cbr: subgradeCbr, design_coverages: coverages });
-    if (!cbrParsed.success) {
-      toast.error(firstError(cbrParsed.error));
-      return;
-    }
-    const trhParsed = trh14RequestSchema.safeParse({ category: trhCategory, design_coverages: coverages });
-    if (!trhParsed.success) {
-      toast.error(firstError(trhParsed.error));
+    if (!fleet.length) {
+      toast.error("Add at least one vehicle in the Traffic / CESA tab first.");
       return;
     }
     setComparing(true);
     try {
-      const [cbrRes, trhRes] = await Promise.all([
-        haulPave.cbrThickness(cbrParsed.data),
-        haulPave.trh14Thickness(trhParsed.data),
-      ]);
-
-      const usace = cbrRes.data;
-      const trh14 = trhRes.data;
-
-      const confidenceRank = { low: 0, medium: 1, high: 2 } as const;
-      const overallConfidence =
-        confidenceRank[usace.confidence] <= confidenceRank[trh14.confidence]
-          ? usace.confidence
-          : trh14.confidence;
-
-      const compareData: CompareMethodsResult = {
-        usace: {
-          method: usace.method,
-          total_thickness_mm: usace.total_thickness_mm,
-          total_coverages: coverages,
-          total_cesa: cesaResult?.cesa ?? undefined,
-          confidence: usace.confidence,
-          warning: usace.warning,
-        },
-        trh14: {
-          method: trh14.method,
-          total_thickness_mm: trh14.total_thickness_mm,
-          total_coverages: coverages,
-          confidence: trh14.confidence,
-          material_class: trh14.material_class,
-        },
-        delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
+      const res = await haulPave.compareMethods({
+        fleet,
+        design_life_years: designLifeYears,
+        working_days_per_year: workingDaysPerYear,
         subgrade_cbr: subgradeCbr,
-        confidence: overallConfidence,
-      };
+      });
 
       setCompareResult({
-        ...compareData,
-        stub: cbrRes.stub || trhRes.stub,
-        stubMessage: cbrRes.stubMessage || trhRes.stubMessage,
+        ...res.data,
+        stub: res.stub,
+        stubMessage: res.stubMessage,
       });
     } catch (err) {
       const e = err as CallError;
@@ -264,7 +233,8 @@ export default function PavementDesign() {
                   </Button>
                 </div>
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
-                {compareResult?.usace.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
+                {compareResult?.usace?.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
+                {compareResult?.trh14?.warning ? <WarningBanner message={compareResult.trh14.warning} /> : null}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>

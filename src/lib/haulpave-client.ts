@@ -5,12 +5,21 @@ import type {
   CbrRequest,
   CesaRequest,
   CesaResult,
+  CesaDetailResult,
   CompareMethodsResult,
   CostComparison,
   CostScenario,
+  CustomMaterial,
+  CustomMaterialRequest,
   DesignPavementResult,
   DesignSummary,
+  EconomicsDetailRequest,
+  ExcelExportResult,
+  LayerCoefficientResult,
+  MaterialTemplate,
   PavementResult,
+  SensitivityRequest,
+  SensitivityResult,
   Trh14Request,
   Vehicle,
 } from "@/lib/types";
@@ -47,6 +56,17 @@ export const haulPave = {
   listVehicles: () => call<Vehicle[]>("list_vehicles", {}),
   getVersion: () => call<{ haulpave: string | null; bridge: string }>("get_version", {}),
   healthCheck: () => call<{ ok: boolean; haulpave_loaded: boolean }>("health_check", {}),
+  analyzeSensitivity: (req: SensitivityRequest) =>
+    call<SensitivityResult>("analyze_sensitivity", req),
+  materialLibrary: () => call<MaterialTemplate[]>("material_library", {}),
+  materialToLayerCoefficient: (materialClass: string) =>
+    call<LayerCoefficientResult>("material_to_layer_coefficient", { material_class: materialClass }),
+  customMaterial: (req: CustomMaterialRequest) =>
+    call<CustomMaterial>("custom_material", req),
+  computeEconomicsDetail: (req: EconomicsDetailRequest) =>
+    call<CesaDetailResult>("compute_economics_detail", req),
+  exportComparisonToExcel: (scenarios: Omit<CostScenario, "_id">[], filePath?: string) =>
+    call<ExcelExportResult>("export_comparison_to_excel", { scenarios, file_path: filePath }),
   getSidecarStatus: () => invoke<SidecarStatus>("get_sidecar_status"),
   restartSidecar: () => invoke<void>("restart_sidecar"),
 };

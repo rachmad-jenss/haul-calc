@@ -129,3 +129,98 @@ export interface CallResult<T> {
   stub: boolean;
   stubMessage?: string;
 }
+
+// ---------------------------------------------------------------------------
+// haul-pave v0.5.0 new types
+// ---------------------------------------------------------------------------
+
+export interface SensitivityPerturbation {
+  x: number;
+  y: number | null;
+}
+
+export interface SensitivityBaseline {
+  subgrade_cbr: number;
+  design_coverages: number;
+  design_life_years: number;
+  trips_per_day: number;
+}
+
+export interface SensitivityResult {
+  variable: string;
+  baseline: SensitivityBaseline;
+  perturbations: SensitivityPerturbation[];
+  confidence: "high" | "medium" | "low";
+}
+
+export interface SensitivityRequest {
+  variable: string;
+  min_value: number;
+  max_value: number;
+  steps: number;
+  metric: string;
+  fleet: FleetEntry[];
+  design_life_years: number;
+  working_days_per_year?: number;
+  subgrade_cbr: number;
+  design_coverages: number;
+  cost_scenarios?: Omit<CostScenario, "_id">[];
+}
+
+export interface MaterialTemplate {
+  id: string;
+  name: string;
+  class: string | null;
+  default_cbr: number | null;
+  layer_type: "surface" | "base" | "subbase";
+}
+
+export interface LayerCoefficientResult {
+  material_class: string;
+  coefficient: number;
+}
+
+export interface CustomMaterial {
+  id: string;
+  name: string;
+  material_class: string;
+  cbr: number;
+  source: string;
+}
+
+export interface CustomMaterialRequest {
+  existing_id?: string;
+  name: string;
+  material_class: string;
+  cbr: number;
+  source?: string;
+}
+
+export interface CesaDetailScenario {
+  name: string;
+  cesa: number;
+  fuel_cost_usd_per_year: number;
+  tire_cost_usd_per_year: number;
+  maintenance_cost_usd_per_year: number;
+  total_cost_usd_per_year: number;
+  npv_usd: number;
+  annual_equivalent_cost_usd: number;
+  cashflows: { year: number; value: number }[];
+}
+
+export interface CesaDetailResult {
+  scenarios: CesaDetailScenario[];
+  design_life_years: number;
+  discount_rate: number;
+}
+
+export interface EconomicsDetailRequest {
+  scenarios: Omit<CostScenario, "_id">[];
+  design_life_years: number;
+  discount_rate: number;
+}
+
+export interface ExcelExportResult {
+  bytes_written: number;
+  file_path?: string;
+}

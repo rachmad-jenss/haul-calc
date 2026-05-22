@@ -147,6 +147,25 @@ function OpexTab() {
     }
   };
 
+  const handleExportExcel = async () => {
+    if (!costResult?.scenarios?.length || !costScenarios.length) return;
+    try {
+      const path = await save({
+        defaultPath: "opex_comparison.xlsx",
+        filters: [{ name: "Excel Workbook", extensions: ["xlsx"] }],
+      });
+      if (!path) return;
+
+      const res = await haulPave.exportComparisonToExcel(
+        costScenarios.map(({ _id: _unused, ...s }) => s),
+        path,
+      );
+      toast.success(`Excel saved to ${res.data.file_path || path}`);
+    } catch (err) {
+      toast.error(`Excel export failed: ${String(err)}`);
+    }
+  };
+
   const chartData =
     costResult?.scenarios.map((s) => ({
       name: s.name,
@@ -252,6 +271,15 @@ function OpexTab() {
                 >
                   <Download className="h-3 w-3" />
                   Export CSV
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleExportExcel}
+                >
+                  <Download className="h-3 w-3" />
+                  Export Excel
                 </Button>
                 <Button
                   variant="ghost"

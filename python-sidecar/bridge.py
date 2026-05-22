@@ -163,6 +163,77 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
             {"id": "kom-960e", "name": "Komatsu 960E",     "gvw_kn": 5_925, "axles": 2},
             {"id": "cat-785d", "name": "Caterpillar 785D", "gvw_kn": 2_641, "axles": 2},
         ]
+    if method == "analyze_sensitivity":
+        variable = params.get("variable", "subgrade_cbr")
+        return {
+            "variable": variable,
+            "baseline": {
+                "subgrade_cbr": params.get("subgrade_cbr", 8.0),
+                "design_coverages": params.get("design_coverages", 1_050_000),
+                "design_life_years": params.get("design_life_years", 10),
+                "trips_per_day": 1.0,
+            },
+            "perturbations": [
+                {"x": 5.0, "y": 750},
+                {"x": 10.0, "y": 625},
+                {"x": 15.0, "y": 550},
+                {"x": 20.0, "y": 500},
+            ],
+            "confidence": "medium",
+        }
+    if method == "material_library":
+        return [
+            {"id": "g1", "name": "G1 — Crushed stone", "class": "G1", "default_cbr": 100.0, "layer_type": "base"},
+            {"id": "g2", "name": "G2 — Crushed stone", "class": "G2", "default_cbr": 80.0, "layer_type": "base"},
+            {"id": "g3", "name": "G3 — Crushed stone", "class": "G3", "default_cbr": 45.0, "layer_type": "base"},
+            {"id": "g4", "name": "G4 — Natural gravel", "class": "G4", "default_cbr": 25.0, "layer_type": "base"},
+            {"id": "g5", "name": "G5 — Natural gravel", "class": "G5", "default_cbr": 10.0, "layer_type": "subbase"},
+            {"id": "g6", "name": "G6 — Natural gravel", "class": "G6", "default_cbr": 5.0, "layer_type": "subbase"},
+            {"id": "g7", "name": "G7 — Gravel-sand", "class": "G7", "default_cbr": 3.0, "layer_type": "subbase"},
+            {"id": "asphalt-wearing", "name": "Asphalt wearing course", "class": None, "default_cbr": None, "layer_type": "surface"},
+        ]
+    if method == "material_to_layer_coefficient":
+        material_class = params.get("material_class", "G5")
+        _coeffs = {"G1": 0.14, "G2": 0.12, "G3": 0.10, "G4": 0.09, "G5": 0.08, "G6": 0.06, "G7": 0.04}
+        return {
+            "material_class": material_class,
+            "coefficient": _coeffs.get(material_class, 0.08),
+        }
+    if method == "custom_material":
+        return {
+            "id": "custom-001",
+            "name": params.get("name", "Custom material"),
+            "material_class": params.get("material_class", "G5"),
+            "cbr": params.get("cbr", 15.0),
+            "source": params.get("source", "user"),
+        }
+    if method == "compute_economics_detail":
+        return {
+            "scenarios": [
+                {
+                    "name": s.get("name", f"Scenario {i}"),
+                    "cesa": 4.21e10,
+                    "fuel_cost_usd_per_year": 1_200_000 + i * 50_000,
+                    "tire_cost_usd_per_year": 300_000 + i * 20_000,
+                    "maintenance_cost_usd_per_year": 450_000 + i * 30_000,
+                    "total_cost_usd_per_year": 1_950_000 + i * 100_000,
+                    "npv_usd": 12_500_000 + i * 800_000,
+                    "annual_equivalent_cost_usd": 1_750_000 + i * 100_000,
+                    "cashflows": [
+                        {"year": y, "value": 1_950_000 + i * 100_000}
+                        for y in range(1, int(params.get("design_life_years", 10)) + 1)
+                    ],
+                }
+                for i, s in enumerate(params.get("scenarios", [{"name": "Default"}]))
+            ],
+            "design_life_years": params.get("design_life_years", 10),
+            "discount_rate": params.get("discount_rate", 0.08),
+        }
+    if method == "export_comparison_to_excel":
+        return {
+            "bytes_written": 0,
+            "file_path": params.get("file_path", ""),
+        }
     raise NotImplementedError(method)
 
 
@@ -317,13 +388,13 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     coverages = float(params["design_coverages"])
     mat_class = cbr_to_material_class(cbr)
     catalog = load_catalog()
-    thickness, _was_clamped = interpolate_catalog(
+    thickness, was_clamped = interpolate_catalog(
         catalog["thickness_mm"][mat_class],
         catalog["coverage_levels"],
         coverages,
     )
     t = round(thickness)
-    return {
+    result: dict[str, Any] = {
         "method": "TRH 14 (CSRA 1985) design catalog",
         "category": category,
         "material_class": mat_class,
@@ -338,6 +409,12 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
         ],
         "total_thickness_mm": t,
     }
+    if was_clamped:
+        result["warning"] = (
+            f"Design coverages ({coverages:,.0f}) exceed the TRH 14 catalog maximum. "
+            "Thickness has been clamped to the highest available catalog value."
+        )
+    return result
 
 
 def _call_compare_scenarios(params: dict[str, Any]) -> Any:
@@ -381,21 +458,30 @@ def _call_compare_methods(params: dict[str, Any]) -> Any:
         warnings.simplefilter("ignore")
         result = compare_methods(traffic, subgrade_cbr=cbr)
 
+    usace_result: dict[str, Any] = {
+        "method": result.usace.method,
+        "total_thickness_mm": round(result.usace.required_thickness_mm),
+        "total_coverages": round(result.usace.total_coverages),
+        "total_cesa": result.usace.total_cesa,
+        "confidence": result.usace.confidence,
+    }
+    trh14_result: dict[str, Any] = {
+        "method": result.trh14.method,
+        "total_thickness_mm": round(result.trh14.total_thickness_mm),
+        "total_coverages": round(result.trh14.total_coverages),
+        "material_class": result.trh14.material_class,
+        "confidence": result.trh14.confidence,
+    }
+    warning = getattr(result.usace, "warning", None) or getattr(result, "warning", None)
+    if warning:
+        usace_result["warning"] = warning
+    trh_warning = getattr(result.trh14, "warning", None)
+    if trh_warning:
+        trh14_result["warning"] = trh_warning
+
     return {
-        "usace": {
-            "method": result.usace.method,
-            "total_thickness_mm": round(result.usace.required_thickness_mm),
-            "total_coverages": round(result.usace.total_coverages),
-            "total_cesa": result.usace.total_cesa,
-            "confidence": result.usace.confidence,
-        },
-        "trh14": {
-            "method": result.trh14.method,
-            "total_thickness_mm": round(result.trh14.total_thickness_mm),
-            "total_coverages": round(result.trh14.total_coverages),
-            "material_class": result.trh14.material_class,
-            "confidence": result.trh14.confidence,
-        },
+        "usace": usace_result,
+        "trh14": trh14_result,
         "delta_mm": round(result.delta_mm),
         "subgrade_cbr": cbr,
         "confidence": result.confidence,
@@ -438,6 +524,98 @@ def _call_list_vehicles(_params: dict[str, Any]) -> Any:
     ]
 
 
+def _call_analyze_sensitivity(params: dict[str, Any]) -> Any:
+    from haulpave.economics.sensitivity import SensitivityInput, analyze_sensitivity
+
+    traffic = _build_traffic(params)
+    sens_input = SensitivityInput(
+        traffic=traffic,
+        variable=params.get("variable", "subgrade_cbr"),
+        min_value=float(params.get("min_value", 2.0)),
+        max_value=float(params.get("max_value", 20.0)),
+        steps=int(params.get("steps", 10)),
+        metric=params.get("metric", "total_thickness_mm"),
+        subgrade_cbr=float(params.get("subgrade_cbr", 8.0)),
+        design_coverages=float(params.get("design_coverages", 1_050_000)),
+    )
+    result = analyze_sensitivity(sens_input)
+    return _serialize(result)
+
+
+def _call_material_library(_params: dict[str, Any]) -> Any:
+    from haulpave.materials.library import list_all_templates
+
+    return _serialize(list_all_templates())
+
+
+def _call_material_to_layer_coefficient(params: dict[str, Any]) -> Any:
+    from haulpave.materials.library import material_to_layer_coefficient
+
+    return _serialize(material_to_layer_coefficient(
+        material_class=str(params.get("material_class", "G5")),
+    ))
+
+
+def _call_custom_material(params: dict[str, Any]) -> Any:
+    from haulpave.models.materials import CustomMaterial
+
+    return _serialize(CustomMaterial(
+        id=params.get("existing_id") or "",
+        name=params.get("name", "Custom material"),
+        material_class=params.get("material_class", "G5"),
+        cbr=float(params.get("cbr", 15.0)),
+        source=str(params.get("source", "user")),
+    ))
+
+
+def _call_compute_economics_detail(params: dict[str, Any]) -> Any:
+    from haulpave.economics.compare import RoadScenario, compute_economics_detail
+
+    road_scenarios = []
+    for s in params.get("scenarios", []):
+        road_scenarios.append(RoadScenario(
+            name=s.get("name", "Scenario"),
+            surface=s.get("surface", "asphalt"),
+            thickness_mm=int(s.get("thickness_mm", 100)),
+            haul_distance_km=float(s.get("haul_distance_km", 5)),
+            trips_per_day=int(s.get("trips_per_day", 20)),
+        ))
+
+    result = compute_economics_detail(
+        road_scenarios,
+        design_life_years=float(params.get("design_life_years", 10)),
+        discount_rate=float(params.get("discount_rate", 0.08)),
+    )
+
+    return _serialize(result)
+
+
+def _call_export_comparison_to_excel(params: dict[str, Any]) -> Any:
+    import base64
+    from haulpave.economics.compare import RoadScenario, export_comparison_to_excel
+
+    road_scenarios = []
+    for s in params.get("scenarios", []):
+        road_scenarios.append(RoadScenario(
+            name=s.get("name", "Scenario"),
+            surface=s.get("surface", "asphalt"),
+            thickness_mm=int(s.get("thickness_mm", 100)),
+            haul_distance_km=float(s.get("haul_distance_km", 5)),
+            trips_per_day=int(s.get("trips_per_day", 20)),
+        ))
+
+    data = export_comparison_to_excel(road_scenarios)
+
+    file_path = params.get("file_path", "")
+    if file_path and isinstance(data, bytes):
+        with open(file_path, "wb") as f:
+            f.write(data)
+        return {"bytes_written": len(data), "file_path": file_path}
+    if isinstance(data, bytes):
+        return {"bytes_written": len(data), "file_base64": base64.b64encode(data).decode("ascii")}
+    return _serialize(data)
+
+
 # ---------------------------------------------------------------------------
 # Dispatch table — built once at module import, not per request.
 # ---------------------------------------------------------------------------
@@ -452,6 +630,12 @@ _DISPATCH: dict[str, Callable[[dict[str, Any]], Any]] = (
         "design_pavement": _call_design_pavement,
         "build_summary": _call_build_summary,
         "list_vehicles": _call_list_vehicles,
+        "analyze_sensitivity": _call_analyze_sensitivity,
+        "material_library": _call_material_library,
+        "material_to_layer_coefficient": _call_material_to_layer_coefficient,
+        "custom_material": _call_custom_material,
+        "compute_economics_detail": _call_compute_economics_detail,
+        "export_comparison_to_excel": _call_export_comparison_to_excel,
     }
     if haulpave is not None
     else {}
