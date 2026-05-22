@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * bump-version.mjs — sync version across package.json, Cargo.toml, tauri.conf.json
+ * bump-version.mjs — sync version across package.json, Cargo.toml, tauri.conf.json, and bridge.py
  *
  * Usage:
  *   node scripts/bump-version.mjs patch        # 0.1.0 → 0.1.1
@@ -22,6 +22,7 @@ const FILES = {
   pkg: resolve(root, "package.json"),
   cargo: resolve(root, "src-tauri/Cargo.toml"),
   tauri: resolve(root, "src-tauri/tauri.conf.json"),
+  bridge: resolve(root, "python-sidecar/bridge.py"),
 };
 
 // ── read current versions ────────────────────────────────────────────────────
@@ -30,15 +31,20 @@ function readVersions() {
   const pkg = JSON.parse(readFileSync(FILES.pkg, "utf-8"));
   const cargo = readFileSync(FILES.cargo, "utf-8");
   const tauri = JSON.parse(readFileSync(FILES.tauri, "utf-8"));
+  const bridge = readFileSync(FILES.bridge, "utf-8");
 
   // Scope to [package] section — [^\[]* stops at the next section header
   const cargoMatch = cargo.match(/^\[package\][^\[]*?version\s*=\s*"([^"]+)"/ms);
   if (!cargoMatch) throw new Error("Could not find version in Cargo.toml [package] section");
 
+  const bridgeMatch = bridge.match(/^BRIDGE_VERSION\s*=\s*"([^"]+)"/m);
+  if (!bridgeMatch) throw new Error("Could not find BRIDGE_VERSION in bridge.py");
+
   return {
     pkg: pkg.version,
     cargo: cargoMatch[1],
     tauri: tauri.version,
+    bridge: bridgeMatch[1],
   };
 }
 
@@ -73,6 +79,11 @@ function applyVersion(newVersion) {
   const tauri = JSON.parse(readFileSync(FILES.tauri, "utf-8"));
   tauri.version = newVersion;
   writeFileSync(FILES.tauri, JSON.stringify(tauri, null, 2) + "\n");
+
+  // python-sidecar/bridge.py
+  const bridge = readFileSync(FILES.bridge, "utf-8");
+  const updatedBridge = bridge.replace(/^(BRIDGE_VERSION\s*=\s*")[^"]+(")/m, `$1${newVersion}$2`);
+  writeFileSync(FILES.bridge, updatedBridge);
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -85,15 +96,18 @@ if (!bump) {
 
 const versions = readVersions();
 
-// Guard: all three must be in sync before bumping
-const allSame = versions.pkg === versions.cargo && versions.pkg === versions.tauri;
-if (!allSame) {
-  console.error("❌ Version mismatch detected — fix before bumping:");
-  console.error(`   package.json:           ${versions.pkg}`);
-  console.error(`   src-tauri/Cargo.toml:   ${versions.cargo}`);
-  console.error(`   src-tauri/tauri.conf.json: ${versions.tauri}`);
-  process.exit(1);
-}
+  // Guard: all four must be in sync before bumping
+  const allSame = versions.pkg === versions.cargo
+    && versions.pkg === versions.tauri
+    && versions.pkg === versions.bridge;
+  if (!allSame) {
+    console.error("❌ Version mismatch detected — fix before bumping:");
+    console.error(`   package.json:              ${versions.pkg}`);
+    console.error(`   src-tauri/Cargo.toml:      ${versions.cargo}`);
+    console.error(`   src-tauri/tauri.conf.json: ${versions.tauri}`);
+    console.error(`   python-sidecar/bridge.py:  ${versions.bridge}`);
+    process.exit(1);
+  }
 
 const current = versions.pkg;
 const next = bumpVersion(current, bump);
@@ -101,11 +115,12 @@ const next = bumpVersion(current, bump);
 applyVersion(next);
 
 console.log(`✅ Version bumped: ${current} → ${next}`);
-console.log(`   package.json            ✓`);
-console.log(`   src-tauri/Cargo.toml    ✓`);
-console.log(`   src-tauri/tauri.conf.json ✓`);
+console.log(`   package.json               ✓`);
+console.log(`   src-tauri/Cargo.toml       ✓`);
+console.log(`   src-tauri/tauri.conf.json  ✓`);
+console.log(`   python-sidecar/bridge.py   ✓`);
 console.log();
 console.log(`Next steps:`);
-console.log(`  cargo check              # update Cargo.lock`);
+console.log(`  cargo check                 # update Cargo.lock`);
 console.log(`  git add -p && git commit -m "chore: bump version to ${next}"`);
 console.log(`  git tag v${next}`);
