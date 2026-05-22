@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
+import type { SensitivityRequest } from "@/lib/types";
 
 type SensParam = "subgrade_cbr" | "design_coverages" | "design_life_years" | "trips_per_day";
 type SensMetric = "total_thickness_mm" | "cesa" | "cost_total";
@@ -52,12 +53,6 @@ const METRIC_CONFIG: Record<SensMetric, MetricConfig> = {
 interface ChartPoint {
   x: number;
   y: number | null;
-}
-
-function linspace(min: number, max: number, n: number): number[] {
-  if (n <= 1) return [min];
-  const step = (max - min) / (n - 1);
-  return Array.from({ length: n }, (_, i) => min + i * step);
 }
 
 export default function SensitivityAnalysis() {
@@ -114,76 +109,25 @@ export default function SensitivityAnalysis() {
     setChartData([]);
 
     try {
-      const values = linspace(minVal, maxVal, clampedSteps);
+      const req: SensitivityRequest = {
+        variable: param,
+        min_value: minVal,
+        max_value: maxVal,
+        steps: clampedSteps,
+        metric,
+        fleet,
+        design_life_years: designLifeYears,
+        subgrade_cbr: subgradeCbr,
+        design_coverages: coverages,
+        cost_scenarios: costScenarios.map(({ _id: _unused, ...s }) => s),
+      };
 
-      const promises: Promise<ChartPoint>[] = values.map(async (v): Promise<ChartPoint> => {
-        try {
-          // Build effective fleet: trips_per_day sweep scales all vehicles
-          const effectiveFleet =
-            param === "trips_per_day"
-              ? fleet.map((f) => ({ ...f, trips_per_day: Math.max(1, Math.round(f.trips_per_day * v)) }))
-              : fleet;
+      const res = await haulPave.analyzeSensitivity(req);
+      const results: ChartPoint[] = res.data.perturbations.map((p) => ({
+        x: p.x,
+        y: p.y,
+      }));
 
-          const effectiveCbr = param === "subgrade_cbr" ? v : subgradeCbr;
-          const effectiveLife = param === "design_life_years" ? v : designLifeYears;
-
-          // Params that require a CESA call first to derive design_coverages
-          const needsCesa =
-            param === "design_life_years" ||
-            param === "trips_per_day" ||
-            metric === "cesa";
-
-          let effectiveCoverages = param === "design_coverages" ? v : coverages;
-          let cesaValue: number | null = null;
-
-          if (needsCesa) {
-            const cesaRes = await haulPave.computeCesa({
-              fleet: effectiveFleet,
-              design_life_years: effectiveLife,
-            });
-            cesaValue = cesaRes.data.cesa;
-            if (param === "design_life_years" || param === "trips_per_day") {
-              effectiveCoverages = cesaRes.data.design_coverages;
-            }
-          }
-
-          let y: number | null = null;
-
-          if (metric === "cesa") {
-            y = cesaValue;
-          } else if (metric === "total_thickness_mm") {
-            const cbrRes = await haulPave.cbrThickness({
-              subgrade_cbr: effectiveCbr,
-              design_coverages: effectiveCoverages,
-            });
-            y = cbrRes.data.total_thickness_mm;
-          } else {
-            // cost_total: sum first scenario's annual costs
-            // for trips_per_day sweep, scale scenario trips proportionally
-            if (costScenarios.length > 0) {
-              const scenariosForCall = costScenarios.map(({ _id: _unused, ...s }) =>
-                param === "trips_per_day"
-                  ? { ...s, trips_per_day: Math.max(1, Math.round(s.trips_per_day * v)) }
-                  : s,
-              );
-              const costRes = await haulPave.compareScenarios(scenariosForCall);
-              if (costRes.data.scenarios.length > 0) {
-                const s = costRes.data.scenarios[0];
-                y =
-                  s.tire_cost_usd_per_year +
-                  s.fuel_cost_usd_per_year +
-                  s.maintenance_cost_usd_per_year;
-              }
-            }
-          }
-
-          return { x: v, y };
-        } catch {
-          return { x: v, y: null };
-        }
-      });
-
-      const results = await Promise.all(promises);
       if (runId === runIdRef.current) {
         setChartData(results);
       }
