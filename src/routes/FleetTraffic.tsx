@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Download, Plus, Trash2, Calculator, UserPlus, FileUp, FileJson, AlertTriangle, Copy } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Plus, Trash2, Calculator, UserPlus, FileUp, FileJson, AlertTriangle, Copy, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -205,25 +205,53 @@ export default function FleetTraffic() {
                 <UserPlus className="h-4 w-4" />
                 Custom vehicles
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLoadSample}>
-                <FileJson className="h-4 w-4" />
-                Sample Fleet
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
+              {fleet.length > 0 ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleLoadSample}>
+                    <FileJson className="h-4 w-4" />
+                    Sample Fleet
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addRow}>
+                    <Plus className="h-4 w-4" />
+                    Add row
+                  </Button>
+                </>
+              ) : null}
               <Button variant="outline" size="sm" onClick={() => setShowCsvModal(true)}>
                 <FileUp className="h-4 w-4" />
                 Import CSV
               </Button>
-              <Button variant="outline" size="sm" onClick={addRow}>
-                <Plus className="h-4 w-4" />
-                Add row
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
+            {fleet.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed py-12 text-center"
+                data-testid="fleet-empty-state"
+              >
+                <Truck className="h-10 w-10 text-muted-foreground" aria-hidden />
+                <div className="space-y-1">
+                  <p className="font-medium">No vehicles in fleet</p>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Add a row or load the sample fleet to start CESA and coverages.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button onClick={addRow}>
+                    <Plus className="h-4 w-4" />
+                    Add row
+                  </Button>
+                  <Button variant="outline" onClick={handleLoadSample}>
+                    <FileJson className="h-4 w-4" />
+                    Sample fleet
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -355,6 +383,7 @@ export default function FleetTraffic() {
                 </tbody>
               </table>
             </div>
+            )}
 
             <div className="mt-4 flex items-end gap-3">
               <div className="space-y-1">
