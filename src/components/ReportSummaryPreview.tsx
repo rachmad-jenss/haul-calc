@@ -50,9 +50,11 @@ export function ReportSummaryPreview({ summary }: { summary: DesignSummary & Stu
       ? (display.results as Record<string, unknown>)
       : {};
 
-  const generated = display.generated_at
-    ? new Date(display.generated_at).toLocaleString()
-    : "—";
+  const generated = (() => {
+    if (!display.generated_at) return "—";
+    const date = new Date(display.generated_at);
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+  })();
 
   return (
     <div className="max-h-[480px] space-y-4 overflow-auto text-sm" data-testid="report-summary-preview">
