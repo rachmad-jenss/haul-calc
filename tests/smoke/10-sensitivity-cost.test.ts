@@ -8,7 +8,9 @@ test.describe("DAS-134 sensitivity cost_total", () => {
   test("rejects cost_total sweep unless parameter is trips/day multiplier", async ({ page }) => {
     await page.locator("#sens-metric").selectOption("cost_total");
     await page.getByRole("button", { name: /run analysis/i }).click();
-    await expect(page.getByText(/trips\/day multiplier/i)).toBeVisible();
+    await expect(
+      page.getByText(/annual cost sensitivity only supports trips\/day multiplier/i),
+    ).toBeVisible();
     await expect(page.locator("svg.recharts-surface")).toHaveCount(0);
   });
 
