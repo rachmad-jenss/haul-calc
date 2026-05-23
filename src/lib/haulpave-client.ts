@@ -50,7 +50,7 @@ export const haulPave = {
     call<CostComparison>("compare_scenarios", { scenarios }),
   compareMethods: (req: CompareMethodsRequest) =>
     call<CompareMethodsResult>("compare_methods", req),
-  designPavement: (req: CesaRequest & Pick<CbrRequest, "subgrade_cbr">) =>
+  designPavement: (req: CompareMethodsRequest) =>
     call<DesignPavementResult>("design_pavement", req),
   buildSummary: (inputs: Record<string, unknown>) =>
     call<DesignSummary>("build_summary", inputs),

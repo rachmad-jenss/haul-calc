@@ -481,21 +481,15 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
     curve_data = load_curve_data("usace_cbr_v1")
     max_coverage = _get_usace_max_coverage()
     digitized_max = _usace_digitized_max_coverage(curve_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        thickness, was_clamped, was_extrapolated = interpolate_thickness(
+            curve_data, cbr=cbr, coverages=coverages
+        )
     if custom_materials is not None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            thickness = cbr_thickness_from_coverages(
-                cbr, coverages, custom_materials=custom_materials
-            )
-            _, was_clamped, was_extrapolated = interpolate_thickness(
-                curve_data, cbr=cbr, coverages=coverages
-            )
-    else:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            thickness, was_clamped, was_extrapolated = interpolate_thickness(
-                curve_data, cbr=cbr, coverages=coverages
-            )
+            cbr_thickness_from_coverages(cbr, coverages, custom_materials=custom_materials)
     t = round(thickness)
 
     if was_clamped or was_extrapolated:
@@ -552,18 +546,23 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     cbr = _TRH14_CATEGORY_CBR.get(category, 10.0)
     coverages = float(params["design_coverages"])
     custom_materials = _parse_custom_materials(params)
-    mat_class = cbr_to_material_class(cbr)
-    catalog = load_catalog()
-    thickness, was_clamped = interpolate_catalog(
-        catalog["thickness_mm"][mat_class],
-        catalog["coverage_levels"],
-        coverages,
-    )
-    t = round(thickness)
     if custom_materials is not None:
-        trh14_thickness_from_coverages(cbr, coverages, custom_materials=custom_materials)
+        trh_result = trh14_thickness_from_coverages(
+            cbr, coverages, custom_materials=custom_materials
+        )
+        t = round(trh_result.total_thickness_mm)
+        mat_class = trh_result.material_class
+        was_clamped = trh_result.was_clamped
         layers = _layers_from_custom_materials(custom_materials, t)
     else:
+        mat_class = cbr_to_material_class(cbr)
+        catalog = load_catalog()
+        thickness, was_clamped = interpolate_catalog(
+            catalog["thickness_mm"][mat_class],
+            catalog["coverage_levels"],
+            coverages,
+        )
+        t = round(thickness)
         layers = [
             {"name": f"Wearing course ({mat_class})",
              "thickness_mm": round(t * 0.28), "cbr": None},
