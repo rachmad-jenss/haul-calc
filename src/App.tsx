@@ -20,6 +20,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
+import { normalizePersistedFileBinding, resolveActiveFilePath } from "@/lib/file-binding";
 import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAutoUpdate } from "@/hooks/useAutoUpdate";
@@ -39,7 +40,21 @@ export default function App() {
   useAutoUpdate();
 
   const store = useCalcStore();
-  const { activeFileName, theme, setTheme, isProjectDirty, resetProject } = store;
+  const { activeFileName, activeFilePath, recentFiles, theme, setTheme, isProjectDirty, resetProject } =
+    store;
+  const boundFilePath = resolveActiveFilePath({ activeFilePath, activeFileName, recentFiles });
+  const hasBoundFile = Boolean(boundFilePath);
+
+  useEffect(() => {
+    const apply = () => {
+      const state = useCalcStore.getState();
+      const patch = normalizePersistedFileBinding(state);
+      if (patch) useCalcStore.setState(patch);
+    };
+    apply();
+    const id = window.setTimeout(apply, 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Open a .hcalc file passed as a CLI arg at launch (double-click in File Explorer).
   // Uses a drainable slot so React StrictMode double-invoke is safe.
@@ -129,16 +144,16 @@ export default function App() {
     return () => mq.removeEventListener('change', apply);
   }, [theme]);
 
-  // Sync window title with active file and dirty state
+  // Sync window title with active file and dirty state (only when path is bound)
   useEffect(() => {
     try {
-      const baseName = activeFileName ? ` - ${activeFileName}` : "";
+      const baseName = hasBoundFile && activeFileName ? ` - ${activeFileName}` : "";
       const dirtyStar = isProjectDirty ? " *" : "";
       getCurrentWindow().setTitle(`Haul-Calc${baseName}${dirtyStar}`);
     } catch {
       // Ignore if not in Tauri
     }
-  }, [activeFileName, isProjectDirty]);
+  }, [activeFileName, hasBoundFile, isProjectDirty]);
 
   // Intercept window close to prompt if dirty
   useEffect(() => {
@@ -178,11 +193,12 @@ export default function App() {
     useCalcStore.temporal.getState().clear();
   };
 
-  const displayName = activeFileName
-    ? activeFileName.length > 20
-      ? activeFileName.slice(0, 20) + "…"
-      : activeFileName
-    : null;
+  const displayName =
+    hasBoundFile && activeFileName
+      ? activeFileName.length > 20
+        ? activeFileName.slice(0, 20) + "…"
+        : activeFileName
+      : null;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
@@ -210,14 +226,14 @@ export default function App() {
               <FolderOpen className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => saveProject(store).catch((err) => { console.error(err); toast.error(`Save failed: ${err.message}`); })}
+              onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save (Ctrl+S)"
             >
               <Save className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => saveAsProject(store).catch((err) => { console.error(err); toast.error(`Save As failed: ${err.message}`); })}
+              onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save As (Ctrl+Shift+S)"
             >

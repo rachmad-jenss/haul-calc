@@ -1,6 +1,7 @@
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
+import { basenameFromPath, resolveActiveFilePath } from "@/lib/file-binding";
 import type { CalcStore } from "@/lib/store";
 
 export type Snapshot = {
@@ -59,13 +60,12 @@ export function parseSnapshot(text: string): Snapshot {
   return parsed as Snapshot;
 }
 
-function basenameFromPath(filePath: string): string {
-  return filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
-}
-
 export async function saveProject(store: CalcStore): Promise<void> {
-  const existingPath = store.activeFilePath;
-  if (existingPath && existingPath.trim().length > 0) {
+  const existingPath = resolveActiveFilePath(store);
+  if (existingPath) {
+    if (!store.activeFilePath?.trim()) {
+      store.setActiveFilePath(existingPath);
+    }
     // Overwrite existing file directly (no dialog)
     const snapshot: Snapshot = {
       version: 1,

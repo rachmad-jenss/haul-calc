@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { temporal } from "zundo";
+import { normalizePersistedFileBinding } from "@/lib/file-binding";
 import type {
   CesaResult,
   CostComparison,
@@ -369,6 +370,15 @@ export const useCalcStore = create<CalcStore>()(
         boqGeometry: state.boqGeometry,
         isProjectDirty: state.isProjectDirty,
       }),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) return;
+        const apply = () => {
+          const state = useCalcStore.getState();
+          const patch = normalizePersistedFileBinding(state);
+          if (patch) useCalcStore.setState(patch);
+        };
+        queueMicrotask(apply);
+      },
     },
   ),
     {
