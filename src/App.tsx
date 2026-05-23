@@ -19,6 +19,7 @@ import {
   Redo2,
 } from "lucide-react";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
@@ -44,12 +45,15 @@ let closeGuardUnlisten: (() => void) | undefined;
 
 export default function App() {
   useAutoUpdate();
-  const { canUndo, canRedo, undo, redo } = useStore(useCalcStore.temporal, (s) => ({
-    canUndo: s.pastStates.length > 0,
-    canRedo: s.futureStates.length > 0,
-    undo: s.undo,
-    redo: s.redo,
-  }));
+  const { canUndo, canRedo, undo, redo } = useStore(
+    useCalcStore.temporal,
+    useShallow((s) => ({
+      canUndo: s.pastStates.length > 0,
+      canRedo: s.futureStates.length > 0,
+      undo: s.undo,
+      redo: s.redo,
+    })),
+  );
   /** Scoped to App lifecycle — reset on effect cleanup so a stuck dialog cannot block future closes. */
   const closeConfirmInFlightRef = useRef(false);
 
