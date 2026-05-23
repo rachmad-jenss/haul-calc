@@ -6,6 +6,8 @@ import type {
   CesaResult,
   CostComparison,
   CostScenario,
+  CustomMaterialEntry,
+  CustomMaterialRequest,
   DesignSummary,
   FleetEntry,
   PavementResult,
@@ -90,6 +92,9 @@ export interface CalcStore {
   // Custom vehicles
   customVehicles: CustomVehicle[];
 
+  // Custom pavement materials
+  customMaterials: CustomMaterialEntry[];
+
   // File
   activeFileName: string | null;
   activeFilePath: string | null;
@@ -117,6 +122,8 @@ export interface CalcStore {
   setFleet: (fleet: FleetEntry[]) => void;
   addCustomVehicle: (v: Omit<CustomVehicle, "id">) => void;
   removeCustomVehicle: (id: string) => void;
+  addCustomMaterial: (m: CustomMaterialRequest) => void;
+  removeCustomMaterial: (id: string) => void;
   setDesignLifeYears: (years: number) => void;
   setWorkingDaysPerYear: (days: number) => void;
   setCesaResult: (result: CesaResult, stub: boolean, stubMessage?: string) => void;
@@ -194,6 +201,7 @@ export const useCalcStore = create<CalcStore>()(
       lccaResult: null,
 
       customVehicles: [],
+      customMaterials: [],
 
       projectName: "Pit South — Main Haul",
       authorName: "",
@@ -231,6 +239,7 @@ export const useCalcStore = create<CalcStore>()(
         lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
         lccaResult: null,
         customVehicles: [],
+        customMaterials: [],
         projectName: "Pit South — Main Haul",
         authorName: "",
         reportSummary: null,
@@ -253,6 +262,29 @@ export const useCalcStore = create<CalcStore>()(
           fleet: s.fleet.filter((f) => f.vehicle_id !== id),
           cesaResult: null,
           cesaDirty: true,
+          reportSummary: null,
+        })),
+      addCustomMaterial: (m) =>
+        set((s) => ({
+          customMaterials: [
+            ...s.customMaterials,
+            {
+              ...m,
+              id: "mat-" + crypto.randomUUID(),
+              cbr_percent: m.cbr_percent ?? null,
+              poisson_ratio: m.poisson_ratio ?? 0.35,
+              layer_coefficient: m.layer_coefficient ?? null,
+              thickness_mm: m.thickness_mm ?? null,
+              description: m.description ?? "",
+            },
+          ],
+          pavementDirty: true,
+          reportSummary: null,
+        })),
+      removeCustomMaterial: (id) =>
+        set((s) => ({
+          customMaterials: s.customMaterials.filter((c) => c.id !== id),
+          pavementDirty: true,
           reportSummary: null,
         })),
       setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null }),
@@ -359,6 +391,7 @@ export const useCalcStore = create<CalcStore>()(
         lccaInputs: state.lccaInputs,
         lccaResult: state.lccaResult,
         customVehicles: state.customVehicles,
+        customMaterials: state.customMaterials,
         projectName: state.projectName,
         authorName: state.authorName,
         reportSummary: state.reportSummary,
@@ -393,6 +426,7 @@ export const useCalcStore = create<CalcStore>()(
         trhCategory: state.trhCategory,
         costScenarios: state.costScenarios,
         customVehicles: state.customVehicles,
+        customMaterials: state.customMaterials,
         projectName: state.projectName,
         authorName: state.authorName,
         // Include results + dirty flags so undo restores a consistent snapshot
@@ -423,6 +457,7 @@ useCalcStore.subscribe((state, prevState) => {
     "projectName",
     "authorName",
     "customVehicles",
+    "customMaterials",
     "lccaInputs",
     "boqGeometry",
   ] as const;

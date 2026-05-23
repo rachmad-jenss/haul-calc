@@ -111,6 +111,18 @@ const snapshotCustomVehicleSchema = z.object({
   axles: z.number(),
 });
 
+const snapshotCustomMaterialSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  material_type: materialTypeSchema,
+  elastic_modulus_mpa: z.number(),
+  cbr_percent: z.number().nullable(),
+  poisson_ratio: z.number(),
+  layer_coefficient: z.number().nullable(),
+  thickness_mm: z.number().nullable(),
+  description: z.string(),
+});
+
 /** Validates `.hcalc` JSON before loading into the store. */
 export const snapshotSchema = z.object({
   version: z.number().finite(),
@@ -119,6 +131,7 @@ export const snapshotSchema = z.object({
   designLifeYears: z.number().finite(),
   workingDaysPerYear: z.number().finite().optional(),
   customVehicles: z.array(snapshotCustomVehicleSchema).optional(),
+  customMaterials: z.array(snapshotCustomMaterialSchema).optional(),
   cesaResult: z.unknown().nullable().optional(),
   subgradeCbr: z.number().finite().optional(),
   coverages: z.number().finite().optional(),
