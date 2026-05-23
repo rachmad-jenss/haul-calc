@@ -6,7 +6,7 @@ import { firstError, snapshotSchema } from "@/lib/schemas";
 import type { CalcStore } from "@/lib/store";
 import { useCalcStore } from "@/lib/store";
 
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 export type Snapshot = {
   version: number;
@@ -15,6 +15,7 @@ export type Snapshot = {
   designLifeYears: CalcStore["designLifeYears"];
   workingDaysPerYear?: CalcStore["workingDaysPerYear"];
   customVehicles?: CalcStore["customVehicles"];
+  customMaterials?: CalcStore["customMaterials"];
   cesaResult: CalcStore["cesaResult"];
   subgradeCbr: CalcStore["subgradeCbr"];
   coverages: CalcStore["coverages"];
@@ -45,6 +46,7 @@ export function snapshotFromStore(store: CalcStore): Snapshot {
     designLifeYears: store.designLifeYears,
     workingDaysPerYear: store.workingDaysPerYear,
     customVehicles: store.customVehicles,
+    customMaterials: store.customMaterials,
     cesaResult: store.cesaResult,
     subgradeCbr: store.subgradeCbr,
     coverages: store.coverages,
@@ -83,11 +85,35 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
     authorName: snap.authorName ?? "",
     reportSummary: snap.reportSummary ?? null,
   };
+  if (version >= 3) {
+    return {
+      ...base,
+      workingDaysPerYear: snap.workingDaysPerYear ?? 250,
+      customVehicles: snap.customVehicles ?? [],
+      customMaterials: snap.customMaterials ?? [],
+      lccaInputs: snap.lccaInputs ?? {
+        discountRate: 0.1,
+        analysisPeriodYears: 20,
+        scenarios: [],
+      },
+      lccaResult: snap.lccaResult ?? null,
+      boqGeometry: snap.boqGeometry ?? {
+        roadLengthKm: 1.0,
+        roadWidthM: 8.0,
+        shoulderWidthM: 1.5,
+      },
+      unitSystem: snap.unitSystem ?? "SI",
+      cesaDirty: snap.cesaDirty ?? false,
+      pavementDirty: snap.pavementDirty ?? false,
+      economicsDirty: snap.economicsDirty ?? false,
+    };
+  }
   if (version >= 2) {
     return {
       ...base,
       workingDaysPerYear: snap.workingDaysPerYear ?? 250,
       customVehicles: snap.customVehicles ?? [],
+      customMaterials: [],
       lccaInputs: snap.lccaInputs ?? {
         discountRate: 0.1,
         analysisPeriodYears: 20,
@@ -109,6 +135,7 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
     ...base,
     workingDaysPerYear: 250,
     customVehicles: [],
+    customMaterials: [],
     lccaInputs: { discountRate: 0.1, analysisPeriodYears: 20, scenarios: [] },
     lccaResult: null,
     boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
