@@ -41,7 +41,7 @@ test.describe("Compare page workspace isolation (DAS-140)", () => {
     });
     await expect(page.getByText(/read-only comparison/i)).toBeVisible();
     await expect(page.getByText(/Save \(Ctrl\+S\) still applies to/i)).toContainText("audit-project.hcalc");
-    await expect(page.getByText(/does not change your active project/i)).toBeVisible();
+    await expect(page.getByText(/do not change your active project/i)).toBeVisible();
   });
 
   test("banner explains no bound project when path is empty", async ({ page }) => {
