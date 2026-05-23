@@ -20,6 +20,7 @@ payload so the UI can render plausible output during development.
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
 import traceback
@@ -593,22 +594,207 @@ def _call_list_vehicles(_params: dict[str, Any]) -> Any:
     ]
 
 
+def _sensitivity_step_values(min_value: float, max_value: float, steps: int) -> list[float]:
+    n = max(3, min(20, int(steps)))
+    if n == 1:
+        return [min_value]
+    span = max_value - min_value
+    return [min_value + span * i / (n - 1) for i in range(n)]
+
+
+def _annual_cost_for_scenarios(road_scenarios: list[Any]) -> float:
+    from haulpave.economics.compare import compare_scenarios
+
+    result = compare_scenarios(road_scenarios)
+    return float(
+        sum(
+            sc.tire_cost_usd_per_year
+            + sc.fuel_cost_usd_per_year
+            + sc.maintenance_cost_usd_per_year
+            for sc in result.scenarios
+        )
+    )
+
+
+def _road_scenarios_at_sweep(
+    template: list[dict[str, Any]],
+    variable: str,
+    x: float,
+    *,
+    design_life_years: float,
+) -> list[Any]:
+    road: list[Any] = []
+    from haulpave.economics.compare import RoadScenario
+
+    for s in template:
+        trips = max(1, int(s.get("trips_per_day", 20)))
+        if variable == "trips_per_day":
+            trips = max(1, round(trips * x))
+        road.append(
+            RoadScenario(
+                name=s.get("name", "Scenario"),
+                surface=s.get("surface", "asphalt"),
+                thickness_mm=int(s.get("thickness_mm", 100)),
+                haul_distance_km=float(s.get("haul_distance_km", 5)),
+                trips_per_day=trips,
+            )
+        )
+    if variable == "design_life_years":
+        _ = design_life_years  # fleet traffic uses design_life from params in cost path only via trips
+    return road
+
+
+def _call_analyze_sensitivity_cost_total(params: dict[str, Any]) -> dict[str, Any]:
+    raw = params.get("cost_scenarios") or []
+    if not raw:
+        raise ValueError("cost_scenarios required for cost_total sensitivity")
+
+    variable = str(params.get("variable", "trips_per_day"))
+    min_value = float(params.get("min_value", 0.5))
+    max_value = float(params.get("max_value", 2.0))
+    steps = int(params.get("steps", 10))
+    design_life = float(params.get("design_life_years", 10))
+
+    xs = _sensitivity_step_values(min_value, max_value, steps)
+    perturbations: list[dict[str, float | None]] = []
+    for x in xs:
+        road = _road_scenarios_at_sweep(
+            raw, variable, x, design_life_years=design_life
+        )
+        perturbations.append({"x": x, "y": round(_annual_cost_for_scenarios(road))})
+
+    mid = xs[len(xs) // 2]
+    return {
+        "variable": variable,
+        "baseline": {
+            "subgrade_cbr": float(params.get("subgrade_cbr", 8.0)),
+            "design_coverages": float(params.get("design_coverages", 1_050_000)),
+            "design_life_years": design_life,
+            "trips_per_day": float(mid if variable == "trips_per_day" else 1.0),
+        },
+        "perturbations": perturbations,
+        "confidence": "medium",
+    }
+
+
+def _call_analyze_sensitivity_cesa(params: dict[str, Any]) -> dict[str, Any]:
+    from haulpave.traffic.cesa import compute_cesa
+
+    variable = str(params.get("variable", "design_life_years"))
+    if variable not in ("design_life_years", "trips_per_day"):
+        raise ValueError(f"CESA sensitivity does not support variable: {variable}")
+
+    min_v = float(params.get("min_value", 5.0))
+    max_v = float(params.get("max_value", 25.0))
+    steps = int(params.get("steps", 10))
+    xs = _sensitivity_step_values(min_v, max_v, steps)
+    base_traffic = _build_traffic(params)
+
+    perturbations: list[dict[str, float | None]] = []
+    for x in xs:
+        if variable == "design_life_years":
+            traffic = base_traffic.model_copy(update={"design_life_years": max(1, int(round(x)))})
+        else:
+            fleet = []
+            for fu in base_traffic.fleet:
+                fleet.append(
+                    fu.model_copy(
+                        update={"trips_per_day": max(1, round(fu.trips_per_day * x))}
+                    )
+                )
+            traffic = base_traffic.model_copy(update={"fleet": tuple(fleet)})
+        perturbations.append({"x": x, "y": round(compute_cesa(traffic).total_cesa)})
+
+    return {
+        "variable": variable,
+        "baseline": {
+            "subgrade_cbr": float(params.get("subgrade_cbr", 8.0)),
+            "design_coverages": float(params.get("design_coverages", 1_050_000)),
+            "design_life_years": float(params.get("design_life_years", 10)),
+            "trips_per_day": 1.0,
+        },
+        "perturbations": perturbations,
+        "confidence": "medium",
+    }
+
+
 def _call_analyze_sensitivity(params: dict[str, Any]) -> Any:
-    from haulpave.economics.sensitivity import SensitivityInput, analyze_sensitivity
+    metric = str(params.get("metric", "total_thickness_mm"))
+    raw_cost = params.get("cost_scenarios")
+
+    if metric == "cost_total":
+        return _call_analyze_sensitivity_cost_total(params)
+    if metric == "cesa":
+        return _call_analyze_sensitivity_cesa(params)
+
+    try:
+        from haulpave.economics.sensitivity import SensitivityInput, analyze_sensitivity
+    except ImportError:
+        return _call_analyze_sensitivity_compat(params)
 
     traffic = _build_traffic(params)
-    sens_input = SensitivityInput(
-        traffic=traffic,
-        variable=params.get("variable", "subgrade_cbr"),
-        min_value=float(params.get("min_value", 2.0)),
-        max_value=float(params.get("max_value", 20.0)),
-        steps=int(params.get("steps", 10)),
-        metric=params.get("metric", "total_thickness_mm"),
-        subgrade_cbr=float(params.get("subgrade_cbr", 8.0)),
-        design_coverages=float(params.get("design_coverages", 1_050_000)),
-    )
+    sens_kwargs: dict[str, Any] = {
+        "traffic": traffic,
+        "variable": params.get("variable", "subgrade_cbr"),
+        "min_value": float(params.get("min_value", 2.0)),
+        "max_value": float(params.get("max_value", 20.0)),
+        "steps": int(params.get("steps", 10)),
+        "metric": metric,
+        "subgrade_cbr": float(params.get("subgrade_cbr", 8.0)),
+        "design_coverages": float(params.get("design_coverages", 1_050_000)),
+    }
+    if raw_cost is not None:
+        sens_kwargs["cost_scenarios"] = raw_cost
+
+    sig = inspect.signature(SensitivityInput)
+    filtered = {k: v for k, v in sens_kwargs.items() if k in sig.parameters}
+    sens_input = SensitivityInput(**filtered)
     result = analyze_sensitivity(sens_input)
     return _serialize(result)
+
+
+def _call_analyze_sensitivity_compat(params: dict[str, Any]) -> dict[str, Any]:
+    """Fallback when haulpave.economics.sensitivity is unavailable (v0.5.x)."""
+    from haulpave.pavement import design_pavement, load_curve_data
+    from haulpave.utils.interpolation import interpolate_thickness
+
+    variable = str(params.get("variable", "subgrade_cbr"))
+    if variable == "trips_per_day":
+        raise ValueError("trips_per_day sensitivity requires metric cost_total or economics.sensitivity")
+
+    traffic = _build_traffic(params)
+    cbr = float(params.get("subgrade_cbr", 8.0))
+    coverages = float(params.get("design_coverages", 1_050_000))
+    min_v = float(params.get("min_value", 2.0))
+    max_v = float(params.get("max_value", 20.0))
+    steps = int(params.get("steps", 10))
+    xs = _sensitivity_step_values(min_v, max_v, steps)
+    curve_data = load_curve_data("usace_cbr_v1")
+
+    perturbations: list[dict[str, float | None]] = []
+    for x in xs:
+        if variable == "subgrade_cbr":
+            thickness, _, _ = interpolate_thickness(curve_data, cbr=x, coverages=coverages)
+        elif variable == "design_coverages":
+            thickness, _, _ = interpolate_thickness(curve_data, cbr=cbr, coverages=x)
+        elif variable == "design_life_years":
+            modified = traffic.model_copy(update={"design_life_years": max(1, int(round(x)))})
+            thickness = design_pavement(modified, cbr).required_thickness_mm
+        else:
+            raise ValueError(f"Unsupported sensitivity variable: {variable}")
+        perturbations.append({"x": x, "y": round(thickness)})
+
+    return {
+        "variable": variable,
+        "baseline": {
+            "subgrade_cbr": cbr,
+            "design_coverages": coverages,
+            "design_life_years": float(params.get("design_life_years", 10)),
+            "trips_per_day": 1.0,
+        },
+        "perturbations": perturbations,
+        "confidence": "medium",
+    }
 
 
 def _call_material_library(_params: dict[str, Any]) -> Any:
