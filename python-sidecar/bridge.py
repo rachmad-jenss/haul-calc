@@ -337,21 +337,61 @@ def _get_usace_max_coverage() -> float:
     return _USACE_MAX_COVERAGE
 
 
+def _usace_digitized_max_coverage(curve_data: dict[str, Any]) -> float:
+    extrapolated = set(curve_data.get("extrapolated_coverage_levels", []))
+    digitized = [v for v in curve_data["coverage_levels"] if v not in extrapolated]
+    if digitized:
+        return float(max(digitized))
+    return float(max(curve_data["coverage_levels"]))
+
+
+def _usace_warning_message(
+    coverages: float,
+    *,
+    was_clamped: bool,
+    was_extrapolated: bool,
+    max_coverage: float,
+    digitized_max: float,
+) -> str | None:
+    if was_clamped:
+        return (
+            f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
+            f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
+        )
+    if was_extrapolated:
+        return (
+            f"Design coverages ({coverages:,.0f}) are in the extrapolated zone "
+            f"(beyond {digitized_max:,.0f}). Result carries medium confidence."
+        )
+    return None
+
+
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
-    from haulpave.pavement import cbr_thickness_from_coverages
+    import warnings
+
+    from haulpave.pavement import interpolate_thickness, load_curve_data
 
     cbr = float(params["subgrade_cbr"])
     coverages = float(params["design_coverages"])
+    curve_data = load_curve_data("usace_cbr_v1")
     max_coverage = _get_usace_max_coverage()
-    thickness = cbr_thickness_from_coverages(cbr, coverages, "usace_cbr_v1")
+    digitized_max = _usace_digitized_max_coverage(curve_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        thickness, was_clamped, was_extrapolated = interpolate_thickness(
+            curve_data, cbr=cbr, coverages=coverages
+        )
     t = round(thickness)
 
-    is_clamped = coverages > max_coverage
+    if was_clamped or was_extrapolated:
+        confidence = "medium"
+    else:
+        confidence = "high"
 
     result: dict[str, Any] = {
         "method": "USACE TM 5-822-12 CBR design curves",
         "subgrade_cbr": cbr,
-        "confidence": "medium" if is_clamped else "high",
+        "confidence": confidence,
         "layers": [
             {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
             {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
@@ -360,11 +400,15 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
         "total_thickness_mm": t,
     }
 
-    if is_clamped:
-        result["warning"] = (
-            f"Design coverages ({coverages:,.0f}) exceed the USACE CBR curve maximum "
-            f"({max_coverage:,.0f}). Thickness has been clamped to the curve boundary."
-        )
+    warning = _usace_warning_message(
+        coverages,
+        was_clamped=was_clamped,
+        was_extrapolated=was_extrapolated,
+        max_coverage=max_coverage,
+        digitized_max=digitized_max,
+    )
+    if warning:
+        result["warning"] = warning
 
     return result
 
@@ -449,42 +493,67 @@ def _call_compare_scenarios(params: dict[str, Any]) -> Any:
 def _call_compare_methods(params: dict[str, Any]) -> Any:
     """Compare CBR vs TRH14 in a single call — returns both results."""
     import warnings
+
+    from haulpave.pavement import load_curve_data
     from haulpave.pavement.compare import compare_methods
 
     traffic = _build_traffic(params)
     cbr = float(params.get("subgrade_cbr", 8.0))
-
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter("ignore", UserWarning)
         result = compare_methods(traffic, subgrade_cbr=cbr)
 
+    curve_data = load_curve_data("usace_cbr_v1")
+    max_coverage = _get_usace_max_coverage()
+    digitized_max = _usace_digitized_max_coverage(curve_data)
+    usace_cov = float(result.usace.total_coverages)
+
+    usace_confidence = (
+        "medium"
+        if result.usace.was_clamped or result.usace.was_extrapolated
+        else result.usace.confidence
+    )
     usace_result: dict[str, Any] = {
         "method": result.usace.method,
         "total_thickness_mm": round(result.usace.required_thickness_mm),
-        "total_coverages": round(result.usace.total_coverages),
+        "total_coverages": round(usace_cov),
         "total_cesa": result.usace.total_cesa,
-        "confidence": result.usace.confidence,
+        "confidence": usace_confidence,
     }
+    usace_warning = _usace_warning_message(
+        usace_cov,
+        was_clamped=result.usace.was_clamped,
+        was_extrapolated=result.usace.was_extrapolated,
+        max_coverage=max_coverage,
+        digitized_max=digitized_max,
+    )
+    if usace_warning:
+        usace_result["warning"] = usace_warning
+
+    trh_confidence = "medium" if result.trh14.was_clamped else result.trh14.confidence
     trh14_result: dict[str, Any] = {
         "method": result.trh14.method,
         "total_thickness_mm": round(result.trh14.total_thickness_mm),
         "total_coverages": round(result.trh14.total_coverages),
         "material_class": result.trh14.material_class,
-        "confidence": result.trh14.confidence,
+        "confidence": trh_confidence,
     }
-    warning = getattr(result.usace, "warning", None) or getattr(result, "warning", None)
-    if warning:
-        usace_result["warning"] = warning
-    trh_warning = getattr(result.trh14, "warning", None)
-    if trh_warning:
-        trh14_result["warning"] = trh_warning
+    if result.trh14.was_clamped:
+        trh14_result["warning"] = (
+            f"Design coverages ({result.trh14.total_coverages:,.0f}) exceed the TRH 14 catalog maximum. "
+            "Thickness has been clamped to the highest available catalog value."
+        )
+
+    compare_confidence = result.confidence
+    if result.usace.was_clamped or result.usace.was_extrapolated or result.trh14.was_clamped:
+        compare_confidence = "medium"
 
     return {
         "usace": usace_result,
         "trh14": trh14_result,
         "delta_mm": round(result.delta_mm),
         "subgrade_cbr": cbr,
-        "confidence": result.confidence,
+        "confidence": compare_confidence,
     }
 
 

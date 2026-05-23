@@ -40,19 +40,36 @@ const TAURI_MOCK = `(function () {
   };
   // CBR method (USACE): CBR=8%, 72,000 design coverages, ultra-heavy vehicles
   //   Total structure: ~750mm — typical for low-CBR + heavy mining traffic
-  var CBR = {
-    method: "CBR", subgrade_cbr: 8,
-    layers: [
-      { name: "Wearing course", thickness_mm: 150, cbr: null },
-      { name: "Base",           thickness_mm: 350, cbr: 80  },
-      { name: "Sub-base",       thickness_mm: 250, cbr: 30  },
-    ],
-    total_thickness_mm: 750,
-  };
+  function cbrResponse(params) {
+    var cov = params && params.design_coverages;
+    var base = {
+      method: "USACE TM 5-822-12 CBR design curves", subgrade_cbr: 8,
+      confidence: "high",
+      layers: [
+        { name: "Surface (asphalt)", thickness_mm: 105, cbr: null },
+        { name: "Base course",       thickness_mm: 345, cbr: 80  },
+        { name: "Sub-base",          thickness_mm: 300, cbr: 30  },
+      ],
+      total_thickness_mm: 750,
+    };
+    if (cov > 1000000) {
+      base.confidence = "medium";
+      base.warning =
+        "Design coverages (" + cov.toLocaleString() + ") exceed the USACE CBR curve maximum " +
+        "(1,000,000). Thickness has been clamped to the curve boundary.";
+    } else if (cov > 100000) {
+      base.confidence = "medium";
+      base.warning =
+        "Design coverages (" + cov.toLocaleString() + ") are in the extrapolated zone " +
+        "(beyond 100,000). Result carries medium confidence.";
+    }
+    return base;
+  }
   // TRH14 Category B: 1,000,000–30,000,000 design passes — 72,000 coverages
   //   Typical B structure: 100mm WC + 300-400mm base + 250-350mm sub-base
   var TRH14 = {
-    method: "TRH14", category: "B",
+    method: "TRH 14 (CSRA 1985) design catalog", category: "B",
+    confidence: "medium",
     layers: [
       { name: "Wearing course", thickness_mm: 100, cbr: null },
       { name: "Base",           thickness_mm: 380, cbr: 80  },
@@ -60,6 +77,16 @@ const TAURI_MOCK = `(function () {
     ],
     total_thickness_mm: 800,
   };
+  function trhResponse(params) {
+    var cov = params && params.design_coverages;
+    var base = Object.assign({}, TRH14);
+    if (cov > 1000000) {
+      base.warning =
+        "Design coverages (" + cov.toLocaleString() + ") exceed the TRH 14 catalog maximum. " +
+        "Thickness has been clamped to the highest available catalog value.";
+    }
+    return base;
+  }
   // Economics: 200 trips/d, 5 km haul, 10 trucks
   //   Truck-km/day = 200 × 10 km = 2,000 truck-km
   //   Fuel: asphalt 0.85 L/km × $1.20/L × 2000 × 365 ≈ $744k/yr
@@ -73,6 +100,27 @@ const TAURI_MOCK = `(function () {
       { name: "Gravel 250 mm",  tire_cost_usd_per_year: 960000, fuel_cost_usd_per_year: 963000, maintenance_cost_usd_per_year: 340000 },
     ],
   };
+  function compareMethodsResponse() {
+    return {
+      usace: {
+        method: "USACE TM 5-822-12 CBR design curves + AASHTO 4th-power LEF",
+        total_thickness_mm: 750,
+        total_coverages: 72000,
+        total_cesa: 12480000,
+        confidence: "high",
+      },
+      trh14: {
+        method: "TRH 14 (CSRA 1985) design catalog",
+        total_thickness_mm: 800,
+        total_coverages: 72000,
+        material_class: "G5",
+        confidence: "medium",
+      },
+      delta_mm: 50,
+      subgrade_cbr: 8,
+      confidence: "high",
+    };
+  }
   var SUMMARY = {
     title: "Haul Road Design Summary",
     generated_at: new Date().toISOString(),
@@ -89,9 +137,10 @@ const TAURI_MOCK = `(function () {
   var DISPATCH = {
     list_vehicles:    function() { return env(VEHICLES);    },
     compute_cesa:     function() { return env(CESA);        },
-    cbr_thickness:    function() { return env(CBR);         },
-    trh14_thickness:  function() { return env(TRH14);       },
+    cbr_thickness:    function(p) { return env(cbrResponse(p)); },
+    trh14_thickness:  function(p) { return env(trhResponse(p)); },
     compare_scenarios:function() { return env(COMPARISON);  },
+    compare_methods:  function() { return env(compareMethodsResponse()); },
     build_summary:    function() { return env(SUMMARY);     },
     get_version:      function() { return env(VERSION);     },
     health_check:     function() { return env(HEALTH);      },
@@ -119,7 +168,7 @@ const TAURI_MOCK = `(function () {
           if (!handler) {
             return reject({ code: "UNKNOWN_METHOD", message: "Unknown method: " + (args && args.method), stub: true });
           }
-          resolve(handler());
+          resolve(handler(args && args.params));
         }, 30);
       });
     },

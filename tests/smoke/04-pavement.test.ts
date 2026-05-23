@@ -39,13 +39,27 @@ test.describe("Pavement Design page", () => {
     await page.screenshot({ path: SS("04-pavement-trh-tab") });
   });
 
+  test("CBR tab shows extrapolation warning for high coverages", async ({ page }) => {
+    await page.getByLabel(/design coverages/i).fill("500000");
+    await page.getByRole("button", { name: /compute/i }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole("tab", { name: /cbr/i }).click();
+    await expect(page.getByText(/extrapolated zone/i)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("TRH tab shows warning when coverages exceed catalog", async ({ page }) => {
+    await page.getByLabel(/design coverages/i).fill("2000000");
+    await page.getByRole("button", { name: /compute/i }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole("tab", { name: /trh/i }).click();
+    await expect(page.getByText(/TRH 14 catalog maximum/i)).toBeVisible({ timeout: 10_000 });
+  });
+
   test("Compare tab shows side-by-side comparison", async ({ page }) => {
     await page.getByRole("tab", { name: /compare/i }).click();
     await page.getByRole("button", { name: /run comparison/i }).click();
-    await page.waitForTimeout(3000);
-    const text = await page.locator("main").textContent();
-    expect(text?.toLowerCase()).toMatch(/usace|trh 14|recommended/i);
-    expect(text?.toLowerCase()).toMatch(/mm/);
+    await expect(page.getByText(/Δ thickness|delta/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("main")).toContainText(/mm/);
     await page.screenshot({ path: SS("04-pavement-compare-tab") });
   });
 
