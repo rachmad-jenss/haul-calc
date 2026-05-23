@@ -1094,7 +1094,7 @@ _DISPATCH: dict[str, Callable[[dict[str, Any]], Any]] = (
 )
 
 
-BRIDGE_VERSION = "1.2.3"
+BRIDGE_VERSION = "1.4.0"
 
 
 def _dispatch(method: str, params: dict[str, Any]) -> tuple[Any, bool]:
