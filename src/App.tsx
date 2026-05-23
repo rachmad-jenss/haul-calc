@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -37,12 +37,12 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
-/** Prevents parallel unsaved-close dialogs when the user double-clicks X. */
-let closeConfirmInFlight = false;
 let closeGuardUnlisten: (() => void) | undefined;
 
 export default function App() {
   useAutoUpdate();
+  /** Scoped to App lifecycle — reset on effect cleanup so a stuck dialog cannot block future closes. */
+  const closeConfirmInFlightRef = useRef(false);
 
   const store = useCalcStore();
   const { activeFileName, activeFilePath, recentFiles, theme, setTheme, isProjectDirty, resetProject } =
@@ -166,6 +166,7 @@ export default function App() {
     if (!isProjectDirty) {
       closeGuardUnlisten?.();
       closeGuardUnlisten = undefined;
+      closeConfirmInFlightRef.current = false;
       return;
     }
 
@@ -176,8 +177,8 @@ export default function App() {
         const win = getCurrentWindow();
         const unlisten = await win.onCloseRequested((event) => {
           event.preventDefault();
-          if (closeConfirmInFlight) return;
-          closeConfirmInFlight = true;
+          if (closeConfirmInFlightRef.current) return;
+          closeConfirmInFlightRef.current = true;
 
           void (async () => {
             let settled = false;
@@ -212,7 +213,7 @@ export default function App() {
               console.error("Close confirmation failed:", err);
               await forceExit();
             } finally {
-              closeConfirmInFlight = false;
+              closeConfirmInFlightRef.current = false;
             }
           })();
         });
@@ -229,6 +230,7 @@ export default function App() {
 
     return () => {
       cancelled = true;
+      closeConfirmInFlightRef.current = false;
       closeGuardUnlisten?.();
       closeGuardUnlisten = undefined;
     };

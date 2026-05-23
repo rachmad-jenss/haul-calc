@@ -412,7 +412,8 @@ export const useCalcStore = create<CalcStore>()(
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as object),
-        isProjectDirty: false,
+        // Never clobber edits that marked the project dirty before rehydrate finishes.
+        isProjectDirty: current.isProjectDirty,
       }),
       partialize: (state) => ({
         fleet: state.fleet,
@@ -456,6 +457,7 @@ export const useCalcStore = create<CalcStore>()(
               isProjectDirty: state.isProjectDirty,
             });
           });
+          trackProjectDirty = true;
         };
         queueMicrotask(apply);
       },
