@@ -134,6 +134,30 @@ const TAURI_MOCK = `(function () {
     return { data: data, stub: true, stub_message: "Stub data — Phase 0" };
   }
 
+  function sensitivityResponse(p) {
+    var metric = p && p.metric;
+    var variable = p && p.variable;
+    var min = Number(p && p.min_value);
+    var max = Number(p && p.max_value);
+    var steps = Math.max(3, Math.min(20, Number(p && p.steps) || 10));
+    var perturbations = [];
+    for (var i = 0; i < steps; i++) {
+      var t = steps === 1 ? 0 : i / (steps - 1);
+      var x = min + t * (max - min);
+      var y;
+      if (metric === "cost_total" && variable === "trips_per_day") {
+        y = 1484000 * x;
+      } else if (metric === "total_thickness_mm") {
+        y = 720 + Math.round(x);
+      } else if (metric === "cesa") {
+        y = 12480000 + Math.round(x * 1000);
+      } else {
+        y = null;
+      }
+      perturbations.push({ x: x, y: y });
+    }
+    return env({ metric: metric, variable: variable, perturbations: perturbations });
+  }
   var DISPATCH = {
     list_vehicles:    function() { return env(VEHICLES);    },
     compute_cesa:     function() { return env(CESA);        },
@@ -141,6 +165,7 @@ const TAURI_MOCK = `(function () {
     trh14_thickness:  function(p) { return env(trhResponse(p)); },
     compare_scenarios:function() { return env(COMPARISON);  },
     compare_methods:  function() { return env(compareMethodsResponse()); },
+    analyze_sensitivity: function(p) { return sensitivityResponse(p); },
     build_summary:    function() { return env(SUMMARY);     },
     get_version:      function() { return env(VERSION);     },
     health_check:     function() { return env(HEALTH);      },
@@ -153,7 +178,19 @@ const TAURI_MOCK = `(function () {
           if (cmd === "get_sidecar_status") { return resolve("running"); }
           if (cmd === "restart_sidecar")    { return resolve(undefined); }
           if (cmd === "plugin:dialog|save") { return resolve("mocked_file.csv"); }
+          if (cmd === "plugin:dialog|open") {
+            if (window.__HAULCALC_OPEN_JSON__) {
+              return resolve("C:/mock/open.hcalc");
+            }
+            return resolve(null);
+          }
           if (cmd === "plugin:fs|write_text_file") { return resolve(undefined); }
+          if (cmd === "plugin:fs|read_text_file") {
+            if (window.__HAULCALC_OPEN_JSON__) {
+              return resolve(window.__HAULCALC_OPEN_JSON__);
+            }
+            return reject({ code: "ENOENT", message: "No test file", stub: false });
+          }
           if (cmd === "plugin:dialog|message") {
             var buttons = args && args.buttons;
             if (typeof buttons === "object" && "ok" in buttons) {
