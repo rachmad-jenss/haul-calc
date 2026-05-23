@@ -223,6 +223,7 @@ export default function PavementDesign() {
               </TabsContent>
               <TabsContent value="trh14" className="space-y-3">
                 {trhResult?.stub ? <StubBanner message={trhResult.stubMessage} /> : null}
+                {trhResult?.warning ? <WarningBanner message={trhResult.warning} /> : null}
                 <PavementChart result={trhResult ?? undefined} />
               </TabsContent>
               <TabsContent value="compare" className="space-y-3">
