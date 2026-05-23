@@ -17,7 +17,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
-import { NumField } from "@/components/FormFields";
+import { FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { computeLcca } from "@/lib/lcca";
-import { compareRequestSchema, firstError } from "@/lib/schemas";
+import { compareRequestSchema, fieldErrorsFromZod, firstError } from "@/lib/schemas";
+import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
@@ -69,10 +70,33 @@ function OpexTab() {
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showData, setShowData] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const update = (id: string, patch: Partial<CostScenario>) =>
+  const scenarioIndex = (id: string) => costScenarios.findIndex((s) => s._id === id);
+  const scenarioFieldError = (id: string, field: string) => {
+    const idx = scenarioIndex(id);
+    return idx >= 0 ? fieldErrors[`${idx}.${field}`] : undefined;
+  };
+
+  const update = (id: string, patch: Partial<CostScenario>) => {
+    const idx = scenarioIndex(id);
+    if (idx >= 0) {
+      const keys = Object.keys(patch).map((f) => `${idx}.${f}`);
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const key of keys) {
+          if (key in next) {
+            delete next[key];
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
     setCostScenarios(costScenarios.map((s) => (s._id === id ? { ...s, ...patch } : s)));
+  };
 
   const add = () =>
     setCostScenarios([
@@ -92,9 +116,11 @@ function OpexTab() {
   const compute = async () => {
     const parsed = compareRequestSchema.safeParse(costScenarios);
     if (!parsed.success) {
+      setFieldErrors(fieldErrorsFromZod(parsed.error));
       toast.error(firstError(parsed.error));
       return;
     }
+    setFieldErrors({});
     setRunning(true);
     try {
       const res = await haulPave.compareScenarios(parsed.data);
@@ -195,11 +221,15 @@ function OpexTab() {
             {costScenarios.map((s) => (
               <div key={s._id} className="rounded border p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <Input
-                    value={s.name}
-                    onChange={(e) => update(s._id, { name: e.target.value })}
-                    className="max-w-[240px]"
-                  />
+                  <div className="max-w-[240px] space-y-1">
+                    <Input
+                      value={s.name}
+                      aria-invalid={scenarioFieldError(s._id, "name") ? true : undefined}
+                      className={cn(scenarioFieldError(s._id, "name") && "border-destructive")}
+                      onChange={(e) => update(s._id, { name: e.target.value })}
+                    />
+                    <FieldError message={scenarioFieldError(s._id, "name")} />
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -217,26 +247,34 @@ function OpexTab() {
                       onChange={(e) =>
                         update(s._id, { surface: e.target.value as CostScenario["surface"] })
                       }
-                      className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      className={cn(
+                        "h-9 w-full rounded-md border border-input bg-background px-3 text-sm",
+                        scenarioFieldError(s._id, "surface") && "border-destructive",
+                      )}
+                      aria-invalid={scenarioFieldError(s._id, "surface") ? true : undefined}
                     >
                       <option value="asphalt">Asphalt</option>
                       <option value="gravel">Gravel</option>
                       <option value="concrete">Concrete</option>
                     </select>
+                    <FieldError message={scenarioFieldError(s._id, "surface")} />
                   </div>
                   <NumField
                     label="Thickness (mm)"
                     value={s.thickness_mm}
+                    error={scenarioFieldError(s._id, "thickness_mm")}
                     onChange={(v) => update(s._id, { thickness_mm: v })}
                   />
                   <NumField
                     label="Haul distance (km)"
                     value={s.haul_distance_km}
+                    error={scenarioFieldError(s._id, "haul_distance_km")}
                     onChange={(v) => update(s._id, { haul_distance_km: v })}
                   />
                   <NumField
                     label="Trips/day"
                     value={s.trips_per_day}
+                    error={scenarioFieldError(s._id, "trips_per_day")}
                     onChange={(v) => update(s._id, { trips_per_day: v })}
                   />
                 </div>
