@@ -155,29 +155,62 @@ export default function App() {
     }
   }, [activeFileName, hasBoundFile, isProjectDirty]);
 
-  // Intercept window close to prompt if dirty
+  // Intercept window close only when the project has unsaved edits.
   useEffect(() => {
-    let unlisten: (() => void) | null = null;
-    
-    try {
-      getCurrentWindow().onCloseRequested(async (event) => {
-        if (useCalcStore.getState().isProjectDirty) {
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const win = getCurrentWindow();
+        // Sync handler only — an `async` listener makes Tauri wait for the promise and can block
+        // WM_CLOSE even when the project is clean (X appears to do nothing).
+        unlisten = await win.onCloseRequested((event) => {
+          const dirty = useCalcStore.getState().isProjectDirty;
+          if (!dirty) return;
+
           event.preventDefault();
-          const confirmed = await ask("You have unsaved changes. Are you sure you want to exit without saving?", {
-            title: "Unsaved Changes",
-            kind: "warning",
-          });
-          if (confirmed) {
-            getCurrentWindow().destroy();
-          }
+          void (async () => {
+            const failOpen = () => win.destroy();
+            try {
+              const confirmed = await new Promise<boolean>((resolve, reject) => {
+                const timeoutId = window.setTimeout(
+                  () => reject(new Error("close dialog timeout")),
+                  5000,
+                );
+                void ask(
+                  "You have unsaved changes. Are you sure you want to exit without saving?",
+                  { title: "Unsaved Changes", kind: "warning" },
+                ).then(
+                  (value) => {
+                    window.clearTimeout(timeoutId);
+                    resolve(value);
+                  },
+                  (err) => {
+                    window.clearTimeout(timeoutId);
+                    reject(err);
+                  },
+                );
+              });
+              if (confirmed) await failOpen();
+            } catch (err) {
+              console.error("Close confirmation failed:", err);
+              await failOpen();
+            }
+          })();
+        });
+        if (cancelled) {
+          unlisten();
+          unlisten = undefined;
         }
-      }).then((fn) => { unlisten = fn; }).catch(console.error);
-    } catch {
-      // Ignore if not in Tauri context
-    }
+      } catch {
+        // Not in a Tauri context (browser / tests)
+      }
+    })();
 
     return () => {
-      if (unlisten) unlisten();
+      cancelled = true;
+      unlisten?.();
     };
   }, []);
 

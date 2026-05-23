@@ -221,7 +221,9 @@ export const useCalcStore = create<CalcStore>()(
 
       isProjectDirty: false,
       setProjectDirty: (isProjectDirty) => set({ isProjectDirty }),
-      resetProject: () => set({
+      resetProject: () => {
+        suppressProjectDirtyTracking = true;
+        set({
         fleet: DEFAULT_FLEET,
         designLifeYears: 10,
         workingDaysPerYear: 250,
@@ -248,7 +250,9 @@ export const useCalcStore = create<CalcStore>()(
         boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
         isProjectDirty: false,
         autoCheckUpdates: true,
-      }),
+        });
+        suppressProjectDirtyTracking = false;
+      },
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
       setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null }),
@@ -313,7 +317,11 @@ export const useCalcStore = create<CalcStore>()(
       setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
       setReportSummary: (result, stub, stubMessage) =>
         set({ reportSummary: { ...result, stub, stubMessage } }),
-      loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+      loadFromSnapshot: (data) => {
+        suppressProjectDirtyTracking = true;
+        set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false });
+        suppressProjectDirtyTracking = false;
+      },
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       setActiveFilePath: (activeFilePath) => set({ activeFilePath }),
       pushRecentFile: (filePath) =>
@@ -327,7 +335,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -371,6 +379,9 @@ export const useCalcStore = create<CalcStore>()(
             }));
           }
         }
+        if (fromVersion < 9) {
+          s.isProjectDirty = false;
+        }
         return s;
       },
       partialize: (state) => ({
@@ -402,14 +413,18 @@ export const useCalcStore = create<CalcStore>()(
         autoCheckUpdates: state.autoCheckUpdates,
         unitSystem: state.unitSystem,
         boqGeometry: state.boqGeometry,
-        isProjectDirty: state.isProjectDirty,
       }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) return;
         const apply = () => {
+          suppressProjectDirtyTracking = true;
           const state = useCalcStore.getState();
           const patch = normalizePersistedFileBinding(state);
-          if (patch) useCalcStore.setState(patch);
+          useCalcStore.setState({
+            ...(patch ?? {}),
+            isProjectDirty: false,
+          });
+          suppressProjectDirtyTracking = false;
         };
         queueMicrotask(apply);
       },
@@ -444,8 +459,14 @@ export const useCalcStore = create<CalcStore>()(
   ),
 );
 
+let trackProjectDirty = false;
+let suppressProjectDirtyTracking = false;
+useCalcStore.persist.onFinishHydration(() => {
+  trackProjectDirty = true;
+});
+
 useCalcStore.subscribe((state, prevState) => {
-  if (state.isProjectDirty) return;
+  if (!trackProjectDirty || suppressProjectDirtyTracking || state.isProjectDirty) return;
   const fields = [
     "fleet",
     "designLifeYears",
