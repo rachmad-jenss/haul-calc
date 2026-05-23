@@ -499,7 +499,10 @@ useCalcStore.persist.onFinishHydration(() => {
 
 // Undo/redo restores tracked fields without calling setters — subscribe marks dirty for those paths only.
 useCalcStore.subscribe((state, prevState) => {
-  if (!trackProjectDirty || suppressProjectDirtyTracking || state.isProjectDirty) return;
+  if (!trackProjectDirty || suppressProjectDirtyTracking) return;
+  // Respect undo/redo/save snapshots that explicitly set isProjectDirty.
+  if (state.isProjectDirty !== prevState.isProjectDirty) return;
+  if (state.isProjectDirty) return;
   const fields = [
     "fleet",
     "designLifeYears",

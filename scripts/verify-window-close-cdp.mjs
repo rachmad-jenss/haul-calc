@@ -16,10 +16,11 @@ if (!page.url().includes("/fleet")) {
   await page.evaluate(() => {
     window.location.hash = "#/fleet";
   });
-  await page.waitForTimeout(800);
+  await page.waitForURL(/#\/fleet/);
 }
 
 const designLife = page.locator("#design-life");
+await designLife.waitFor();
 const currentValue = await designLife.inputValue();
 const nextValue = currentValue === "13" ? "12" : "13";
 await designLife.click();
