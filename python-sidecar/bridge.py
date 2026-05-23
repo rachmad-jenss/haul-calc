@@ -300,6 +300,23 @@ def _build_traffic(params: dict[str, Any]) -> Any:
     )
 
 
+def _capture_user_warnings(callback: Any) -> tuple[Any, list[str]]:
+    """Run *callback* and return (result, deduped UserWarning messages)."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        result = callback()
+    messages = list(
+        dict.fromkeys(
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, UserWarning)
+        )
+    )
+    return result, messages
+
+
 def _call_compute_cesa(params: dict[str, Any]) -> Any:
     from haulpave.traffic.cesa import compute_cesa
     from haulpave.traffic.coverages import compute_coverages
@@ -493,16 +510,14 @@ def _call_compare_scenarios(params: dict[str, Any]) -> Any:
 
 def _call_compare_methods(params: dict[str, Any]) -> Any:
     """Compare CBR vs TRH14 in a single call — returns both results."""
-    import warnings
-
     from haulpave.pavement import load_curve_data
     from haulpave.pavement.compare import compare_methods
 
     traffic = _build_traffic(params)
     cbr = float(params.get("subgrade_cbr", 8.0))
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        result = compare_methods(traffic, subgrade_cbr=cbr)
+    result, captured_warnings = _capture_user_warnings(
+        lambda: compare_methods(traffic, subgrade_cbr=cbr)
+    )
 
     curve_data = load_curve_data("usace_cbr_v1")
     max_coverage = _get_usace_max_coverage()
@@ -549,13 +564,16 @@ def _call_compare_methods(params: dict[str, Any]) -> Any:
     if result.usace.was_clamped or result.usace.was_extrapolated or result.trh14.was_clamped:
         compare_confidence = "medium"
 
-    return {
+    response: dict[str, Any] = {
         "usace": usace_result,
         "trh14": trh14_result,
         "delta_mm": round(result.delta_mm),
         "subgrade_cbr": cbr,
         "confidence": compare_confidence,
     }
+    if captured_warnings:
+        response["warnings"] = captured_warnings
+    return response
 
 
 def _call_design_pavement(params: dict[str, Any]) -> Any:
