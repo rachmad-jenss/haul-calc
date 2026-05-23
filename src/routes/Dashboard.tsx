@@ -193,9 +193,18 @@ export default function Dashboard() {
 }
 
 function DashboardNavCard({ to, children }: { to: string; children: ReactNode }) {
+  const label =
+    to === "/fleet"
+      ? "Open Fleet and Traffic"
+      : to === "/pavement"
+        ? "Open Pavement Design"
+        : to === "/economics"
+          ? "Open Economics"
+          : "Open Reports";
   return (
     <NavLink
       to={to}
+      aria-label={label}
       className="block rounded-lg outline-none transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="h-full border-transparent shadow-none hover:border-border">{children}</Card>
