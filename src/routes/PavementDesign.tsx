@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { WarningBanner } from "@/components/WarningBanner";
-import { NumField } from "@/components/FormFields";
+import { FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { customMaterialsToRpc } from "@/lib/custom-materials-rpc";
 import { haulPave } from "@/lib/haulpave-client";
-import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
+import { cbrRequestSchema, fieldErrorsFromZod, trh14RequestSchema } from "@/lib/schemas";
+import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import type {
   CallError,
@@ -48,6 +49,32 @@ export default function PavementDesign() {
   const [comparing, setComparing] = useState(false);
   const [showCustomMaterialModal, setShowCustomMaterialModal] = useState(false);
   const [catalogPrefill, setCatalogPrefill] = useState<MaterialTemplate | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateInputs = (): boolean => {
+    const errors: Record<string, string> = {};
+    const cbrParsed = cbrRequestSchema.safeParse({
+      subgrade_cbr: subgradeCbr,
+      design_coverages: coverages,
+    });
+    if (!cbrParsed.success) Object.assign(errors, fieldErrorsFromZod(cbrParsed.error));
+    const trhParsed = trh14RequestSchema.safeParse({
+      category: trhCategory,
+      design_coverages: coverages,
+    });
+    if (!trhParsed.success) {
+      for (const [k, v] of Object.entries(fieldErrorsFromZod(trhParsed.error))) {
+        if (!(k in errors)) errors[k] = v;
+      }
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      const summary = Object.values(errors)[0];
+      toast.error(summary ?? "Validation error");
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     setCompareResult(null);
@@ -61,22 +88,17 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
+    if (!validateInputs()) return;
     const cbrParsed = cbrRequestSchema.safeParse({
       subgrade_cbr: subgradeCbr,
       design_coverages: coverages,
     });
-    if (!cbrParsed.success) {
-      toast.error(firstError(cbrParsed.error));
-      return;
-    }
+    if (!cbrParsed.success) return;
     const trhParsed = trh14RequestSchema.safeParse({
       category: trhCategory,
       design_coverages: coverages,
     });
-    if (!trhParsed.success) {
-      toast.error(firstError(trhParsed.error));
-      return;
-    }
+    if (!trhParsed.success) return;
     const materialsRpc = customMaterialsToRpc(customMaterials);
     const materialParams = materialsRpc ? { custom_materials: materialsRpc } : {};
     setComparing(true);
@@ -130,22 +152,17 @@ export default function PavementDesign() {
   };
 
   const compute = async () => {
+    if (!validateInputs()) return;
     const cbrParsed = cbrRequestSchema.safeParse({
       subgrade_cbr: subgradeCbr,
       design_coverages: coverages,
     });
-    if (!cbrParsed.success) {
-      toast.error(firstError(cbrParsed.error));
-      return;
-    }
+    if (!cbrParsed.success) return;
     const trhParsed = trh14RequestSchema.safeParse({
       category: trhCategory,
       design_coverages: coverages,
     });
-    if (!trhParsed.success) {
-      toast.error(firstError(trhParsed.error));
-      return;
-    }
+    if (!trhParsed.success) return;
     const materialsRpc = customMaterialsToRpc(customMaterials);
     const materialParams = materialsRpc ? { custom_materials: materialsRpc } : {};
 
@@ -189,7 +206,16 @@ export default function PavementDesign() {
                 id="subgrade-cbr"
                 label="Subgrade CBR (%)"
                 value={subgradeCbr}
-                onChange={setSubgradeCbr}
+                error={fieldErrors.subgrade_cbr}
+                onChange={(v) => {
+                  setFieldErrors((prev) => {
+                    if (!("subgrade_cbr" in prev)) return prev;
+                    const next = { ...prev };
+                    delete next.subgrade_cbr;
+                    return next;
+                  });
+                  setSubgradeCbr(v);
+                }}
                 min={1}
                 max={50}
               />
@@ -225,8 +251,19 @@ export default function PavementDesign() {
                 type="number"
                 min={1}
                 value={coverages}
-                onChange={(e) => setCoverages(Math.max(1, parseNumericInput(e.target.value, coverages)))}
+                aria-invalid={fieldErrors.design_coverages ? true : undefined}
+                className={cn(fieldErrors.design_coverages && "border-destructive")}
+                onChange={(e) => {
+                  setFieldErrors((prev) => {
+                    if (!("design_coverages" in prev)) return prev;
+                    const next = { ...prev };
+                    delete next.design_coverages;
+                    return next;
+                  });
+                  setCoverages(Math.max(1, parseNumericInput(e.target.value, coverages)));
+                }}
               />
+              <FieldError message={fieldErrors.design_coverages} />
               {coverages > 2_000_000 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                   <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -245,14 +282,27 @@ export default function PavementDesign() {
               <select
                 id="category"
                 value={trhCategory}
-                onChange={(e) => setTrhCategory(e.target.value as "A" | "B" | "C" | "D")}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                onChange={(e) => {
+                  setFieldErrors((prev) => {
+                    if (!("category" in prev)) return prev;
+                    const next = { ...prev };
+                    delete next.category;
+                    return next;
+                  });
+                  setTrhCategory(e.target.value as "A" | "B" | "C" | "D");
+                }}
+                className={cn(
+                  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm",
+                  fieldErrors.category && "border-destructive",
+                )}
+                aria-invalid={fieldErrors.category ? true : undefined}
               >
                 <option value="A">A — heavily trafficked</option>
                 <option value="B">B — primary</option>
                 <option value="C">C — secondary</option>
                 <option value="D">D — light</option>
               </select>
+              <FieldError message={fieldErrors.category} />
             </div>
 
             <div className="space-y-2 border-t pt-3">
