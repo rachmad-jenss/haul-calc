@@ -425,21 +425,77 @@ def _usace_warning_message(
     return None
 
 
+def _parse_custom_materials(params: dict[str, Any]) -> list[Any] | None:
+    """Parse optional ``custom_materials`` array; ``None`` when absent or empty."""
+    raw = params.get("custom_materials")
+    if not isinstance(raw, list) or len(raw) == 0:
+        return None
+    return [_build_custom_material_from_params(item) for item in raw]
+
+
+def _layers_from_custom_materials(materials: list[Any], total_mm: int) -> list[dict[str, Any]]:
+    """Map haul-pave ``CustomMaterial`` instances to UI ``PavementLayer`` wire format."""
+    specified = [
+        float(m.thickness_mm)
+        for m in materials
+        if m.thickness_mm is not None and float(m.thickness_mm) > 0
+    ]
+    if len(specified) == len(materials) and specified:
+        total_spec = sum(specified)
+        scale = total_mm / total_spec if total_spec > 0 else 1.0
+        layers: list[dict[str, Any]] = []
+        for m in materials:
+            t = round(float(m.thickness_mm) * scale)
+            layers.append({
+                "name": m.name,
+                "thickness_mm": t,
+                "cbr": float(m.cbr_percent) if m.cbr_percent is not None else None,
+            })
+        drift = total_mm - sum(layer["thickness_mm"] for layer in layers)
+        if layers and drift:
+            layers[-1]["thickness_mm"] = max(1, layers[-1]["thickness_mm"] + drift)
+        return layers
+
+    n = len(materials)
+    base = total_mm // n
+    rem = total_mm - base * n
+    layers = []
+    for i, m in enumerate(materials):
+        t = base + (1 if i < rem else 0)
+        layers.append({
+            "name": m.name,
+            "thickness_mm": t,
+            "cbr": float(m.cbr_percent) if m.cbr_percent is not None else None,
+        })
+    return layers
+
+
 def _call_cbr_thickness(params: dict[str, Any]) -> Any:
     import warnings
 
-    from haulpave.pavement import interpolate_thickness, load_curve_data
+    from haulpave.pavement import cbr_thickness_from_coverages, interpolate_thickness, load_curve_data
 
     cbr = float(params["subgrade_cbr"])
     coverages = float(params["design_coverages"])
+    custom_materials = _parse_custom_materials(params)
     curve_data = load_curve_data("usace_cbr_v1")
     max_coverage = _get_usace_max_coverage()
     digitized_max = _usace_digitized_max_coverage(curve_data)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        thickness, was_clamped, was_extrapolated = interpolate_thickness(
-            curve_data, cbr=cbr, coverages=coverages
-        )
+    if custom_materials is not None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            thickness = cbr_thickness_from_coverages(
+                cbr, coverages, custom_materials=custom_materials
+            )
+            _, was_clamped, was_extrapolated = interpolate_thickness(
+                curve_data, cbr=cbr, coverages=coverages
+            )
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            thickness, was_clamped, was_extrapolated = interpolate_thickness(
+                curve_data, cbr=cbr, coverages=coverages
+            )
     t = round(thickness)
 
     if was_clamped or was_extrapolated:
@@ -447,15 +503,20 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
     else:
         confidence = "high"
 
+    if custom_materials is not None:
+        layers = _layers_from_custom_materials(custom_materials, t)
+    else:
+        layers = [
+            {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
+            {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
+            {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
+        ]
+
     result: dict[str, Any] = {
         "method": "USACE TM 5-822-12 CBR design curves",
         "subgrade_cbr": cbr,
         "confidence": confidence,
-        "layers": [
-            {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
-            {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
-            {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
-        ],
+        "layers": layers,
         "total_thickness_mm": t,
     }
 
@@ -482,6 +543,7 @@ _TRH14_CATEGORY_CBR: dict[str, float] = {
 
 
 def _call_trh14_thickness(params: dict[str, Any]) -> Any:
+    from haulpave.pavement import trh14_thickness_from_coverages
     from haulpave.pavement.trh14 import (
         interpolate_catalog, load_catalog, cbr_to_material_class,
     )
@@ -489,6 +551,7 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
     category = str(params.get("category", "B")).upper()
     cbr = _TRH14_CATEGORY_CBR.get(category, 10.0)
     coverages = float(params["design_coverages"])
+    custom_materials = _parse_custom_materials(params)
     mat_class = cbr_to_material_class(cbr)
     catalog = load_catalog()
     thickness, was_clamped = interpolate_catalog(
@@ -497,19 +560,24 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
         coverages,
     )
     t = round(thickness)
-    result: dict[str, Any] = {
-        "method": "TRH 14 (CSRA 1985) design catalog",
-        "category": category,
-        "material_class": mat_class,
-        "confidence": "medium",
-        "layers": [
+    if custom_materials is not None:
+        trh14_thickness_from_coverages(cbr, coverages, custom_materials=custom_materials)
+        layers = _layers_from_custom_materials(custom_materials, t)
+    else:
+        layers = [
             {"name": f"Wearing course ({mat_class})",
              "thickness_mm": round(t * 0.28), "cbr": None},
             {"name": "Base",
              "thickness_mm": round(t * 0.42), "cbr": 25},
             {"name": "Sub-base",
              "thickness_mm": round(t * 0.30), "cbr": 10},
-        ],
+        ]
+    result: dict[str, Any] = {
+        "method": "TRH 14 (CSRA 1985) design catalog",
+        "category": category,
+        "material_class": mat_class,
+        "confidence": "medium",
+        "layers": layers,
         "total_thickness_mm": t,
     }
     if was_clamped:
@@ -556,8 +624,9 @@ def _call_compare_methods(params: dict[str, Any]) -> Any:
 
     traffic = _build_traffic(params)
     cbr = float(params.get("subgrade_cbr", 8.0))
+    custom_materials = _parse_custom_materials(params)
     result, captured_warnings = _capture_user_warnings(
-        lambda: compare_methods(traffic, subgrade_cbr=cbr)
+        lambda: compare_methods(traffic, subgrade_cbr=cbr, custom_materials=custom_materials)
     )
 
     curve_data = load_curve_data("usace_cbr_v1")
@@ -586,6 +655,8 @@ def _call_compare_methods(params: dict[str, Any]) -> Any:
     )
     if usace_warning:
         usace_result["warning"] = usace_warning
+    if result.usace.layers:
+        usace_result["layers"] = _serialize(result.usace.layers)
 
     trh_confidence = "medium" if result.trh14.was_clamped else result.trh14.confidence
     trh14_result: dict[str, Any] = {
@@ -628,10 +699,11 @@ def _call_design_pavement(params: dict[str, Any]) -> Any:
 
     traffic = _build_traffic(params)
     cbr = float(params.get("subgrade_cbr", 8.0))
+    custom_materials = _parse_custom_materials(params)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        result = design_pavement(traffic, subgrade_cbr=cbr)
+        result = design_pavement(traffic, subgrade_cbr=cbr, custom_materials=custom_materials)
 
     return _serialize(result)
 

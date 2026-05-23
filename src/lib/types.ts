@@ -34,11 +34,18 @@ export interface CbrRequest {
   subgrade_cbr: number;
   design_coverages: number;
   climate_zone?: "tropical" | "arid" | "temperate";
+  custom_materials?: CustomMaterialRequest[];
 }
 
 export interface Trh14Request {
   category: "A" | "B" | "C" | "D";
   design_coverages: number;
+  custom_materials?: CustomMaterialRequest[];
+}
+
+export interface CompareMethodsRequest extends CesaRequest {
+  subgrade_cbr: number;
+  custom_materials?: CustomMaterialRequest[];
 }
 
 export interface PavementLayer {

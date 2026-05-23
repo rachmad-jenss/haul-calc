@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { customMaterialsToRpc } from "@/lib/custom-materials-rpc";
 import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
@@ -20,7 +21,6 @@ import type {
   CallError,
   CompareMethodsResult,
   MaterialTemplate,
-  MethodResult,
   PavementResult,
 } from "@/lib/types";
 import { convertThickness, unitLabels } from "@/lib/unit-convert";
@@ -35,6 +35,7 @@ export default function PavementDesign() {
     cbrResult,
     trhResult,
     pavementDirty,
+    customMaterials,
     setSubgradeCbr,
     setCoverages,
     setTrhCategory,
@@ -50,7 +51,7 @@ export default function PavementDesign() {
 
   useEffect(() => {
     setCompareResult(null);
-  }, [subgradeCbr, coverages, trhCategory]);
+  }, [subgradeCbr, coverages, trhCategory, customMaterials]);
 
   const importFromCesa = () => {
     if (cesaResult) {
@@ -76,19 +77,39 @@ export default function PavementDesign() {
       toast.error(firstError(trhParsed.error));
       return;
     }
+    const materialsRpc = customMaterialsToRpc(customMaterials);
+    const materialParams = materialsRpc ? { custom_materials: materialsRpc } : {};
     setComparing(true);
     try {
       const [cbrRes, trhRes] = await Promise.all([
-        haulPave.cbrThickness(cbrParsed.data),
-        haulPave.trh14Thickness(trhParsed.data),
+        haulPave.cbrThickness({ ...cbrParsed.data, ...materialParams }),
+        haulPave.trh14Thickness({ ...trhParsed.data, ...materialParams }),
       ]);
 
       setCbrResult(cbrRes.data, cbrRes.stub, cbrRes.stubMessage);
       setTrhResult(trhRes.data, trhRes.stub, trhRes.stubMessage);
 
-      const usace = toMethodResult(cbrRes.data, coverages, cesaResult?.cesa);
-      const trh14 = toMethodResult(trhRes.data, coverages);
-      const confidence = minConfidence(usace.confidence, trh14.confidence);
+      const usace = {
+        method: cbrRes.data.method,
+        total_thickness_mm: cbrRes.data.total_thickness_mm,
+        total_coverages: coverages,
+        total_cesa: cesaResult?.cesa,
+        confidence: cbrRes.data.confidence,
+        material_class: cbrRes.data.material_class,
+        warning: cbrRes.data.warning,
+      };
+      const trh14 = {
+        method: trhRes.data.method,
+        total_thickness_mm: trhRes.data.total_thickness_mm,
+        total_coverages: coverages,
+        confidence: trhRes.data.confidence,
+        material_class: trhRes.data.material_class,
+        warning: trhRes.data.warning,
+      };
+      const confidence =
+        CONFIDENCE_RANK[usace.confidence] <= CONFIDENCE_RANK[trh14.confidence]
+          ? usace.confidence
+          : trh14.confidence;
       const stubMessages = [cbrRes.stubMessage, trhRes.stubMessage].filter(Boolean);
 
       setCompareResult({
@@ -125,11 +146,14 @@ export default function PavementDesign() {
       toast.error(firstError(trhParsed.error));
       return;
     }
+    const materialsRpc = customMaterialsToRpc(customMaterials);
+    const materialParams = materialsRpc ? { custom_materials: materialsRpc } : {};
+
     setRunning(true);
     try {
       const [cbrRes, trhRes] = await Promise.all([
-        haulPave.cbrThickness(cbrParsed.data),
-        haulPave.trh14Thickness(trhParsed.data),
+        haulPave.cbrThickness({ ...cbrParsed.data, ...materialParams }),
+        haulPave.trh14Thickness({ ...trhParsed.data, ...materialParams }),
       ]);
       setCbrResult(cbrRes.data, cbrRes.stub, cbrRes.stubMessage);
       setTrhResult(trhRes.data, trhRes.stub, trhRes.stubMessage);
@@ -313,33 +337,11 @@ export default function PavementDesign() {
   );
 }
 
-const CONFIDENCE_RANK: Record<MethodResult["confidence"], number> = {
+const CONFIDENCE_RANK: Record<"low" | "medium" | "high", number> = {
   low: 0,
   medium: 1,
   high: 2,
 };
-
-function minConfidence(
-  ...levels: MethodResult["confidence"][]
-): MethodResult["confidence"] {
-  return levels.reduce((min, c) => (CONFIDENCE_RANK[c] < CONFIDENCE_RANK[min] ? c : min));
-}
-
-function toMethodResult(
-  pavement: PavementResult,
-  designCoverages: number,
-  totalCesa?: number,
-): MethodResult {
-  return {
-    method: pavement.method,
-    total_thickness_mm: pavement.total_thickness_mm,
-    total_coverages: designCoverages,
-    total_cesa: totalCesa,
-    confidence: pavement.confidence,
-    material_class: pavement.material_class,
-    warning: pavement.warning,
-  };
-}
 
 const CONFIDENCE_COLOR: Record<string, string> = {
   high: "bg-emerald-100 text-emerald-800",
