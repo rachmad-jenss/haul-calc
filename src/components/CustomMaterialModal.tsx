@@ -76,6 +76,7 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
       setForm(EMPTY_FORM);
       setFormError(null);
       setStubMessage(undefined);
+      setValidating(false);
       return;
     }
     if (catalogPrefill) {
