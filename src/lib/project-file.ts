@@ -71,17 +71,17 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
   const base: Partial<CalcStore> = {
     fleet: snap.fleet,
     designLifeYears: snap.designLifeYears,
-    cesaResult: snap.cesaResult,
-    subgradeCbr: snap.subgradeCbr,
-    coverages: snap.coverages,
-    trhCategory: snap.trhCategory,
-    cbrResult: snap.cbrResult,
-    trhResult: snap.trhResult,
-    costScenarios: snap.costScenarios,
-    costResult: snap.costResult,
-    projectName: snap.projectName,
-    authorName: snap.authorName,
-    reportSummary: snap.reportSummary,
+    cesaResult: snap.cesaResult ?? null,
+    subgradeCbr: snap.subgradeCbr ?? 8,
+    coverages: snap.coverages ?? 1_050_000,
+    trhCategory: snap.trhCategory ?? "B",
+    cbrResult: snap.cbrResult ?? null,
+    trhResult: snap.trhResult ?? null,
+    costScenarios: snap.costScenarios ?? [],
+    costResult: snap.costResult ?? null,
+    projectName: snap.projectName ?? "",
+    authorName: snap.authorName ?? "",
+    reportSummary: snap.reportSummary ?? null,
   };
   if (version >= 2) {
     return {
