@@ -59,8 +59,8 @@ export const haulPave = {
   analyzeSensitivity: (req: SensitivityRequest) =>
     call<SensitivityResult>("analyze_sensitivity", req),
   materialLibrary: () => call<MaterialTemplate[]>("material_library", {}),
-  materialToLayerCoefficient: (materialClass: string) =>
-    call<LayerCoefficientResult>("material_to_layer_coefficient", { material_class: materialClass }),
+  materialToLayerCoefficient: (req: CustomMaterialRequest) =>
+    call<LayerCoefficientResult>("material_to_layer_coefficient", req),
   customMaterial: (req: CustomMaterialRequest) =>
     call<CustomMaterial>("custom_material", req),
   computeEconomicsDetail: (req: EconomicsDetailRequest) =>

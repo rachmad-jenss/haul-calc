@@ -131,6 +131,22 @@ const TAURI_MOCK = `(function () {
     return { data: data, stub: true, stub_message: "Stub data — Phase 0" };
   }
 
+  var MATERIALS = [
+    { name: "Gravel-sand mix (G5)", material_class: "G5", cbr_range: [7, 15], typical_modulus_mpa: 120, source: "CSRA TRH 14 (stub)" },
+    { name: "Crushed stone base (high quality)", material_class: "N/A", cbr_range: [80, 100], typical_modulus_mpa: 450, source: "USACE TM 5-822-12 (stub)" },
+  ];
+  var LAYER_COEFF = { coefficient: 0.10 };
+  var CUSTOM_MAT = {
+    name: "User material", material_type: "granular", elastic_modulus_mpa: 120,
+    cbr_percent: 15, poisson_ratio: 0.35, layer_coefficient: null, thickness_mm: null, description: "",
+  };
+  var ECON_DETAIL = {
+    scenarios: [
+      { name: "Asphalt 100 mm", cesa: 12480000, fuel_cost_usd_per_year: 744000, tire_cost_usd_per_year: 380000, maintenance_cost_usd_per_year: 150000, total_cost_usd_per_year: 1274000, npv_usd: 8500000, annual_equivalent_cost_usd: 1250000, cashflows: [] },
+    ], design_life_years: 10, discount_rate: 0.08,
+  };
+  var EXCEL_EXPORT = { bytes_written: 0 };
+
   function sensitivityResponse(p) {
     var metric = p && p.metric;
     var variable = p && p.variable;
@@ -162,7 +178,13 @@ const TAURI_MOCK = `(function () {
     trh14_thickness:  function(p) { return env(trhResponse(p)); },
     compare_scenarios:function() { return env(COMPARISON);  },
     compare_methods:  function() { return env(compareMethodsResponse()); },
+    design_pavement:  function(p) { return env(cbrResponse(p || { subgrade_cbr: 8, design_coverages: 72000 })); },
     analyze_sensitivity: function(p) { return sensitivityResponse(p); },
+    material_library: function() { return env(MATERIALS); },
+    material_to_layer_coefficient: function() { return env(LAYER_COEFF); },
+    custom_material:  function() { return env(CUSTOM_MAT); },
+    compute_economics_detail: function() { return env(ECON_DETAIL); },
+    export_comparison_to_excel: function() { return env(EXCEL_EXPORT); },
     build_summary:    function() { return env(SUMMARY);     },
     get_version:      function() { return env(VERSION);     },
     health_check:     function() { return env(HEALTH);      },
