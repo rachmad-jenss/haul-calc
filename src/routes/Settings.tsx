@@ -42,22 +42,32 @@ export default function Settings() {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [health, version, sidecarStatus] = await Promise.all([
-        haulPave.healthCheck(),
-        haulPave.getVersion(),
-        haulPave.getSidecarStatus(),
-      ]);
-      setStatus({
-        loaded: health.data.haulpave_loaded,
-        haulpaveVersion: version.data.haulpave,
-        bridgeVersion: version.data.bridge,
-        sidecarStatus,
-      });
-    } catch (err) {
-      const e = err as CallError;
+      const sidecarStatus = await haulPave.getSidecarStatus();
+      try {
+        const [health, version] = await Promise.all([
+          haulPave.healthCheck(),
+          haulPave.getVersion(),
+        ]);
+        setStatus({
+          loaded: health.data.haulpave_loaded,
+          haulpaveVersion: version.data.haulpave,
+          bridgeVersion: version.data.bridge,
+          sidecarStatus,
+        });
+      } catch (err) {
+        const e = err as CallError;
+        setStatus({
+          loaded: false,
+          error: e.message,
+          haulpaveVersion: null,
+          bridgeVersion: "—",
+          sidecarStatus,
+        });
+      }
+    } catch {
       setStatus({
         loaded: false,
-        error: e.message,
+        error: "Unable to read sidecar status",
         haulpaveVersion: null,
         bridgeVersion: "—",
         sidecarStatus: "crashed",
@@ -472,6 +482,13 @@ function SidecarStatusBadge({
     return (
       <span className="flex items-center gap-1 text-amber-600">
         <Loader2 className="h-4 w-4 animate-spin" /> Restarting…
+      </span>
+    );
+  }
+  if (status === "killed") {
+    return (
+      <span className="flex items-center gap-1 text-muted-foreground">
+        <XCircle className="h-4 w-4" /> Stopped
       </span>
     );
   }
