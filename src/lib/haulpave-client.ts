@@ -6,6 +6,7 @@ import type {
   CesaRequest,
   CesaResult,
   CesaDetailResult,
+  CompareMethodsRequest,
   CompareMethodsResult,
   CostComparison,
   CostScenario,
@@ -47,9 +48,9 @@ export const haulPave = {
   trh14Thickness: (req: Trh14Request) => call<PavementResult>("trh14_thickness", req),
   compareScenarios: (scenarios: Omit<CostScenario, "_id">[]) =>
     call<CostComparison>("compare_scenarios", { scenarios }),
-  compareMethods: (req: CesaRequest & Pick<CbrRequest, "subgrade_cbr">) =>
+  compareMethods: (req: CompareMethodsRequest) =>
     call<CompareMethodsResult>("compare_methods", req),
-  designPavement: (req: CesaRequest & Pick<CbrRequest, "subgrade_cbr">) =>
+  designPavement: (req: CompareMethodsRequest) =>
     call<DesignPavementResult>("design_pavement", req),
   buildSummary: (inputs: Record<string, unknown>) =>
     call<DesignSummary>("build_summary", inputs),

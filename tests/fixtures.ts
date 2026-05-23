@@ -37,17 +37,33 @@ const TAURI_MOCK = `(function () {
   };
   // CBR method (USACE): CBR=8%, 72,000 design coverages, ultra-heavy vehicles
   //   Total structure: ~750mm — typical for low-CBR + heavy mining traffic
+  function layersFromCustomMaterials(mats, totalMm) {
+    var n = mats.length;
+    var each = Math.floor(totalMm / n);
+    var rem = totalMm - each * n;
+    return mats.map(function (m, i) {
+      return {
+        name: m.name || "Custom layer",
+        thickness_mm: each + (i < rem ? 1 : 0),
+        cbr: m.cbr_percent != null ? m.cbr_percent : null,
+      };
+    });
+  }
   function cbrResponse(params) {
     var cov = params && params.design_coverages;
+    var mats = (params && params.custom_materials) || [];
+    var total = 750;
     var base = {
       method: "USACE TM 5-822-12 CBR design curves", subgrade_cbr: 8,
       confidence: "high",
-      layers: [
-        { name: "Surface (asphalt)", thickness_mm: 105, cbr: null },
-        { name: "Base course",       thickness_mm: 345, cbr: 80  },
-        { name: "Sub-base",          thickness_mm: 300, cbr: 30  },
-      ],
-      total_thickness_mm: 750,
+      layers: mats.length
+        ? layersFromCustomMaterials(mats, total)
+        : [
+            { name: "Surface (asphalt)", thickness_mm: 105, cbr: null },
+            { name: "Base course",       thickness_mm: 345, cbr: 80  },
+            { name: "Sub-base",          thickness_mm: 300, cbr: 30  },
+          ],
+      total_thickness_mm: total,
     };
     if (cov > 1000000) {
       base.confidence = "medium";
@@ -76,7 +92,11 @@ const TAURI_MOCK = `(function () {
   };
   function trhResponse(params) {
     var cov = params && params.design_coverages;
+    var mats = (params && params.custom_materials) || [];
     var base = Object.assign({}, TRH14);
+    if (mats.length) {
+      base.layers = layersFromCustomMaterials(mats, base.total_thickness_mm);
+    }
     if (cov > 1000000) {
       base.warning =
         "Design coverages (" + cov.toLocaleString() + ") exceed the TRH 14 catalog maximum. " +
@@ -97,7 +117,8 @@ const TAURI_MOCK = `(function () {
       { name: "Gravel 250 mm",  tire_cost_usd_per_year: 960000, fuel_cost_usd_per_year: 963000, maintenance_cost_usd_per_year: 340000 },
     ],
   };
-  function compareMethodsResponse() {
+  function compareMethodsResponse(params) {
+    var mats = (params && params.custom_materials) || [];
     return {
       usace: {
         method: "USACE TM 5-822-12 CBR design curves + AASHTO 4th-power LEF",
@@ -177,7 +198,7 @@ const TAURI_MOCK = `(function () {
     cbr_thickness:    function(p) { return env(cbrResponse(p)); },
     trh14_thickness:  function(p) { return env(trhResponse(p)); },
     compare_scenarios:function() { return env(COMPARISON);  },
-    compare_methods:  function() { return env(compareMethodsResponse()); },
+    compare_methods:  function(p) { return env(compareMethodsResponse(p)); },
     design_pavement:  function(p) { return env(cbrResponse(p || { subgrade_cbr: 8, design_coverages: 72000 })); },
     analyze_sensitivity: function(p) { return sensitivityResponse(p); },
     material_library: function() { return env(MATERIALS); },
