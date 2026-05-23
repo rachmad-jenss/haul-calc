@@ -175,7 +175,9 @@ const TAURI_MOCK = `(function () {
     invoke: function(cmd, args) {
       return new Promise(function(resolve, reject) {
         setTimeout(function() {
-          if (cmd === "get_sidecar_status") { return resolve("running"); }
+          if (cmd === "get_sidecar_status") {
+            return resolve(window.__HAULCALC_SIDECAR_STATUS__ || "running");
+          }
           if (cmd === "restart_sidecar")    { return resolve(undefined); }
           if (cmd === "take_pending_file_path") { return resolve(null); }
           if (cmd === "plugin:dialog|save") { return resolve("mocked_file.csv"); }
@@ -203,6 +205,11 @@ const TAURI_MOCK = `(function () {
             }
             return resolve("Yes");
           }
+          if (cmd === "haul_pave_call" && args && args.method === "health_check") {
+            if (window.__HAULCALC_SIDECAR_STATUS__ === "killed") {
+              return reject({ code: "SIDEcar_DOWN", message: "Sidecar not running", stub: false });
+            }
+          }
           if (cmd !== "haul_pave_call") {
             return reject({ code: "UNKNOWN_CMD", message: "Unknown command: " + cmd, stub: false });
           }
@@ -222,6 +229,19 @@ export const test = base.extend<Record<string, never>>({
     await page.addInitScript(TAURI_MOCK);
     await page.goto("/");
     await page.waitForTimeout(500);
+    await use(page);
+  },
+});
+
+/** Fresh page that lands on Dashboard with one render error queued (DAS-136 E2E). */
+export const testE2eThrow = base.extend<Record<string, never>>({
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      window.__HAULCALC_E2E_SHOULD_THROW__ = true;
+    });
+    await page.addInitScript(TAURI_MOCK);
+    await page.goto("/#/dashboard");
+    await page.waitForTimeout(800);
     await use(page);
   },
 });
