@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
-import type { CallError } from "@/lib/types";
+import type { CallError, PavementLayer } from "@/lib/types";
 import { toSafeCsvCell } from "@/lib/utils";
 
 export default function Reports() {
@@ -311,7 +311,7 @@ function BoqSection({
   geometry,
   onGeometryChange,
 }: {
-  layers: { name: string; thickness_mm: number; cbr: number | null }[];
+  layers: PavementLayer[];
   geometry: { roadLengthKm: number; roadWidthM: number; shoulderWidthM: number };
   onGeometryChange: (field: "roadLengthKm" | "roadWidthM" | "shoulderWidthM", value: number) => void;
 }) {

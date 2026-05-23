@@ -46,6 +46,7 @@ const TAURI_MOCK = `(function () {
         name: m.name || "Custom layer",
         thickness_mm: each + (i < rem ? 1 : 0),
         cbr: m.cbr_percent != null ? m.cbr_percent : null,
+        material_type: m.material_type || "granular",
       };
     });
   }
