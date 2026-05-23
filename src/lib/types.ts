@@ -52,6 +52,8 @@ export interface PavementLayer {
   name: string;
   thickness_mm: number;
   cbr: number | null;
+  /** Present when layers come from project custom materials (haul-pave v0.5). */
+  material_type?: MaterialType;
 }
 
 export interface PavementResult {

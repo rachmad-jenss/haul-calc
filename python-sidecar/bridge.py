@@ -77,9 +77,9 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
             "confidence": "high",
             "layers": [
                 # Surface thinnest, sub-base thickest — correct structural order
-                {"name": "Surface (asphalt)", "thickness_mm": 75, "cbr": None},
-                {"name": "Base course (crushed stone)", "thickness_mm": 200, "cbr": 80},
-                {"name": "Sub-base (gravel)", "thickness_mm": 350, "cbr": 25},
+                {"name": "Surface (asphalt)", "thickness_mm": 75, "cbr": None, "material_type": "asphalt"},
+                {"name": "Base course (crushed stone)", "thickness_mm": 200, "cbr": 80, "material_type": "granular"},
+                {"name": "Sub-base (gravel)", "thickness_mm": 350, "cbr": 25, "material_type": "granular"},
             ],
             "total_thickness_mm": 625,
         }
@@ -90,9 +90,9 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
             "material_class": "G5",
             "confidence": "medium",
             "layers": [
-                {"name": "Wearing course (G5)", "thickness_mm": 150, "cbr": None},
-                {"name": "Base (G4)", "thickness_mm": 175, "cbr": 25},
-                {"name": "Sub-base (G6)", "thickness_mm": 200, "cbr": 10},
+                {"name": "Wearing course (G5)", "thickness_mm": 150, "cbr": None, "material_type": "asphalt"},
+                {"name": "Base (G4)", "thickness_mm": 175, "cbr": 25, "material_type": "granular"},
+                {"name": "Sub-base (G6)", "thickness_mm": 200, "cbr": 10, "material_type": "granular"},
             ],
             "total_thickness_mm": 525,
         }
@@ -450,6 +450,7 @@ def _layers_from_custom_materials(materials: list[Any], total_mm: int) -> list[d
                 "name": m.name,
                 "thickness_mm": t,
                 "cbr": float(m.cbr_percent) if m.cbr_percent is not None else None,
+                "material_type": m.material_type,
             })
         drift = total_mm - sum(layer["thickness_mm"] for layer in layers)
         if layers and drift:
@@ -466,6 +467,7 @@ def _layers_from_custom_materials(materials: list[Any], total_mm: int) -> list[d
             "name": m.name,
             "thickness_mm": t,
             "cbr": float(m.cbr_percent) if m.cbr_percent is not None else None,
+            "material_type": m.material_type,
         })
     return layers
 
@@ -501,9 +503,9 @@ def _call_cbr_thickness(params: dict[str, Any]) -> Any:
         layers = _layers_from_custom_materials(custom_materials, t)
     else:
         layers = [
-            {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None},
-            {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80},
-            {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30},
+            {"name": "Surface (asphalt)", "thickness_mm": round(t * 0.14), "cbr": None, "material_type": "asphalt"},
+            {"name": "Base course",       "thickness_mm": round(t * 0.46), "cbr": 80, "material_type": "granular"},
+            {"name": "Sub-base",          "thickness_mm": round(t * 0.40), "cbr": 30, "material_type": "granular"},
         ]
 
     result: dict[str, Any] = {
@@ -565,11 +567,11 @@ def _call_trh14_thickness(params: dict[str, Any]) -> Any:
         t = round(thickness)
         layers = [
             {"name": f"Wearing course ({mat_class})",
-             "thickness_mm": round(t * 0.28), "cbr": None},
+             "thickness_mm": round(t * 0.28), "cbr": None, "material_type": "asphalt"},
             {"name": "Base",
-             "thickness_mm": round(t * 0.42), "cbr": 25},
+             "thickness_mm": round(t * 0.42), "cbr": 25, "material_type": "granular"},
             {"name": "Sub-base",
-             "thickness_mm": round(t * 0.30), "cbr": 10},
+             "thickness_mm": round(t * 0.30), "cbr": 10, "material_type": "granular"},
         ]
     result: dict[str, Any] = {
         "method": "TRH 14 (CSRA 1985) design catalog",
