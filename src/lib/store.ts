@@ -153,6 +153,17 @@ const DEFAULT_FLEET: FleetEntry[] = [
   { _id: crypto.randomUUID(), vehicle_id: "cat-789d", count: 4, trips_per_day: 24, payload_kn: 2_100 },
 ];
 
+let suppressProjectDirtyTracking = false;
+
+function withoutProjectDirtyTracking<T>(fn: () => T): T {
+  suppressProjectDirtyTracking = true;
+  try {
+    return fn();
+  } finally {
+    suppressProjectDirtyTracking = false;
+  }
+}
+
 const DEFAULT_SCENARIOS: CostScenario[] = [
   {
     _id: crypto.randomUUID(),
@@ -221,40 +232,44 @@ export const useCalcStore = create<CalcStore>()(
 
       isProjectDirty: false,
       setProjectDirty: (isProjectDirty) => set({ isProjectDirty }),
-      resetProject: () => set({
-        fleet: DEFAULT_FLEET,
-        designLifeYears: 10,
-        workingDaysPerYear: 250,
-        cesaResult: null,
-        cesaDirty: false,
-        subgradeCbr: 8,
-        coverages: 1_050_000,
-        trhCategory: "B",
-        cbrResult: null,
-        trhResult: null,
-        pavementDirty: false,
-        costScenarios: DEFAULT_SCENARIOS,
-        costResult: null,
-        economicsDirty: false,
-        lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
-        lccaResult: null,
-        customVehicles: [],
-        customMaterials: [],
-        projectName: "Pit South — Main Haul",
-        authorName: "",
-        reportSummary: null,
-        activeFileName: null,
-        activeFilePath: null,
-        boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
-        isProjectDirty: false,
-        autoCheckUpdates: true,
-      }),
+      resetProject: () =>
+        withoutProjectDirtyTracking(() =>
+          set({
+            fleet: DEFAULT_FLEET,
+            designLifeYears: 10,
+            workingDaysPerYear: 250,
+            cesaResult: null,
+            cesaDirty: false,
+            subgradeCbr: 8,
+            coverages: 1_050_000,
+            trhCategory: "B",
+            cbrResult: null,
+            trhResult: null,
+            pavementDirty: false,
+            costScenarios: DEFAULT_SCENARIOS,
+            costResult: null,
+            economicsDirty: false,
+            lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
+            lccaResult: null,
+            customVehicles: [],
+            customMaterials: [],
+            projectName: "Pit South — Main Haul",
+            authorName: "",
+            reportSummary: null,
+            activeFileName: null,
+            activeFilePath: null,
+            boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
+            isProjectDirty: false,
+            autoCheckUpdates: true,
+          }),
+        ),
 
-      setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
-      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null }),
+      setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
+      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       addCustomVehicle: (v) =>
         set((s) => ({
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
+          isProjectDirty: true,
         })),
       removeCustomVehicle: (id) =>
         set((s) => ({
@@ -263,6 +278,7 @@ export const useCalcStore = create<CalcStore>()(
           cesaResult: null,
           cesaDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
       addCustomMaterial: (m) =>
         set((s) => ({
@@ -280,40 +296,56 @@ export const useCalcStore = create<CalcStore>()(
           ],
           pavementDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
       removeCustomMaterial: (id) =>
         set((s) => ({
           customMaterials: s.customMaterials.filter((c) => c.id !== id),
           pavementDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
-      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null }),
+      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       setCesaResult: (result, stub, stubMessage) =>
-        set((s) => ({
-          cesaResult: { ...result, stub, stubMessage },
-          cesaDirty: false,
-          coverages: result.design_coverages,
-          cbrResult: s.coverages !== result.design_coverages ? null : s.cbrResult,
-          trhResult: s.coverages !== result.design_coverages ? null : s.trhResult,
-          pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
-        })),
-      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null }),
-      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null }),
-      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set((s) => ({
+            cesaResult: { ...result, stub, stubMessage },
+            cesaDirty: false,
+            coverages: result.design_coverages,
+            cbrResult: s.coverages !== result.design_coverages ? null : s.cbrResult,
+            trhResult: s.coverages !== result.design_coverages ? null : s.trhResult,
+            pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
+          })),
+        ),
+      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
       setCbrResult: (result, stub, stubMessage) =>
-        set({ cbrResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        withoutProjectDirtyTracking(() =>
+          set({ cbrResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        ),
       setTrhResult: (result, stub, stubMessage) =>
-        set({ trhResult: { ...result, stub, stubMessage }, pavementDirty: false }),
-      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set({ trhResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        ),
+      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null, isProjectDirty: true }),
       setCostResult: (result, stub, stubMessage) =>
-        set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),
-      setLccaInputs: (lccaInputs) => set({ lccaInputs, lccaResult: null }),
-      setLccaResult: (lccaResult) => set({ lccaResult }),
-      setProjectName: (projectName) => set({ projectName, reportSummary: null }),
-      setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),
+        ),
+      setLccaInputs: (lccaInputs) => set({ lccaInputs, lccaResult: null, isProjectDirty: true }),
+      setLccaResult: (lccaResult) =>
+        withoutProjectDirtyTracking(() => set({ lccaResult })),
+      setProjectName: (projectName) => set({ projectName, reportSummary: null, isProjectDirty: true }),
+      setAuthorName: (authorName) => set({ authorName, reportSummary: null, isProjectDirty: true }),
       setReportSummary: (result, stub, stubMessage) =>
-        set({ reportSummary: { ...result, stub, stubMessage } }),
-      loadFromSnapshot: (data) => set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+        withoutProjectDirtyTracking(() =>
+          set({ reportSummary: { ...result, stub, stubMessage } }),
+        ),
+      loadFromSnapshot: (data) =>
+        withoutProjectDirtyTracking(() =>
+          set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+        ),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       setActiveFilePath: (activeFilePath) => set({ activeFilePath }),
       pushRecentFile: (filePath) =>
@@ -323,11 +355,11 @@ export const useCalcStore = create<CalcStore>()(
       setTheme: (theme) => set({ theme }),
       setAutoCheckUpdates: (autoCheckUpdates) => set({ autoCheckUpdates }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
-      setBoqGeometry: (boqGeometry) => set({ boqGeometry }),
+      setBoqGeometry: (boqGeometry) => set({ boqGeometry, isProjectDirty: true }),
     }),
     {
       name: "haul-calc-store",
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -371,8 +403,18 @@ export const useCalcStore = create<CalcStore>()(
             }));
           }
         }
+        if (fromVersion < 9) {
+          s.isProjectDirty = false;
+        }
+        delete s.isProjectDirty;
         return s;
       },
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as object),
+        // Never clobber edits that marked the project dirty before rehydrate finishes.
+        isProjectDirty: current.isProjectDirty,
+      }),
       partialize: (state) => ({
         fleet: state.fleet,
         designLifeYears: state.designLifeYears,
@@ -402,14 +444,20 @@ export const useCalcStore = create<CalcStore>()(
         autoCheckUpdates: state.autoCheckUpdates,
         unitSystem: state.unitSystem,
         boqGeometry: state.boqGeometry,
-        isProjectDirty: state.isProjectDirty,
       }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) return;
         const apply = () => {
-          const state = useCalcStore.getState();
-          const patch = normalizePersistedFileBinding(state);
-          if (patch) useCalcStore.setState(patch);
+          withoutProjectDirtyTracking(() => {
+            const state = useCalcStore.getState();
+            const patch = normalizePersistedFileBinding(state);
+            useCalcStore.setState({
+              ...(patch ?? {}),
+              // Preserve edits made before persist rehydrate finishes.
+              isProjectDirty: state.isProjectDirty,
+            });
+          });
+          trackProjectDirty = true;
         };
         queueMicrotask(apply);
       },
@@ -439,12 +487,23 @@ export const useCalcStore = create<CalcStore>()(
         economicsDirty: state.economicsDirty,
         reportSummary: state.reportSummary,
         boqGeometry: state.boqGeometry,
+        isProjectDirty: state.isProjectDirty,
       }),
     },
   ),
 );
 
+let trackProjectDirty = useCalcStore.persist.hasHydrated();
+
+useCalcStore.persist.onFinishHydration(() => {
+  trackProjectDirty = true;
+});
+
+// Undo/redo restores tracked fields without calling setters — subscribe marks dirty for those paths only.
 useCalcStore.subscribe((state, prevState) => {
+  if (!trackProjectDirty || suppressProjectDirtyTracking) return;
+  // Respect undo/redo/save snapshots that explicitly set isProjectDirty.
+  if (state.isProjectDirty !== prevState.isProjectDirty) return;
   if (state.isProjectDirty) return;
   const fields = [
     "fleet",
