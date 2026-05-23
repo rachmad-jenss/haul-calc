@@ -41,6 +41,48 @@ export const compareRequestSchema = z
   .array(costScenarioSchema)
   .min(2, "Add at least 2 scenarios to compare");
 
+export const materialTypeSchema = z.enum(["granular", "stabilized", "asphalt", "concrete"]);
+
+export const customMaterialRequestSchema = z
+  .object({
+    name: z.string().min(1, "Material name is required"),
+    material_type: materialTypeSchema,
+    elastic_modulus_mpa: z.number().positive("Elastic modulus must be > 0 MPa"),
+    cbr_percent: z.number().positive("CBR must be > 0 %").nullable().optional(),
+    poisson_ratio: z.number().gt(0, "Poisson ratio must be > 0").lt(0.5, "Poisson ratio must be < 0.5").optional(),
+    layer_coefficient: z.number().positive("Layer coefficient must be > 0").nullable().optional(),
+    thickness_mm: z.number().positive("Thickness must be > 0 mm").nullable().optional(),
+    description: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.material_type === "granular" && data.layer_coefficient == null && data.cbr_percent == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "CBR % is required for granular materials unless layer coefficient is set",
+        path: ["cbr_percent"],
+      });
+    }
+  });
+
+export const materialTemplateSchema = z
+  .object({
+    name: z.string().min(1),
+    material_class: z.string().min(1),
+    cbr_range: z.tuple([z.number().min(0), z.number().positive().nullable()]),
+    typical_modulus_mpa: z.number().positive(),
+    source: z.string().min(1),
+  })
+  .superRefine((data, ctx) => {
+    const [lo, hi] = data.cbr_range;
+    if (hi !== null && hi <= lo) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "CBR upper bound must be greater than lower bound",
+        path: ["cbr_range", 1],
+      });
+    }
+  });
+
 export function firstError(err: z.ZodError): string {
   return err.errors[0]?.message ?? "Validation error";
 }

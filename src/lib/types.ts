@@ -169,33 +169,47 @@ export interface SensitivityRequest {
   cost_scenarios?: Omit<CostScenario, "_id">[];
 }
 
+/** TRH / USACE catalog entry from haul-pave `material_library.list_all`. */
 export interface MaterialTemplate {
-  id: string;
-  name: string;
-  class: string | null;
-  default_cbr: number | null;
-  layer_type: "surface" | "base" | "subbase";
-}
-
-export interface LayerCoefficientResult {
-  material_class: string;
-  coefficient: number;
-}
-
-export interface CustomMaterial {
-  id: string;
   name: string;
   material_class: string;
-  cbr: number;
+  cbr_range: [number, number | null];
+  typical_modulus_mpa: number;
   source: string;
 }
 
-export interface CustomMaterialRequest {
-  existing_id?: string;
+export interface LayerCoefficientResult {
+  coefficient: number;
+}
+
+export type MaterialType = "granular" | "stabilized" | "asphalt" | "concrete";
+
+/** User-defined material — mirrors haul-pave `CustomMaterial` dataclass. */
+export interface CustomMaterial {
   name: string;
-  material_class: string;
-  cbr: number;
-  source?: string;
+  material_type: MaterialType;
+  elastic_modulus_mpa: number;
+  cbr_percent: number | null;
+  poisson_ratio: number;
+  layer_coefficient: number | null;
+  thickness_mm: number | null;
+  description: string;
+}
+
+/** Client-side custom material with stable id for store/UI (DAS-160+). */
+export interface CustomMaterialEntry extends CustomMaterial {
+  id: string;
+}
+
+export interface CustomMaterialRequest {
+  name: string;
+  material_type: MaterialType;
+  elastic_modulus_mpa: number;
+  cbr_percent?: number | null;
+  poisson_ratio?: number;
+  layer_coefficient?: number | null;
+  thickness_mm?: number | null;
+  description?: string;
 }
 
 export interface CesaDetailScenario {
