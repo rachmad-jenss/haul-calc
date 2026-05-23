@@ -1,4 +1,4 @@
-import { test, expect, navigate } from "../fixtures";
+import { test, expect } from "../fixtures";
 
 const STORE_KEY = "haul-calc-store";
 
@@ -29,7 +29,7 @@ async function seedPersistAndReload(
     { key: STORE_KEY, payload: persistPayload(overrides) },
   );
   await page.reload();
-  await page.waitForTimeout(1200);
+  await expect(page.locator("main")).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("Compare page workspace isolation (DAS-140)", () => {
