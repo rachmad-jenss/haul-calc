@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Calculator, ArrowDownToLine, AlertTriangle } from "lucide-react";
+import { Calculator, ArrowDownToLine, AlertTriangle, Layers } from "lucide-react";
+import { CustomMaterialModal } from "@/components/CustomMaterialModal";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -37,6 +38,7 @@ export default function PavementDesign() {
   const [running, setRunning] = useState(false);
   const [compareResult, setCompareResult] = useState<(CompareMethodsResult & { stub: boolean; stubMessage?: string }) | null>(null);
   const [comparing, setComparing] = useState(false);
+  const [showCustomMaterialModal, setShowCustomMaterialModal] = useState(false);
 
   useEffect(() => {
     setCompareResult(null);
@@ -220,6 +222,18 @@ export default function PavementDesign() {
                 <option value="D">D — light</option>
               </select>
             </div>
+
+            <div className="border-t pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowCustomMaterialModal(true)}
+              >
+                <Layers className="mr-2 h-4 w-4" />
+                Custom materials…
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -268,6 +282,11 @@ export default function PavementDesign() {
           </CardContent>
         </Card>
       </div>
+
+      <CustomMaterialModal
+        open={showCustomMaterialModal}
+        onOpenChange={setShowCustomMaterialModal}
+      />
     </div>
   );
 }
