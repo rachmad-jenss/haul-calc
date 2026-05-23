@@ -204,7 +204,19 @@ const TAURI_MOCK = `(function () {
     analyze_sensitivity: function(p) { return sensitivityResponse(p); },
     material_library: function() { return env(MATERIALS); },
     material_to_layer_coefficient: function() { return env(LAYER_COEFF); },
-    custom_material:  function() { return env(CUSTOM_MAT); },
+    custom_material:  function(p) {
+      var req = p || {};
+      return env({
+        name: req.name || CUSTOM_MAT.name,
+        material_type: req.material_type || CUSTOM_MAT.material_type,
+        elastic_modulus_mpa: req.elastic_modulus_mpa != null ? req.elastic_modulus_mpa : CUSTOM_MAT.elastic_modulus_mpa,
+        cbr_percent: req.cbr_percent != null ? req.cbr_percent : CUSTOM_MAT.cbr_percent,
+        poisson_ratio: req.poisson_ratio != null ? req.poisson_ratio : CUSTOM_MAT.poisson_ratio,
+        layer_coefficient: req.layer_coefficient != null ? req.layer_coefficient : CUSTOM_MAT.layer_coefficient,
+        thickness_mm: req.thickness_mm != null ? req.thickness_mm : CUSTOM_MAT.thickness_mm,
+        description: req.description != null ? req.description : CUSTOM_MAT.description,
+      });
+    },
     compute_economics_detail: function() { return env(ECON_DETAIL); },
     export_comparison_to_excel: function() { return env(EXCEL_EXPORT); },
     build_summary:    function() { return env(SUMMARY);     },
