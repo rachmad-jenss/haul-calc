@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Haul Calc",
+  "productName": "HaulCalc",
   "version": "1.4.1",
   "identifier": "id.jenss.haulcalc",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Haul Calc",
+        "title": "HaulCalc",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -46,7 +46,7 @@
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "displayLanguageSelector": false,
-        "startMenuFolder": "Haul Calc",
+        "startMenuFolder": "HaulCalc",
         "installerHooks": "./windows/hooks.nsh"
       }
     },

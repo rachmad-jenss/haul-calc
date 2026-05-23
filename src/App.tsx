@@ -154,7 +154,7 @@ export default function App() {
     try {
       const baseName = hasBoundFile && activeFileName ? ` - ${activeFileName}` : "";
       const dirtyStar = isProjectDirty ? " *" : "";
-      getCurrentWindow().setTitle(`Haul-Calc${baseName}${dirtyStar}`);
+      getCurrentWindow().setTitle(`HaulCalc${baseName}${dirtyStar}`);
     } catch {
       // Ignore if not in Tauri
     }
@@ -260,7 +260,7 @@ export default function App() {
       <aside className="flex w-60 shrink-0 flex-col border-r bg-card">
         <div className="flex h-14 flex-col justify-center border-b px-4 gap-1">
           <div className="flex items-center">
-            <span className="text-base font-semibold tracking-tight">Haul Calc</span>
+            <span className="text-base font-semibold tracking-tight">HaulCalc</span>
             <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
               v{__APP_VERSION__}
             </span>
