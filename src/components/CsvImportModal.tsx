@@ -23,7 +23,11 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
   const [fileName, setFileName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setParseResult(null);
+      setFileName(null);
+      return;
+    }
     const t = window.setTimeout(() => {
       contentRef.current?.querySelector<HTMLElement>("button")?.focus();
     }, 0);
