@@ -141,6 +141,8 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
               {customVehicles.map((cv) => (
                 <li
                   key={cv.id}
+                  data-testid="custom-vehicle-row"
+                  aria-label={`${cv.name} — ${cv.gvw_kn} kN / ${cv.axles} axles`}
                   className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                 >
                   <span className="truncate text-muted-foreground">

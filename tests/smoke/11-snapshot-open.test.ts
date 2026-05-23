@@ -168,7 +168,9 @@ test.describe("DAS-131 snapshot v2 in UI", () => {
     await navigate(page, "/fleet");
     await page.getByRole("button", { name: /custom vehicles/i }).click();
     const dialog = page.getByRole("dialog", { name: /custom vehicles/i });
-    await expect(dialog.getByText(/Snapshot Hauler — 5000 kN/)).toBeVisible();
+    await expect(
+      dialog.getByRole("listitem", { name: /Snapshot Hauler — 5000 kN/i }),
+    ).toBeVisible();
     await expect(page.locator("#working-days")).toHaveValue("300");
   });
 });
