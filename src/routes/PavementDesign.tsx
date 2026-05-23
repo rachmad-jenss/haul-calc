@@ -69,7 +69,8 @@ export default function PavementDesign() {
     }
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
-      toast.error(Object.values(errors)[0] ?? "Validation error");
+      const summary = Object.values(errors)[0];
+      toast.error(summary ?? "Validation error");
       return false;
     }
     return true;
