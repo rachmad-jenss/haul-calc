@@ -2,6 +2,7 @@ import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 import { basenameFromPath, resolveActiveFilePath } from "@/lib/file-binding";
+import { firstError, snapshotSchema } from "@/lib/schemas";
 import type { CalcStore } from "@/lib/store";
 import { useCalcStore } from "@/lib/store";
 
@@ -141,10 +142,11 @@ export function parseSnapshot(text: string | Snapshot): Snapshot {
       throw new Error("File tidak valid atau corrupt.");
     }
   }
-  if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
-    throw new Error("File tidak valid atau corrupt.");
+  const result = snapshotSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`File tidak valid: ${firstError(result.error)}`);
   }
-  return parsed as Snapshot;
+  return result.data as Snapshot;
 }
 
 export async function saveProject(store: CalcStore): Promise<void> {

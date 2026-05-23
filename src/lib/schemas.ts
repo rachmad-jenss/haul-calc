@@ -44,3 +44,55 @@ export const compareRequestSchema = z
 export function firstError(err: z.ZodError): string {
   return err.errors[0]?.message ?? "Validation error";
 }
+
+const snapshotFleetEntrySchema = z.object({
+  _id: z.string(),
+  vehicle_id: z.string(),
+  count: z.number(),
+  trips_per_day: z.number(),
+  payload_kn: z.number(),
+});
+
+const snapshotCostScenarioSchema = z.object({
+  _id: z.string(),
+  name: z.string(),
+  surface: z.enum(["asphalt", "gravel", "concrete"]),
+  thickness_mm: z.number(),
+  haul_distance_km: z.number(),
+  trips_per_day: z.number(),
+});
+
+const snapshotCustomVehicleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  gvw_kn: z.number(),
+  axles: z.number(),
+});
+
+/** Validates `.hcalc` JSON before loading into the store. */
+export const snapshotSchema = z.object({
+  version: z.number().finite(),
+  savedAt: z.string().optional(),
+  fleet: z.array(snapshotFleetEntrySchema),
+  designLifeYears: z.number().finite(),
+  workingDaysPerYear: z.number().finite().optional(),
+  customVehicles: z.array(snapshotCustomVehicleSchema).optional(),
+  cesaResult: z.unknown().nullable().optional(),
+  subgradeCbr: z.number().finite().optional(),
+  coverages: z.number().finite().optional(),
+  trhCategory: z.enum(["A", "B", "C", "D"]).optional(),
+  cbrResult: z.unknown().nullable().optional(),
+  trhResult: z.unknown().nullable().optional(),
+  costScenarios: z.array(snapshotCostScenarioSchema).optional(),
+  costResult: z.unknown().nullable().optional(),
+  lccaInputs: z.unknown().optional(),
+  lccaResult: z.unknown().nullable().optional(),
+  boqGeometry: z.unknown().optional(),
+  unitSystem: z.enum(["SI", "Imperial"]).optional(),
+  cesaDirty: z.boolean().optional(),
+  pavementDirty: z.boolean().optional(),
+  economicsDirty: z.boolean().optional(),
+  projectName: z.string().optional(),
+  authorName: z.string().optional(),
+  reportSummary: z.unknown().nullable().optional(),
+});
