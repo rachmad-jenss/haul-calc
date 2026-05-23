@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { generatePdf, DEFAULT_SECTIONS, type IncludeSections } from "@/lib/pdf-generator";
 import { computeBoq, type BoqRow } from "@/lib/boq";
 import { PageHeader } from "@/components/PageHeader";
+import { ReportSummaryPreview } from "@/components/ReportSummaryPreview";
 import { StubBanner } from "@/components/StubBanner";
 import { NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
@@ -237,9 +238,7 @@ export default function Reports() {
           <CardContent className="space-y-3">
             {reportSummary?.stub ? <StubBanner message={reportSummary.stubMessage} /> : null}
             {reportSummary ? (
-              <pre className="max-h-[480px] overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
-                {JSON.stringify(reportSummary, null, 2)}
-              </pre>
+              <ReportSummaryPreview summary={reportSummary} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Click "Generate summary" to build a design report from the most recent
