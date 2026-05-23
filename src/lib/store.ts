@@ -153,6 +153,17 @@ const DEFAULT_FLEET: FleetEntry[] = [
   { _id: crypto.randomUUID(), vehicle_id: "cat-789d", count: 4, trips_per_day: 24, payload_kn: 2_100 },
 ];
 
+let suppressProjectDirtyTracking = false;
+
+function withoutProjectDirtyTracking<T>(fn: () => T): T {
+  suppressProjectDirtyTracking = true;
+  try {
+    return fn();
+  } finally {
+    suppressProjectDirtyTracking = false;
+  }
+}
+
 const DEFAULT_SCENARIOS: CostScenario[] = [
   {
     _id: crypto.randomUUID(),
@@ -221,38 +232,37 @@ export const useCalcStore = create<CalcStore>()(
 
       isProjectDirty: false,
       setProjectDirty: (isProjectDirty) => set({ isProjectDirty }),
-      resetProject: () => {
-        suppressProjectDirtyTracking = true;
-        set({
-        fleet: DEFAULT_FLEET,
-        designLifeYears: 10,
-        workingDaysPerYear: 250,
-        cesaResult: null,
-        cesaDirty: false,
-        subgradeCbr: 8,
-        coverages: 1_050_000,
-        trhCategory: "B",
-        cbrResult: null,
-        trhResult: null,
-        pavementDirty: false,
-        costScenarios: DEFAULT_SCENARIOS,
-        costResult: null,
-        economicsDirty: false,
-        lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
-        lccaResult: null,
-        customVehicles: [],
-        customMaterials: [],
-        projectName: "Pit South — Main Haul",
-        authorName: "",
-        reportSummary: null,
-        activeFileName: null,
-        activeFilePath: null,
-        boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
-        isProjectDirty: false,
-        autoCheckUpdates: true,
-        });
-        suppressProjectDirtyTracking = false;
-      },
+      resetProject: () =>
+        withoutProjectDirtyTracking(() =>
+          set({
+            fleet: DEFAULT_FLEET,
+            designLifeYears: 10,
+            workingDaysPerYear: 250,
+            cesaResult: null,
+            cesaDirty: false,
+            subgradeCbr: 8,
+            coverages: 1_050_000,
+            trhCategory: "B",
+            cbrResult: null,
+            trhResult: null,
+            pavementDirty: false,
+            costScenarios: DEFAULT_SCENARIOS,
+            costResult: null,
+            economicsDirty: false,
+            lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
+            lccaResult: null,
+            customVehicles: [],
+            customMaterials: [],
+            projectName: "Pit South — Main Haul",
+            authorName: "",
+            reportSummary: null,
+            activeFileName: null,
+            activeFilePath: null,
+            boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
+            isProjectDirty: false,
+            autoCheckUpdates: true,
+          }),
+        ),
 
       setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
@@ -332,11 +342,10 @@ export const useCalcStore = create<CalcStore>()(
         withoutProjectDirtyTracking(() =>
           set({ reportSummary: { ...result, stub, stubMessage } }),
         ),
-      loadFromSnapshot: (data) => {
-        suppressProjectDirtyTracking = true;
-        set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false });
-        suppressProjectDirtyTracking = false;
-      },
+      loadFromSnapshot: (data) =>
+        withoutProjectDirtyTracking(() =>
+          set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+        ),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       setActiveFilePath: (activeFilePath) => set({ activeFilePath }),
       pushRecentFile: (filePath) =>
@@ -438,15 +447,15 @@ export const useCalcStore = create<CalcStore>()(
       onRehydrateStorage: () => (_state, error) => {
         if (error) return;
         const apply = () => {
-          suppressProjectDirtyTracking = true;
-          const state = useCalcStore.getState();
-          const patch = normalizePersistedFileBinding(state);
-          useCalcStore.setState({
-            ...(patch ?? {}),
-            // Preserve edits made before persist rehydrate finishes.
-            isProjectDirty: state.isProjectDirty,
+          withoutProjectDirtyTracking(() => {
+            const state = useCalcStore.getState();
+            const patch = normalizePersistedFileBinding(state);
+            useCalcStore.setState({
+              ...(patch ?? {}),
+              // Preserve edits made before persist rehydrate finishes.
+              isProjectDirty: state.isProjectDirty,
+            });
           });
-          suppressProjectDirtyTracking = false;
         };
         queueMicrotask(apply);
       },
@@ -483,16 +492,6 @@ export const useCalcStore = create<CalcStore>()(
 );
 
 let trackProjectDirty = useCalcStore.persist.hasHydrated();
-let suppressProjectDirtyTracking = false;
-
-function withoutProjectDirtyTracking<T>(fn: () => T): T {
-  suppressProjectDirtyTracking = true;
-  try {
-    return fn();
-  } finally {
-    suppressProjectDirtyTracking = false;
-  }
-}
 
 useCalcStore.persist.onFinishHydration(() => {
   trackProjectDirty = true;
