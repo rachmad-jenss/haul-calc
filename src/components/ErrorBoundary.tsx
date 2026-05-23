@@ -7,12 +7,13 @@ interface Props {
 
 interface State {
   error: Error | null;
+  resetKey: number;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, resetKey: 0 };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
@@ -29,13 +30,20 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted-foreground">
               {this.state.error.message}
             </p>
-            <Button onClick={() => this.setState({ error: null })}>
+            <Button
+              onClick={() =>
+                this.setState((s) => ({
+                  error: null,
+                  resetKey: s.resetKey + 1,
+                }))
+              }
+            >
               Try again
             </Button>
           </div>
         </div>
       );
     }
-    return this.props.children;
+    return <div key={this.state.resetKey}>{this.props.children}</div>;
   }
 }
