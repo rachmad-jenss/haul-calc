@@ -317,6 +317,20 @@ def _capture_user_warnings(callback: Any) -> tuple[Any, list[str]]:
     return result, messages
 
 
+def _library_warnings_not_in_structured(
+    captured: list[str],
+    structured: list[str | None],
+) -> list[str]:
+    """Drop haul-pave UserWarnings already represented in usace/trh14 warning fields."""
+    known = [s for s in structured if s]
+    extra: list[str] = []
+    for msg in captured:
+        if any(msg in k or k in msg for k in known):
+            continue
+        extra.append(msg)
+    return extra
+
+
 def _call_compute_cesa(params: dict[str, Any]) -> Any:
     from haulpave.traffic.cesa import compute_cesa
     from haulpave.traffic.coverages import compute_coverages
@@ -571,8 +585,12 @@ def _call_compare_methods(params: dict[str, Any]) -> Any:
         "subgrade_cbr": cbr,
         "confidence": compare_confidence,
     }
-    if captured_warnings:
-        response["warnings"] = captured_warnings
+    extra_warnings = _library_warnings_not_in_structured(
+        captured_warnings,
+        [usace_warning, trh14_result.get("warning")],
+    )
+    if extra_warnings:
+        response["warnings"] = extra_warnings
     return response
 
 
