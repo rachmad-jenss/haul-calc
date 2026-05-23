@@ -205,21 +205,25 @@ export default function FleetTraffic() {
                 <UserPlus className="h-4 w-4" />
                 Custom vehicles
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLoadSample}>
-                <FileJson className="h-4 w-4" />
-                Sample Fleet
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
+              {fleet.length > 0 ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleLoadSample}>
+                    <FileJson className="h-4 w-4" />
+                    Sample Fleet
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addRow}>
+                    <Plus className="h-4 w-4" />
+                    Add row
+                  </Button>
+                </>
+              ) : null}
               <Button variant="outline" size="sm" onClick={() => setShowCsvModal(true)}>
                 <FileUp className="h-4 w-4" />
                 Import CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={addRow}>
-                <Plus className="h-4 w-4" />
-                Add row
               </Button>
             </div>
           </CardHeader>
