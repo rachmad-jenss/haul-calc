@@ -52,10 +52,11 @@ tests/screenshots/
 tests/playwright-report/
 tests/test-results/
 
-# AI tool files (not for public repo)
+# AI tool files (local agent workflow — not for public repo)
+AGENTS.md
 CLAUDE.md
+.cursor/
 CONTRIBUTING.md
 TEMPLATES.md
 .claude/
-AGENTS.md
 .opencode/
