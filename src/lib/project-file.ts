@@ -2,6 +2,7 @@ import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 import { basenameFromPath, resolveActiveFilePath } from "@/lib/file-binding";
+import { firstError, snapshotSchema } from "@/lib/schemas";
 import type { CalcStore } from "@/lib/store";
 import { useCalcStore } from "@/lib/store";
 
@@ -70,17 +71,17 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
   const base: Partial<CalcStore> = {
     fleet: snap.fleet,
     designLifeYears: snap.designLifeYears,
-    cesaResult: snap.cesaResult,
-    subgradeCbr: snap.subgradeCbr,
-    coverages: snap.coverages,
-    trhCategory: snap.trhCategory,
-    cbrResult: snap.cbrResult,
-    trhResult: snap.trhResult,
-    costScenarios: snap.costScenarios,
-    costResult: snap.costResult,
-    projectName: snap.projectName,
-    authorName: snap.authorName,
-    reportSummary: snap.reportSummary,
+    cesaResult: snap.cesaResult ?? null,
+    subgradeCbr: snap.subgradeCbr ?? 8,
+    coverages: snap.coverages ?? 1_050_000,
+    trhCategory: snap.trhCategory ?? "B",
+    cbrResult: snap.cbrResult ?? null,
+    trhResult: snap.trhResult ?? null,
+    costScenarios: snap.costScenarios ?? [],
+    costResult: snap.costResult ?? null,
+    projectName: snap.projectName ?? "",
+    authorName: snap.authorName ?? "",
+    reportSummary: snap.reportSummary ?? null,
   };
   if (version >= 2) {
     return {
@@ -141,10 +142,11 @@ export function parseSnapshot(text: string | Snapshot): Snapshot {
       throw new Error("File tidak valid atau corrupt.");
     }
   }
-  if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
-    throw new Error("File tidak valid atau corrupt.");
+  const result = snapshotSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`File tidak valid: ${firstError(result.error)}`);
   }
-  return parsed as Snapshot;
+  return result.data as Snapshot;
 }
 
 export async function saveProject(store: CalcStore): Promise<void> {
