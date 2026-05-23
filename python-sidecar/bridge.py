@@ -184,29 +184,46 @@ def _stub_response(method: str, params: dict[str, Any]) -> Any:
         }
     if method == "material_library":
         return [
-            {"id": "g1", "name": "G1 — Crushed stone", "class": "G1", "default_cbr": 100.0, "layer_type": "base"},
-            {"id": "g2", "name": "G2 — Crushed stone", "class": "G2", "default_cbr": 80.0, "layer_type": "base"},
-            {"id": "g3", "name": "G3 — Crushed stone", "class": "G3", "default_cbr": 45.0, "layer_type": "base"},
-            {"id": "g4", "name": "G4 — Natural gravel", "class": "G4", "default_cbr": 25.0, "layer_type": "base"},
-            {"id": "g5", "name": "G5 — Natural gravel", "class": "G5", "default_cbr": 10.0, "layer_type": "subbase"},
-            {"id": "g6", "name": "G6 — Natural gravel", "class": "G6", "default_cbr": 5.0, "layer_type": "subbase"},
-            {"id": "g7", "name": "G7 — Gravel-sand", "class": "G7", "default_cbr": 3.0, "layer_type": "subbase"},
-            {"id": "asphalt-wearing", "name": "Asphalt wearing course", "class": None, "default_cbr": None, "layer_type": "surface"},
+            {
+                "name": "Gravel-sand mix (G5)",
+                "material_class": "G5",
+                "cbr_range": [7.0, 15.0],
+                "typical_modulus_mpa": 120.0,
+                "source": "CSRA TRH 14 (1985), Table 2 (stub)",
+            },
+            {
+                "name": "Crushed stone base (high quality)",
+                "material_class": "N/A",
+                "cbr_range": [80.0, 100.0],
+                "typical_modulus_mpa": 450.0,
+                "source": "USACE TM 5-822-12 (1990), Table 2-1 (stub)",
+            },
         ]
     if method == "material_to_layer_coefficient":
-        material_class = params.get("material_class", "G5")
-        _coeffs = {"G1": 0.14, "G2": 0.12, "G3": 0.10, "G4": 0.09, "G5": 0.08, "G6": 0.06, "G7": 0.04}
-        return {
-            "material_class": material_class,
-            "coefficient": _coeffs.get(material_class, 0.08),
-        }
+        cbr = float(params.get("cbr_percent", params.get("cbr", 10.0)))
+        if cbr >= 80:
+            coeff = 0.14
+        elif cbr >= 50:
+            coeff = 0.13
+        elif cbr >= 30:
+            coeff = 0.12
+        elif cbr >= 15:
+            coeff = 0.11
+        elif cbr >= 7:
+            coeff = 0.10
+        else:
+            coeff = 0.08
+        return {"coefficient": coeff}
     if method == "custom_material":
         return {
-            "id": "custom-001",
             "name": params.get("name", "Custom material"),
-            "material_class": params.get("material_class", "G5"),
-            "cbr": params.get("cbr", 15.0),
-            "source": params.get("source", "user"),
+            "material_type": params.get("material_type", "granular"),
+            "elastic_modulus_mpa": float(params.get("elastic_modulus_mpa", 120.0)),
+            "cbr_percent": float(params.get("cbr_percent", params.get("cbr", 15.0))),
+            "poisson_ratio": float(params.get("poisson_ratio", 0.35)),
+            "layer_coefficient": params.get("layer_coefficient"),
+            "thickness_mm": params.get("thickness_mm"),
+            "description": params.get("description", ""),
         }
     if method == "compute_economics_detail":
         return {
@@ -847,30 +864,87 @@ def _call_analyze_sensitivity_compat(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _call_material_library(_params: dict[str, Any]) -> Any:
-    from haulpave.materials.library import list_all_templates
+# TRH 14 G-class mid-point CBR [%] for legacy material_class-only RPC params.
+_TRH_CLASS_CBR_MID: dict[str, float] = {
+    "G1": 90.0,
+    "G2": 62.0,
+    "G3": 35.0,
+    "G4": 20.0,
+    "G5": 11.0,
+    "G6": 5.5,
+    "G7": 3.0,
+    "G8": 1.75,
+    "G9": 0.75,
+    "N/A": 15.0,
+}
 
-    return _serialize(list_all_templates())
+
+def _build_custom_material_from_params(params: dict[str, Any]) -> Any:
+    """Build haul-pave v0.5 CustomMaterial from JSON-RPC params."""
+    from haulpave.models.material import CustomMaterial
+
+    if "material_type" not in params and params.get("material_class"):
+        mc = str(params.get("material_class", "G5")).upper()
+        cbr_raw = params.get("cbr_percent", params.get("cbr"))
+        cbr_percent = float(cbr_raw) if cbr_raw is not None else _TRH_CLASS_CBR_MID.get(mc, 10.0)
+        return CustomMaterial(
+            name=str(params.get("name", f"Material {mc}")),
+            material_type="granular",
+            elastic_modulus_mpa=float(params.get("elastic_modulus_mpa", 120.0)),
+            cbr_percent=cbr_percent,
+            poisson_ratio=float(params.get("poisson_ratio", 0.35)),
+            layer_coefficient=(
+                float(params["layer_coefficient"]) if params.get("layer_coefficient") is not None else None
+            ),
+            thickness_mm=(
+                float(params["thickness_mm"]) if params.get("thickness_mm") is not None else None
+            ),
+            description=str(params.get("description", "")),
+        )
+
+    material_type = str(params.get("material_type", "granular"))
+    if material_type not in ("granular", "stabilized", "asphalt", "concrete"):
+        raise ValueError(
+            f"material_type must be granular, stabilized, asphalt, or concrete; got {material_type!r}"
+        )
+
+    cbr_raw = params.get("cbr_percent", params.get("cbr"))
+    cbr_percent = float(cbr_raw) if cbr_raw is not None else None
+
+    layer_coef = params.get("layer_coefficient")
+    layer_coefficient = float(layer_coef) if layer_coef is not None else None
+
+    thickness_raw = params.get("thickness_mm")
+    thickness_mm = float(thickness_raw) if thickness_raw is not None else None
+
+    return CustomMaterial(
+        name=str(params.get("name", "Custom material")),
+        material_type=material_type,
+        elastic_modulus_mpa=float(params.get("elastic_modulus_mpa", 120.0)),
+        cbr_percent=cbr_percent,
+        poisson_ratio=float(params.get("poisson_ratio", 0.35)),
+        layer_coefficient=layer_coefficient,
+        thickness_mm=thickness_mm,
+        description=str(params.get("description", "")),
+    )
+
+
+def _call_material_library(_params: dict[str, Any]) -> Any:
+    from haulpave.material_library import list_all
+
+    return _serialize(list_all())
 
 
 def _call_material_to_layer_coefficient(params: dict[str, Any]) -> Any:
-    from haulpave.materials.library import material_to_layer_coefficient
+    from haulpave.models.material import material_to_layer_coefficient
 
-    return _serialize(material_to_layer_coefficient(
-        material_class=str(params.get("material_class", "G5")),
-    ))
+    material = _build_custom_material_from_params(params)
+    return {"coefficient": material_to_layer_coefficient(material)}
 
 
 def _call_custom_material(params: dict[str, Any]) -> Any:
-    from haulpave.models.materials import CustomMaterial
-
-    return _serialize(CustomMaterial(
-        id=params.get("existing_id") or "",
-        name=params.get("name", "Custom material"),
-        material_class=params.get("material_class", "G5"),
-        cbr=float(params.get("cbr", 15.0)),
-        source=str(params.get("source", "user")),
-    ))
+    material = _build_custom_material_from_params(params)
+    return _serialize(material)
 
 
 def _call_compute_economics_detail(params: dict[str, Any]) -> Any:
