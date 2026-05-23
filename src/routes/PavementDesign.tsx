@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calculator, ArrowDownToLine, AlertTriangle, Layers } from "lucide-react";
 import { CustomMaterialModal } from "@/components/CustomMaterialModal";
+import { MaterialLibraryPanel } from "@/components/MaterialLibraryPanel";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -15,7 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
-import type { CallError, CompareMethodsResult, MethodResult, PavementResult } from "@/lib/types";
+import type {
+  CallError,
+  CompareMethodsResult,
+  MaterialTemplate,
+  MethodResult,
+  PavementResult,
+} from "@/lib/types";
 import { convertThickness, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
@@ -39,6 +46,7 @@ export default function PavementDesign() {
   const [compareResult, setCompareResult] = useState<(CompareMethodsResult & { stub: boolean; stubMessage?: string }) | null>(null);
   const [comparing, setComparing] = useState(false);
   const [showCustomMaterialModal, setShowCustomMaterialModal] = useState(false);
+  const [catalogPrefill, setCatalogPrefill] = useState<MaterialTemplate | null>(null);
 
   useEffect(() => {
     setCompareResult(null);
@@ -223,12 +231,25 @@ export default function PavementDesign() {
               </select>
             </div>
 
-            <div className="border-t pt-3">
+            <div className="space-y-2 border-t pt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Materials
+              </p>
+              <MaterialLibraryPanel
+                onPickTemplate={(t) => {
+                  setCatalogPrefill(t);
+                  setShowCustomMaterialModal(true);
+                  toast.info(`Prefilled "${t.name}" — review and add to project.`);
+                }}
+              />
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => setShowCustomMaterialModal(true)}
+                onClick={() => {
+                  setCatalogPrefill(null);
+                  setShowCustomMaterialModal(true);
+                }}
               >
                 <Layers className="mr-2 h-4 w-4" />
                 Custom materials…
@@ -286,6 +307,7 @@ export default function PavementDesign() {
       <CustomMaterialModal
         open={showCustomMaterialModal}
         onOpenChange={setShowCustomMaterialModal}
+        catalogPrefill={catalogPrefill}
       />
     </div>
   );
