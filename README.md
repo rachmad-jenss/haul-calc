@@ -31,11 +31,11 @@ The app auto-updates — once installed, use **Settings → Updates → Check fo
 - Life-Cycle Cost Analysis (LCCA) with NPV and AEC computation
 - Multi-project comparison for side-by-side benchmarking
 - Sensitivity analysis with what-if parameter sweeps and data table view
-- Material Bill of Quantities (BoQ) in Reports with PDF export
+- Material Bill of Quantities (BoQ) in Reports (CSV/PDF) using layer names and bulk density from haul-pave material types
+- Material catalog on Pavement Design (TRH 14 / USACE templates) with search; add project-specific custom materials and use them in thickness compute and method comparison
+- Custom materials persist in `.hcalc` project files (snapshot v3+)
 - Keyboard shortcuts: Ctrl+N (new), Ctrl+O (open), Ctrl+S (save), Ctrl+Z/Y (undo/redo)
 - Fleet row ordering with up/down reorder buttons
-- Material Bill of Quantities (BoQ) in Reports with PDF export
-- Material library with pre-defined templates and custom material support
 - Excel export for economics comparison
 - Save/load projects as `.hcalc` files — double-click to open directly
 - Versioned design summary export (JSON)
@@ -48,6 +48,7 @@ The app auto-updates — once installed, use **Settings → Updates → Check fo
 - Node.js 20+ and pnpm 9+
 - Rust stable (via `rustup`)
 - Python 3.10+
+- [haul-pave](https://github.com/rachmad-jenss/haul-pave) **0.5.0+** (material library API, custom materials, layer `material_type` for BoQ density)
 - WebView2 runtime (preinstalled on Windows 11; bootstrapped by the installer on older systems)
 
 ## Development setup
@@ -55,7 +56,7 @@ The app auto-updates — once installed, use **Settings → Updates → Check fo
 ```powershell
 # Install JS and Python dependencies
 pnpm install
-pip install haulpave  # or: cd python-sidecar && pip install -r requirements.txt
+pip install "haulpave>=0.5.0"  # or: cd python-sidecar && pip install -r requirements.txt
 
 # Build the Python sidecar exe (run once per haul-pave version bump)
 pwsh python-sidecar/build.ps1
