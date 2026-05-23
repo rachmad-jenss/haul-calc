@@ -44,6 +44,10 @@ export class ErrorBoundary extends Component<Props, State> {
         </div>
       );
     }
-    return <div key={this.state.resetKey}>{this.props.children}</div>;
+    return (
+      <div key={this.state.resetKey} className="h-full min-h-0">
+        {this.props.children}
+      </div>
+    );
   }
 }
