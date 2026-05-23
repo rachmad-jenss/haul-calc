@@ -7,6 +7,13 @@ import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { FieldError, Metric } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,25 +289,31 @@ export default function FleetTraffic() {
                   {fleet.map((row, idx) => (
                     <tr key={row._id} className="border-b last:border-0">
                       <td className="px-2 py-2">
-                        <select
+                        <Select
                           value={row.vehicle_id}
-                          onChange={(e) => updateRow(idx, { vehicle_id: e.target.value })}
-                          className={cn(
-                            "h-8 w-full rounded border border-input bg-background px-2 text-sm",
-                            rowFieldError(idx, "vehicle_id") && "border-destructive",
-                          )}
-                          aria-invalid={rowFieldError(idx, "vehicle_id") ? true : undefined}
+                          onValueChange={(vehicle_id) => updateRow(idx, { vehicle_id })}
                         >
-                          {allVehicles.length === 0 ? (
-                            <option value={row.vehicle_id}>{row.vehicle_id}</option>
-                          ) : (
-                            allVehicles.map((v) => (
-                              <option key={v.id} value={v.id}>
-                                {v.name}
-                              </option>
-                            ))
-                          )}
-                        </select>
+                          <SelectTrigger
+                            className={cn(
+                              "h-8",
+                              rowFieldError(idx, "vehicle_id") && "border-destructive",
+                            )}
+                            aria-invalid={rowFieldError(idx, "vehicle_id") ? true : undefined}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allVehicles.length === 0 ? (
+                              <SelectItem value={row.vehicle_id}>{row.vehicle_id}</SelectItem>
+                            ) : (
+                              allVehicles.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>
+                                  {v.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                         <FieldError message={rowFieldError(idx, "vehicle_id")} />
                       </td>
                       <td className="px-2 py-2">
