@@ -475,6 +475,13 @@ function SidecarStatusBadge({
       </span>
     );
   }
+  if (status === "killed") {
+    return (
+      <span className="flex items-center gap-1 text-muted-foreground">
+        <XCircle className="h-4 w-4" /> Stopped
+      </span>
+    );
+  }
   return (
     <span className="flex items-center gap-1 text-destructive">
       <XCircle className="h-4 w-4" />

@@ -39,7 +39,7 @@ async function call<T>(method: string, params: unknown = {}): Promise<CallResult
   }
 }
 
-export type SidecarStatus = "running" | "crashed" | "restarting";
+export type SidecarStatus = "running" | "crashed" | "restarting" | "killed";
 
 export const haulPave = {
   computeCesa: (req: CesaRequest) => call<CesaResult>("compute_cesa", req),
