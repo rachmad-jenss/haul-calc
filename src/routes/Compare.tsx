@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseSnapshot, type Snapshot } from "@/lib/project-file";
+import { resolveActiveFilePath } from "@/lib/file-binding";
+import { useCalcStore } from "@/lib/store";
 
 interface LoadedProject {
   filePath: string;
@@ -39,6 +41,9 @@ function bestIdx(values: (number | null)[], mode: "min" | "max"): number | null 
 export default function Compare() {
   const [projects, setProjects] = useState<LoadedProject[]>([]);
   const [loading, setLoading] = useState(false);
+  const { activeFileName, activeFilePath, recentFiles } = useCalcStore();
+  const workspacePath = resolveActiveFilePath({ activeFilePath, activeFileName, recentFiles });
+  const workspaceLabel = activeFileName ?? (workspacePath ? workspacePath.replace(/^.*[/\\]/, "") : null);
 
   const addFiles = async () => {
     const filePaths = await open({
@@ -99,6 +104,26 @@ export default function Compare() {
       />
 
       <div className="space-y-6 p-6">
+        <Card className="border-dashed bg-muted/20">
+          <CardContent className="py-3 text-sm text-muted-foreground">
+            <p>
+              <span className="font-medium text-foreground">Read-only comparison.</span>{" "}
+              Files loaded here are not opened in the main workspace and do not change your
+              active project.
+            </p>
+            <p className="mt-1">
+              {workspaceLabel ? (
+                <>
+                  Save (Ctrl+S) still applies to{" "}
+                  <span className="font-medium text-foreground">{workspaceLabel}</span>.
+                </>
+              ) : (
+                <>No project file is bound in the workspace — use File → Open on another page to edit a project.</>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+
         {projects.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
