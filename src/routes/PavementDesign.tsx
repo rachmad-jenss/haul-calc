@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calculator, ArrowDownToLine, AlertTriangle } from "lucide-react";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { haulPave } from "@/lib/haulpave-client";
 import { cbrRequestSchema, trh14RequestSchema, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
-import type { CallError, CompareMethodsResult, PavementResult } from "@/lib/types";
+import type { CallError, CompareMethodsResult, MethodResult, PavementResult } from "@/lib/types";
 import { convertThickness, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
@@ -27,9 +27,6 @@ export default function PavementDesign() {
     cbrResult,
     trhResult,
     pavementDirty,
-    fleet,
-    designLifeYears,
-    workingDaysPerYear,
     setSubgradeCbr,
     setCoverages,
     setTrhCategory,
@@ -41,6 +38,10 @@ export default function PavementDesign() {
   const [compareResult, setCompareResult] = useState<(CompareMethodsResult & { stub: boolean; stubMessage?: string }) | null>(null);
   const [comparing, setComparing] = useState(false);
 
+  useEffect(() => {
+    setCompareResult(null);
+  }, [subgradeCbr, coverages, trhCategory]);
+
   const importFromCesa = () => {
     if (cesaResult) {
       setCoverages(cesaResult.design_coverages);
@@ -49,23 +50,45 @@ export default function PavementDesign() {
   };
 
   const compare = async () => {
-    if (!fleet.length) {
-      toast.error("Add at least one vehicle in the Traffic / CESA tab first.");
+    const cbrParsed = cbrRequestSchema.safeParse({
+      subgrade_cbr: subgradeCbr,
+      design_coverages: coverages,
+    });
+    if (!cbrParsed.success) {
+      toast.error(firstError(cbrParsed.error));
+      return;
+    }
+    const trhParsed = trh14RequestSchema.safeParse({
+      category: trhCategory,
+      design_coverages: coverages,
+    });
+    if (!trhParsed.success) {
+      toast.error(firstError(trhParsed.error));
       return;
     }
     setComparing(true);
     try {
-      const res = await haulPave.compareMethods({
-        fleet,
-        design_life_years: designLifeYears,
-        working_days_per_year: workingDaysPerYear,
-        subgrade_cbr: subgradeCbr,
-      });
+      const [cbrRes, trhRes] = await Promise.all([
+        haulPave.cbrThickness(cbrParsed.data),
+        haulPave.trh14Thickness(trhParsed.data),
+      ]);
+
+      setCbrResult(cbrRes.data, cbrRes.stub, cbrRes.stubMessage);
+      setTrhResult(trhRes.data, trhRes.stub, trhRes.stubMessage);
+
+      const usace = toMethodResult(cbrRes.data, coverages, cesaResult?.cesa);
+      const trh14 = toMethodResult(trhRes.data, coverages);
+      const confidence = minConfidence(usace.confidence, trh14.confidence);
+      const stubMessages = [cbrRes.stubMessage, trhRes.stubMessage].filter(Boolean);
 
       setCompareResult({
-        ...res.data,
-        stub: res.stub,
-        stubMessage: res.stubMessage,
+        usace,
+        trh14,
+        delta_mm: Math.abs(usace.total_thickness_mm - trh14.total_thickness_mm),
+        subgrade_cbr: subgradeCbr,
+        confidence,
+        stub: cbrRes.stub || trhRes.stub,
+        stubMessage: stubMessages.length > 0 ? stubMessages.join(" · ") : undefined,
       });
     } catch (err) {
       const e = err as CallError;
@@ -245,6 +268,34 @@ export default function PavementDesign() {
   );
 }
 
+const CONFIDENCE_RANK: Record<MethodResult["confidence"], number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+};
+
+function minConfidence(
+  ...levels: MethodResult["confidence"][]
+): MethodResult["confidence"] {
+  return levels.reduce((min, c) => (CONFIDENCE_RANK[c] < CONFIDENCE_RANK[min] ? c : min));
+}
+
+function toMethodResult(
+  pavement: PavementResult,
+  designCoverages: number,
+  totalCesa?: number,
+): MethodResult {
+  return {
+    method: pavement.method,
+    total_thickness_mm: pavement.total_thickness_mm,
+    total_coverages: designCoverages,
+    total_cesa: totalCesa,
+    confidence: pavement.confidence,
+    material_class: pavement.material_class,
+    warning: pavement.warning,
+  };
+}
+
 const CONFIDENCE_COLOR: Record<string, string> = {
   high: "bg-emerald-100 text-emerald-800",
   medium: "bg-amber-100 text-amber-800",
@@ -291,7 +342,10 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
                   </span>
                 )}
               </div>
-              <div className="mb-1 font-mono text-2xl font-bold">
+              <div
+                className="mb-1 font-mono text-2xl font-bold"
+                data-testid={`compare-${key}-thickness-mm`}
+              >
                 {formatNumber(m.total_thickness_mm, 0)} mm
               </div>
               <div className="text-xs text-muted-foreground">{m.method}</div>
@@ -345,7 +399,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
         <span>·</span>
-        <span>Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
+        <span>Total: <span className="font-mono" data-testid="pavement-total-thickness">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
         <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
           {result.confidence} confidence
         </span>
