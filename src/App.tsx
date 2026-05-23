@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -17,6 +17,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -35,6 +36,10 @@ const NAV = [
   { to: "/compare", label: "Compare", icon: GitCompareArrows },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
+
+/** Prevents parallel unsaved-close dialogs when the user double-clicks X. */
+let closeConfirmInFlight = false;
+let closeGuardUnlisten: (() => void) | undefined;
 
 export default function App() {
   useAutoUpdate();
@@ -154,6 +159,80 @@ export default function App() {
       // Ignore if not in Tauri
     }
   }, [activeFileName, hasBoundFile, isProjectDirty]);
+
+  // Register close guard only while dirty. A permanent listener blocks WM_CLOSE on Windows
+  // even when the project is clean; useLayoutEffect minimizes the attach race after edits.
+  useLayoutEffect(() => {
+    if (!isProjectDirty) {
+      closeGuardUnlisten?.();
+      closeGuardUnlisten = undefined;
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const win = getCurrentWindow();
+        const unlisten = await win.onCloseRequested((event) => {
+          event.preventDefault();
+          if (closeConfirmInFlight) return;
+          closeConfirmInFlight = true;
+
+          void (async () => {
+            let settled = false;
+            const forceExit = async () => {
+              if (settled) return;
+              settled = true;
+              try {
+                await win.destroy();
+              } catch {
+                // ignore
+              }
+              await exit(0);
+            };
+            const timeoutId = window.setTimeout(() => {
+              void forceExit();
+            }, 5000);
+            try {
+              const confirmed = await ask(
+                "You have unsaved changes. Are you sure you want to exit without saving?",
+                { title: "Unsaved Changes", kind: "warning" },
+              );
+              if (settled) return;
+              window.clearTimeout(timeoutId);
+              if (confirmed) {
+                await forceExit();
+              } else {
+                settled = true;
+              }
+            } catch (err) {
+              if (settled) return;
+              window.clearTimeout(timeoutId);
+              console.error("Close confirmation failed:", err);
+              await forceExit();
+            } finally {
+              closeConfirmInFlight = false;
+            }
+          })();
+        });
+        if (cancelled) {
+          unlisten();
+        } else {
+          closeGuardUnlisten?.();
+          closeGuardUnlisten = unlisten;
+        }
+      } catch {
+        // Not in a Tauri context (browser / tests)
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      closeGuardUnlisten?.();
+      closeGuardUnlisten = undefined;
+    };
+  }, [isProjectDirty]);
 
   const handleNewProject = async () => {
     if (useCalcStore.getState().isProjectDirty) {

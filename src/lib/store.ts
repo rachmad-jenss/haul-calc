@@ -254,11 +254,12 @@ export const useCalcStore = create<CalcStore>()(
         suppressProjectDirtyTracking = false;
       },
 
-      setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null }),
-      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null }),
+      setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
+      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       addCustomVehicle: (v) =>
         set((s) => ({
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
+          isProjectDirty: true,
         })),
       removeCustomVehicle: (id) =>
         set((s) => ({
@@ -267,6 +268,7 @@ export const useCalcStore = create<CalcStore>()(
           cesaResult: null,
           cesaDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
       addCustomMaterial: (m) =>
         set((s) => ({
@@ -284,39 +286,52 @@ export const useCalcStore = create<CalcStore>()(
           ],
           pavementDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
       removeCustomMaterial: (id) =>
         set((s) => ({
           customMaterials: s.customMaterials.filter((c) => c.id !== id),
           pavementDirty: true,
           reportSummary: null,
+          isProjectDirty: true,
         })),
-      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null }),
+      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       setCesaResult: (result, stub, stubMessage) =>
-        set((s) => ({
-          cesaResult: { ...result, stub, stubMessage },
-          cesaDirty: false,
-          coverages: result.design_coverages,
-          cbrResult: s.coverages !== result.design_coverages ? null : s.cbrResult,
-          trhResult: s.coverages !== result.design_coverages ? null : s.trhResult,
-          pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
-        })),
-      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null }),
-      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null }),
-      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set((s) => ({
+            cesaResult: { ...result, stub, stubMessage },
+            cesaDirty: false,
+            coverages: result.design_coverages,
+            cbrResult: s.coverages !== result.design_coverages ? null : s.cbrResult,
+            trhResult: s.coverages !== result.design_coverages ? null : s.trhResult,
+            pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
+          })),
+        ),
+      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
       setCbrResult: (result, stub, stubMessage) =>
-        set({ cbrResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        withoutProjectDirtyTracking(() =>
+          set({ cbrResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        ),
       setTrhResult: (result, stub, stubMessage) =>
-        set({ trhResult: { ...result, stub, stubMessage }, pavementDirty: false }),
-      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set({ trhResult: { ...result, stub, stubMessage }, pavementDirty: false }),
+        ),
+      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null, isProjectDirty: true }),
       setCostResult: (result, stub, stubMessage) =>
-        set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),
-      setLccaInputs: (lccaInputs) => set({ lccaInputs, lccaResult: null }),
-      setLccaResult: (lccaResult) => set({ lccaResult }),
-      setProjectName: (projectName) => set({ projectName, reportSummary: null }),
-      setAuthorName: (authorName) => set({ authorName, reportSummary: null }),
+        withoutProjectDirtyTracking(() =>
+          set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),
+        ),
+      setLccaInputs: (lccaInputs) => set({ lccaInputs, lccaResult: null, isProjectDirty: true }),
+      setLccaResult: (lccaResult) =>
+        withoutProjectDirtyTracking(() => set({ lccaResult })),
+      setProjectName: (projectName) => set({ projectName, reportSummary: null, isProjectDirty: true }),
+      setAuthorName: (authorName) => set({ authorName, reportSummary: null, isProjectDirty: true }),
       setReportSummary: (result, stub, stubMessage) =>
-        set({ reportSummary: { ...result, stub, stubMessage } }),
+        withoutProjectDirtyTracking(() =>
+          set({ reportSummary: { ...result, stub, stubMessage } }),
+        ),
       loadFromSnapshot: (data) => {
         suppressProjectDirtyTracking = true;
         set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false });
@@ -331,7 +346,7 @@ export const useCalcStore = create<CalcStore>()(
       setTheme: (theme) => set({ theme }),
       setAutoCheckUpdates: (autoCheckUpdates) => set({ autoCheckUpdates }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
-      setBoqGeometry: (boqGeometry) => set({ boqGeometry }),
+      setBoqGeometry: (boqGeometry) => set({ boqGeometry, isProjectDirty: true }),
     }),
     {
       name: "haul-calc-store",
@@ -428,7 +443,8 @@ export const useCalcStore = create<CalcStore>()(
           const patch = normalizePersistedFileBinding(state);
           useCalcStore.setState({
             ...(patch ?? {}),
-            isProjectDirty: false,
+            // Preserve edits made before persist rehydrate finishes.
+            isProjectDirty: state.isProjectDirty,
           });
           suppressProjectDirtyTracking = false;
         };
@@ -460,17 +476,29 @@ export const useCalcStore = create<CalcStore>()(
         economicsDirty: state.economicsDirty,
         reportSummary: state.reportSummary,
         boqGeometry: state.boqGeometry,
+        isProjectDirty: state.isProjectDirty,
       }),
     },
   ),
 );
 
-let trackProjectDirty = false;
+let trackProjectDirty = useCalcStore.persist.hasHydrated();
 let suppressProjectDirtyTracking = false;
+
+function withoutProjectDirtyTracking<T>(fn: () => T): T {
+  suppressProjectDirtyTracking = true;
+  try {
+    return fn();
+  } finally {
+    suppressProjectDirtyTracking = false;
+  }
+}
+
 useCalcStore.persist.onFinishHydration(() => {
   trackProjectDirty = true;
 });
 
+// Undo/redo restores tracked fields without calling setters — subscribe marks dirty for those paths only.
 useCalcStore.subscribe((state, prevState) => {
   if (!trackProjectDirty || suppressProjectDirtyTracking || state.isProjectDirty) return;
   const fields = [
