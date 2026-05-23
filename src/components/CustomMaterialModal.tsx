@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StubBanner } from "@/components/StubBanner";
@@ -63,20 +69,25 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
   const [stubMessage, setStubMessage] = useState<string | undefined>();
   const [validating, setValidating] = useState(false);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) {
       setForm(EMPTY_FORM);
       setFormError(null);
       setStubMessage(undefined);
+      setValidating(false);
       return;
     }
     if (catalogPrefill) {
       setForm(formFromTemplate(catalogPrefill));
       setFormError(null);
     }
+    const t = window.setTimeout(() => {
+      contentRef.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [open, catalogPrefill]);
-
-  if (!open) return null;
 
   const handleClose = () => {
     setForm(EMPTY_FORM);
@@ -136,33 +147,15 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="custom-materials-title"
-      tabIndex={-1}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") handleClose();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-    >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-background p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="custom-materials-title" className="text-lg font-semibold">
-            Custom materials
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
+      <DialogContent
+        ref={contentRef}
+        className="max-h-[90vh] max-w-lg overflow-y-auto"
+        aria-describedby={undefined}
+      >
+        <DialogHeader>
+          <DialogTitle id="custom-materials-title">Custom materials</DialogTitle>
+        </DialogHeader>
 
         {stubMessage ? <StubBanner message={stubMessage} /> : null}
 
@@ -316,7 +309,7 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
             </ul>
           </div>
         ) : null}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

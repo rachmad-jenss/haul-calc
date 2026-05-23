@@ -1,6 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { parseFleetCsv, type FleetCsvParseResult } from "@/lib/fleet-csv";
 import type { FleetEntry } from "@/lib/types";
 
@@ -12,10 +18,21 @@ interface Props {
 
 export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [parseResult, setParseResult] = useState<FleetCsvParseResult | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) {
+      setParseResult(null);
+      setFileName(null);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      contentRef.current?.querySelector<HTMLElement>("button")?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   const handleClose = () => {
     setParseResult(null);
@@ -53,27 +70,11 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
   const hasErrors = (parseResult?.errors.length ?? 0) > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="csv-import-title"
-      tabIndex={-1}
-      onKeyDown={(e) => { if (e.key === "Escape") handleClose(); }}
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-    >
-      <div className="w-full max-w-lg rounded-lg border bg-background p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="csv-import-title" className="text-lg font-semibold">Import fleet from CSV</h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
+      <DialogContent ref={contentRef} className="max-w-lg" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle id="csv-import-title">Import fleet from CSV</DialogTitle>
+        </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -150,15 +151,17 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
           )}
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
           <Button onClick={handleImport} disabled={!hasRows}>
             {hasRows
               ? `Import ${parseResult!.rows.length} row${parseResult!.rows.length > 1 ? "s" : ""}`
               : "Import"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
