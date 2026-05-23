@@ -650,6 +650,10 @@ def _call_analyze_sensitivity_cost_total(params: dict[str, Any]) -> dict[str, An
         raise ValueError("cost_scenarios required for cost_total sensitivity")
 
     variable = str(params.get("variable", "trips_per_day"))
+    if variable != "trips_per_day":
+        raise ValueError(
+            "cost_total sensitivity only supports variable 'trips_per_day'"
+        )
     min_value = float(params.get("min_value", 0.5))
     max_value = float(params.get("max_value", 2.0))
     steps = int(params.get("steps", 10))

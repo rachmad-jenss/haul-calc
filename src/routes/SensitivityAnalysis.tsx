@@ -97,6 +97,12 @@ export default function SensitivityAnalysis() {
       toast.error("At least one cost scenario is required to sweep cost.");
       return;
     }
+    if (metric === "cost_total" && param !== "trips_per_day") {
+      toast.error(
+        "Annual cost sensitivity only supports trips/day multiplier — use Economics scenarios for other drivers.",
+      );
+      return;
+    }
     if (metric === "cesa" && (param === "subgrade_cbr" || param === "design_coverages")) {
       toast.error("CESA is not affected by subgrade CBR or design coverages — choose design life or trips/day.");
       return;
