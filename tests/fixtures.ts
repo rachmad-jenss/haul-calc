@@ -177,6 +177,7 @@ const TAURI_MOCK = `(function () {
         setTimeout(function() {
           if (cmd === "get_sidecar_status") { return resolve("running"); }
           if (cmd === "restart_sidecar")    { return resolve(undefined); }
+          if (cmd === "take_pending_file_path") { return resolve(null); }
           if (cmd === "plugin:dialog|save") { return resolve("mocked_file.csv"); }
           if (cmd === "plugin:dialog|open") {
             if (window.__HAULCALC_OPEN_JSON__) {
@@ -187,7 +188,11 @@ const TAURI_MOCK = `(function () {
           if (cmd === "plugin:fs|write_text_file") { return resolve(undefined); }
           if (cmd === "plugin:fs|read_text_file") {
             if (window.__HAULCALC_OPEN_JSON__) {
-              return resolve(window.__HAULCALC_OPEN_JSON__);
+              try {
+                return resolve(JSON.parse(window.__HAULCALC_OPEN_JSON__));
+              } catch (e) {
+                return resolve(window.__HAULCALC_OPEN_JSON__);
+              }
             }
             return reject({ code: "ENOENT", message: "No test file", stub: false });
           }

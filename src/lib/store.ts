@@ -230,6 +230,7 @@ export const useCalcStore = create<CalcStore>()(
         economicsDirty: false,
         lccaInputs: { discountRate: 0.10, analysisPeriodYears: 20, scenarios: [] },
         lccaResult: null,
+        customVehicles: [],
         projectName: "Pit South — Main Haul",
         authorName: "",
         reportSummary: null,

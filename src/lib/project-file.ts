@@ -3,12 +3,17 @@ import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 import { basenameFromPath, resolveActiveFilePath } from "@/lib/file-binding";
 import type { CalcStore } from "@/lib/store";
+import { useCalcStore } from "@/lib/store";
+
+export const SNAPSHOT_VERSION = 2;
 
 export type Snapshot = {
   version: number;
   savedAt: string;
   fleet: CalcStore["fleet"];
   designLifeYears: CalcStore["designLifeYears"];
+  workingDaysPerYear?: CalcStore["workingDaysPerYear"];
+  customVehicles?: CalcStore["customVehicles"];
   cesaResult: CalcStore["cesaResult"];
   subgradeCbr: CalcStore["subgradeCbr"];
   coverages: CalcStore["coverages"];
@@ -17,6 +22,13 @@ export type Snapshot = {
   trhResult: CalcStore["trhResult"];
   costScenarios: CalcStore["costScenarios"];
   costResult: CalcStore["costResult"];
+  lccaInputs?: CalcStore["lccaInputs"];
+  lccaResult?: CalcStore["lccaResult"];
+  boqGeometry?: CalcStore["boqGeometry"];
+  unitSystem?: CalcStore["unitSystem"];
+  cesaDirty?: CalcStore["cesaDirty"];
+  pavementDirty?: CalcStore["pavementDirty"];
+  economicsDirty?: CalcStore["economicsDirty"];
   projectName: CalcStore["projectName"];
   authorName: CalcStore["authorName"];
   reportSummary: CalcStore["reportSummary"];
@@ -24,10 +36,38 @@ export type Snapshot = {
 
 type OpenStore = Pick<CalcStore, "loadFromSnapshot" | "pushRecentFile" | "setActiveFilePath">;
 
-function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void {
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  const fileName = parts[parts.length - 1];
-  store.loadFromSnapshot({
+export function snapshotFromStore(store: CalcStore): Snapshot {
+  return {
+    version: SNAPSHOT_VERSION,
+    savedAt: new Date().toISOString(),
+    fleet: store.fleet,
+    designLifeYears: store.designLifeYears,
+    workingDaysPerYear: store.workingDaysPerYear,
+    customVehicles: store.customVehicles,
+    cesaResult: store.cesaResult,
+    subgradeCbr: store.subgradeCbr,
+    coverages: store.coverages,
+    trhCategory: store.trhCategory,
+    cbrResult: store.cbrResult,
+    trhResult: store.trhResult,
+    costScenarios: store.costScenarios,
+    costResult: store.costResult,
+    lccaInputs: store.lccaInputs,
+    lccaResult: store.lccaResult,
+    boqGeometry: store.boqGeometry,
+    unitSystem: store.unitSystem,
+    cesaDirty: store.cesaDirty,
+    pavementDirty: store.pavementDirty,
+    economicsDirty: store.economicsDirty,
+    projectName: store.projectName,
+    authorName: store.authorName,
+    reportSummary: store.reportSummary,
+  };
+}
+
+export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
+  const version = snap.version ?? 1;
+  const base: Partial<CalcStore> = {
     fleet: snap.fleet,
     designLifeYears: snap.designLifeYears,
     cesaResult: snap.cesaResult,
@@ -41,18 +81,65 @@ function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void 
     projectName: snap.projectName,
     authorName: snap.authorName,
     reportSummary: snap.reportSummary,
+  };
+  if (version >= 2) {
+    return {
+      ...base,
+      workingDaysPerYear: snap.workingDaysPerYear ?? 250,
+      customVehicles: snap.customVehicles ?? [],
+      lccaInputs: snap.lccaInputs ?? {
+        discountRate: 0.1,
+        analysisPeriodYears: 20,
+        scenarios: [],
+      },
+      lccaResult: snap.lccaResult ?? null,
+      boqGeometry: snap.boqGeometry ?? {
+        roadLengthKm: 1.0,
+        roadWidthM: 8.0,
+        shoulderWidthM: 1.5,
+      },
+      unitSystem: snap.unitSystem ?? "SI",
+      cesaDirty: snap.cesaDirty ?? false,
+      pavementDirty: snap.pavementDirty ?? false,
+      economicsDirty: snap.economicsDirty ?? false,
+    };
+  }
+  return {
+    ...base,
+    workingDaysPerYear: 250,
+    customVehicles: [],
+    lccaInputs: { discountRate: 0.1, analysisPeriodYears: 20, scenarios: [] },
+    lccaResult: null,
+    boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
+    unitSystem: "SI",
+    cesaDirty: false,
+    pavementDirty: false,
+    economicsDirty: false,
+  };
+}
+
+function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  const fileName = parts[parts.length - 1];
+  store.loadFromSnapshot({
+    ...storePatchFromSnapshot(snap),
     activeFileName: fileName,
     activeFilePath: filePath,
   });
   store.pushRecentFile(filePath);
+  useCalcStore.temporal.getState().clear();
 }
 
-export function parseSnapshot(text: string): Snapshot {
+export function parseSnapshot(text: string | Snapshot): Snapshot {
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("File tidak valid atau corrupt.");
+  if (typeof text === "object" && text !== null && "version" in text) {
+    parsed = text;
+  } else {
+    try {
+      parsed = JSON.parse(text as string);
+    } catch {
+      throw new Error("File tidak valid atau corrupt.");
+    }
   }
   if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
     throw new Error("File tidak valid atau corrupt.");
@@ -66,31 +153,15 @@ export async function saveProject(store: CalcStore): Promise<void> {
     if (!store.activeFilePath?.trim()) {
       store.setActiveFilePath(existingPath);
     }
-    // Overwrite existing file directly (no dialog)
-    const snapshot: Snapshot = {
-      version: 1,
-      savedAt: new Date().toISOString(),
-      fleet: store.fleet,
-      designLifeYears: store.designLifeYears,
-      cesaResult: store.cesaResult,
-      subgradeCbr: store.subgradeCbr,
-      coverages: store.coverages,
-      trhCategory: store.trhCategory,
-      cbrResult: store.cbrResult,
-      trhResult: store.trhResult,
-      costScenarios: store.costScenarios,
-      costResult: store.costResult,
-      projectName: store.projectName,
-      authorName: store.authorName,
-      reportSummary: store.reportSummary,
-    };
-    await writeTextFile(existingPath, JSON.stringify(snapshot, null, 2));
+    await writeTextFile(
+      existingPath,
+      JSON.stringify(snapshotFromStore(store), null, 2),
+    );
     store.setProjectDirty(false);
     toast.success(`Saved to ${store.activeFileName ?? basenameFromPath(existingPath)}`);
     return;
   }
 
-  // No existing path — fall back to Save As
   await saveAsProject(store);
 }
 
@@ -102,25 +173,7 @@ export async function saveAsProject(store: CalcStore): Promise<void> {
 
   if (!filePath) return;
 
-  const snapshot: Snapshot = {
-    version: 1,
-    savedAt: new Date().toISOString(),
-    fleet: store.fleet,
-    designLifeYears: store.designLifeYears,
-    cesaResult: store.cesaResult,
-    subgradeCbr: store.subgradeCbr,
-    coverages: store.coverages,
-    trhCategory: store.trhCategory,
-    cbrResult: store.cbrResult,
-    trhResult: store.trhResult,
-    costScenarios: store.costScenarios,
-    costResult: store.costResult,
-    projectName: store.projectName,
-    authorName: store.authorName,
-    reportSummary: store.reportSummary,
-  };
-
-  await writeTextFile(filePath, JSON.stringify(snapshot, null, 2));
+  await writeTextFile(filePath, JSON.stringify(snapshotFromStore(store), null, 2));
 
   const parts = filePath.replace(/\\/g, "/").split("/");
   const fileName = parts[parts.length - 1];
