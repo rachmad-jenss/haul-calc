@@ -15,7 +15,11 @@ import {
   TrendingUp,
   LayoutDashboard,
   GitCompareArrows,
+  Undo2,
+  Redo2,
 } from "lucide-react";
+import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
@@ -41,6 +45,15 @@ let closeGuardUnlisten: (() => void) | undefined;
 
 export default function App() {
   useAutoUpdate();
+  const { canUndo, canRedo, undo, redo } = useStore(
+    useCalcStore.temporal,
+    useShallow((s) => ({
+      canUndo: s.pastStates.length > 0,
+      canRedo: s.futureStates.length > 0,
+      undo: s.undo,
+      redo: s.redo,
+    })),
+  );
   /** Scoped to App lifecycle — reset on effect cleanup so a stuck dialog cannot block future closes. */
   const closeConfirmInFlightRef = useRef(false);
 
@@ -267,6 +280,27 @@ export default function App() {
           </div>
           <div className="flex items-center gap-1">
             <button
+              type="button"
+              onClick={() => undo()}
+              disabled={!canUndo}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => redo()}
+              disabled={!canRedo}
+              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+              title="Redo (Ctrl+Y)"
+              aria-label="Redo"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
               onClick={handleNewProject}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="New project (Ctrl+N)"
@@ -274,6 +308,7 @@ export default function App() {
               <FileText className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Open project (Ctrl+O)"
@@ -281,6 +316,7 @@ export default function App() {
               <FolderOpen className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save (Ctrl+S)"
@@ -288,6 +324,7 @@ export default function App() {
               <Save className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save As (Ctrl+Shift+S)"
