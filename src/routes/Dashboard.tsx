@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { Clock, Truck, Layers, Coins, FileText, FolderOpen } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -56,7 +58,7 @@ export default function Dashboard() {
       />
 
       <div className="grid flex-1 gap-4 overflow-auto p-6 sm:grid-cols-2">
-        <Card>
+        <DashboardNavCard to="/fleet">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <Truck className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm font-medium">Fleet &amp; Traffic</CardTitle>
@@ -77,9 +79,9 @@ export default function Dashboard() {
               </span>
             </div>
           </CardContent>
-        </Card>
+        </DashboardNavCard>
 
-        <Card>
+        <DashboardNavCard to="/pavement">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <Layers className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm font-medium">Pavement Design</CardTitle>
@@ -106,9 +108,9 @@ export default function Dashboard() {
               </span>
             </div>
           </CardContent>
-        </Card>
+        </DashboardNavCard>
 
-        <Card>
+        <DashboardNavCard to="/economics">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <Coins className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm font-medium">Economics</CardTitle>
@@ -125,9 +127,9 @@ export default function Dashboard() {
               </span>
             </div>
           </CardContent>
-        </Card>
+        </DashboardNavCard>
 
-        <Card>
+        <DashboardNavCard to="/reports">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm font-medium">Reports</CardTitle>
@@ -152,7 +154,7 @@ export default function Dashboard() {
               </span>
             </div>
           </CardContent>
-        </Card>
+        </DashboardNavCard>
 
         <Card className="sm:col-span-2">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
@@ -187,5 +189,25 @@ export default function Dashboard() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function DashboardNavCard({ to, children }: { to: string; children: ReactNode }) {
+  const label =
+    to === "/fleet"
+      ? "Open Fleet and Traffic"
+      : to === "/pavement"
+        ? "Open Pavement Design"
+        : to === "/economics"
+          ? "Open Economics"
+          : "Open Reports";
+  return (
+    <NavLink
+      to={to}
+      aria-label={label}
+      className="block rounded-lg outline-none transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Card className="h-full border-transparent shadow-none hover:border-border">{children}</Card>
+    </NavLink>
   );
 }
