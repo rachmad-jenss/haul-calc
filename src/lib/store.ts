@@ -382,8 +382,14 @@ export const useCalcStore = create<CalcStore>()(
         if (fromVersion < 9) {
           s.isProjectDirty = false;
         }
+        delete s.isProjectDirty;
         return s;
       },
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as object),
+        isProjectDirty: false,
+      }),
       partialize: (state) => ({
         fleet: state.fleet,
         designLifeYears: state.designLifeYears,

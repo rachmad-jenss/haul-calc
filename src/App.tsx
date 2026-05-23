@@ -17,6 +17,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -171,31 +172,35 @@ export default function App() {
 
           event.preventDefault();
           void (async () => {
-            const failOpen = () => win.destroy();
+            let settled = false;
+            const forceExit = async () => {
+              if (settled) return;
+              settled = true;
+              try {
+                await win.destroy();
+              } catch {
+                // ignore
+              }
+              await exit(0);
+            };
+            const timeoutId = window.setTimeout(() => {
+              void forceExit();
+            }, 5000);
             try {
-              const confirmed = await new Promise<boolean>((resolve, reject) => {
-                const timeoutId = window.setTimeout(
-                  () => reject(new Error("close dialog timeout")),
-                  5000,
-                );
-                void ask(
-                  "You have unsaved changes. Are you sure you want to exit without saving?",
-                  { title: "Unsaved Changes", kind: "warning" },
-                ).then(
-                  (value) => {
-                    window.clearTimeout(timeoutId);
-                    resolve(value);
-                  },
-                  (err) => {
-                    window.clearTimeout(timeoutId);
-                    reject(err);
-                  },
-                );
-              });
-              if (confirmed) await failOpen();
+              const confirmed = await ask(
+                "You have unsaved changes. Are you sure you want to exit without saving?",
+                { title: "Unsaved Changes", kind: "warning" },
+              );
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeoutId);
+              if (confirmed) await forceExit();
             } catch (err) {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeoutId);
               console.error("Close confirmation failed:", err);
-              await failOpen();
+              await forceExit();
             }
           })();
         });
