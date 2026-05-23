@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn, parseNumericInput } from "@/lib/utils";
@@ -34,15 +35,17 @@ export function NumField({
   description?: string;
   disabled?: boolean;
 }) {
-  const errorId = id ? `${id}-error` : undefined;
-  const descId = id && description ? `${id}-description` : undefined;
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const errorId = `${inputId}-error`;
+  const descId = description ? `${inputId}-description` : undefined;
   const describedBy = [error ? errorId : undefined, descId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <Input
-        id={id}
+        id={inputId}
         type="number"
         min={min}
         max={max}
