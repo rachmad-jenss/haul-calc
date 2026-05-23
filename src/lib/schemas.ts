@@ -87,6 +87,16 @@ export function firstError(err: z.ZodError): string {
   return err.errors[0]?.message ?? "Validation error";
 }
 
+/** Flatten Zod issues to dot-path keys (e.g. `fleet.0.count`, `design_life_years`). */
+export function fieldErrorsFromZod(err: z.ZodError): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const issue of err.errors) {
+    const key = issue.path.map(String).join(".");
+    if (key && !(key in out)) out[key] = issue.message;
+  }
+  return out;
+}
+
 const snapshotFleetEntrySchema = z.object({
   _id: z.string(),
   vehicle_id: z.string(),

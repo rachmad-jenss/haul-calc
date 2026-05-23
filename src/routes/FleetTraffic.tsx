@@ -5,7 +5,7 @@ import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
-import { Metric } from "@/components/FormFields";
+import { FieldError, Metric } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,11 @@ import { Label } from "@/components/ui/label";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { haulPave } from "@/lib/haulpave-client";
-import { cesaRequestSchema, firstError } from "@/lib/schemas";
+import { cesaRequestSchema, fieldErrorsFromZod, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
 import { convertPayload, unitLabels } from "@/lib/unit-convert";
-import { formatNumber, parseNumericInput, toSafeCsvCell } from "@/lib/utils";
+import { cn, formatNumber, parseNumericInput, toSafeCsvCell } from "@/lib/utils";
 
 export default function FleetTraffic() {
   const {
@@ -38,6 +38,22 @@ export default function FleetTraffic() {
   const [running, setRunning] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [showCsvModal, setShowCsvModal] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const rowFieldError = (idx: number, field: string) => fieldErrors[`fleet.${idx}.${field}`];
+  const clearFieldErrors = (...keys: string[]) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const key of keys) {
+        if (key in next) {
+          delete next[key];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  };
 
   useEffect(() => {
     haulPave
@@ -49,6 +65,8 @@ export default function FleetTraffic() {
   }, []);
 
   const updateRow = (idx: number, patch: Partial<FleetEntry>) => {
+    const keys = Object.keys(patch).map((f) => `fleet.${idx}.${f}`);
+    clearFieldErrors(...keys, "fleet");
     setFleet(fleet.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
@@ -154,23 +172,17 @@ export default function FleetTraffic() {
   };
 
   const compute = async () => {
-    if (fleet.length === 0) {
-      toast.error("Fleet is empty. Add at least one vehicle row.");
-      return;
-    }
-    if (fleet.some((e) => e.trips_per_day < 1)) {
-      toast.error("All vehicles must have at least 1 trip per day.");
-      return;
-    }
     const parsed = cesaRequestSchema.safeParse({
       fleet,
       design_life_years: designLifeYears,
       working_days_per_year: workingDaysPerYear,
     });
     if (!parsed.success) {
+      setFieldErrors(fieldErrorsFromZod(parsed.error));
       toast.error(firstError(parsed.error));
       return;
     }
+    setFieldErrors({});
     setRunning(true);
     try {
       const res = await haulPave.computeCesa(parsed.data);
@@ -233,6 +245,9 @@ export default function FleetTraffic() {
                 className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed py-12 text-center"
                 data-testid="fleet-empty-state"
               >
+                {fieldErrors.fleet ? (
+                  <FieldError message={fieldErrors.fleet} />
+                ) : null}
                 <Truck className="h-10 w-10 text-muted-foreground" aria-hidden />
                 <div className="space-y-1">
                   <p className="font-medium">No vehicles in fleet</p>
@@ -270,7 +285,11 @@ export default function FleetTraffic() {
                         <select
                           value={row.vehicle_id}
                           onChange={(e) => updateRow(idx, { vehicle_id: e.target.value })}
-                          className="h-8 w-full rounded border border-input bg-background px-2 text-sm"
+                          className={cn(
+                            "h-8 w-full rounded border border-input bg-background px-2 text-sm",
+                            rowFieldError(idx, "vehicle_id") && "border-destructive",
+                          )}
+                          aria-invalid={rowFieldError(idx, "vehicle_id") ? true : undefined}
                         >
                           {allVehicles.length === 0 ? (
                             <option value={row.vehicle_id}>{row.vehicle_id}</option>
@@ -282,28 +301,35 @@ export default function FleetTraffic() {
                             ))
                           )}
                         </select>
+                        <FieldError message={rowFieldError(idx, "vehicle_id")} />
                       </td>
                       <td className="px-2 py-2">
                         <Input
                           type="number"
                           min={1}
                           value={row.count}
+                          aria-invalid={rowFieldError(idx, "count") ? true : undefined}
+                          className={cn(rowFieldError(idx, "count") && "border-destructive")}
                           onChange={(e) =>
                             updateRow(idx, { count: parseNumericInput(e.target.value, row.count) })
                           }
                         />
+                        <FieldError message={rowFieldError(idx, "count")} />
                       </td>
                       <td className="px-2 py-2">
                         <Input
                           type="number"
                           min={1}
                           value={row.trips_per_day}
+                          aria-invalid={rowFieldError(idx, "trips_per_day") ? true : undefined}
+                          className={cn(rowFieldError(idx, "trips_per_day") && "border-destructive")}
                           onChange={(e) =>
                             updateRow(idx, {
                               trips_per_day: parseNumericInput(e.target.value, row.trips_per_day),
                             })
                           }
                         />
+                        <FieldError message={rowFieldError(idx, "trips_per_day")} />
                         {row.trips_per_day > 100 && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -317,6 +343,8 @@ export default function FleetTraffic() {
                             type="number"
                             min={0}
                             value={row.payload_kn}
+                            aria-invalid={rowFieldError(idx, "payload_kn") ? true : undefined}
+                            className={cn(rowFieldError(idx, "payload_kn") && "border-destructive")}
                             onChange={(e) =>
                               updateRow(idx, {
                                 payload_kn: parseNumericInput(e.target.value, row.payload_kn),
@@ -341,6 +369,7 @@ export default function FleetTraffic() {
                             Very low — verify units (kN)
                           </p>
                         )}
+                        <FieldError message={rowFieldError(idx, "payload_kn")} />
                       </td>
                       <td className="px-2 py-2 flex items-center justify-end gap-1">
                         <Button
@@ -394,11 +423,14 @@ export default function FleetTraffic() {
                   min={1}
                   max={50}
                   value={designLifeYears}
-                  onChange={(e) =>
-                    setDesignLifeYears(parseNumericInput(e.target.value, designLifeYears))
-                  }
-                  className="w-32"
+                  aria-invalid={fieldErrors.design_life_years ? true : undefined}
+                  className={cn("w-32", fieldErrors.design_life_years && "border-destructive")}
+                  onChange={(e) => {
+                    clearFieldErrors("design_life_years");
+                    setDesignLifeYears(parseNumericInput(e.target.value, designLifeYears));
+                  }}
                 />
+                <FieldError message={fieldErrors.design_life_years} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="working-days">Working days/year</Label>
@@ -408,11 +440,14 @@ export default function FleetTraffic() {
                   min={1}
                   max={365}
                   value={workingDaysPerYear}
-                  onChange={(e) =>
-                    setWorkingDaysPerYear(parseNumericInput(e.target.value, workingDaysPerYear))
-                  }
-                  className="w-32"
+                  aria-invalid={fieldErrors.working_days_per_year ? true : undefined}
+                  className={cn("w-32", fieldErrors.working_days_per_year && "border-destructive")}
+                  onChange={(e) => {
+                    clearFieldErrors("working_days_per_year");
+                    setWorkingDaysPerYear(parseNumericInput(e.target.value, workingDaysPerYear));
+                  }}
                 />
+                <FieldError message={fieldErrors.working_days_per_year} />
               </div>
             </div>
           </CardContent>
