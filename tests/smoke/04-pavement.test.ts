@@ -63,6 +63,15 @@ test.describe("Pavement Design page", () => {
     await page.screenshot({ path: SS("04-pavement-compare-tab") });
   });
 
+  test("Compare tab shows USACE extrapolation warning (DAS-137 manual)", async ({ page }) => {
+    await page.getByLabel(/design coverages/i).fill("500000");
+    await page.getByRole("button", { name: /compute/i }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole("tab", { name: /compare/i }).click();
+    await page.getByRole("button", { name: /run comparison/i }).click();
+    await expect(page.getByText(/extrapolated zone/i)).toBeVisible({ timeout: 10_000 });
+  });
+
   test("Compare thickness matches USACE and TRH tabs (DAS-128)", async ({ page }) => {
     await page.getByRole("button", { name: /compute/i }).click();
     await page.waitForTimeout(3000);

@@ -101,6 +101,8 @@ export interface CompareMethodsResult {
   delta_mm: number;
   subgrade_cbr: number;
   confidence: "high" | "medium" | "low";
+  /** Library UserWarnings surfaced from compare_methods (not suppressed). */
+  warnings?: string[];
 }
 
 export interface PavementLayerFull {

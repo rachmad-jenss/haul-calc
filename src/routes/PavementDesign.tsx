@@ -259,6 +259,9 @@ export default function PavementDesign() {
                 {compareResult?.stub ? <StubBanner message={compareResult.stubMessage} /> : null}
                 {compareResult?.usace?.warning ? <WarningBanner message={compareResult.usace.warning} /> : null}
                 {compareResult?.trh14?.warning ? <WarningBanner message={compareResult.trh14.warning} /> : null}
+                {compareResult?.warnings?.map((msg) => (
+                  <WarningBanner key={msg} message={msg} />
+                ))}
                 <MethodComparisonPanel result={compareResult ?? undefined} />
               </TabsContent>
             </Tabs>
