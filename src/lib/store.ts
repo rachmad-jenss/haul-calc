@@ -446,17 +446,18 @@ export const useCalcStore = create<CalcStore>()(
         boqGeometry: state.boqGeometry,
       }),
       onRehydrateStorage: () => (_state, error) => {
-        if (error) return;
         const apply = () => {
-          withoutProjectDirtyTracking(() => {
-            const state = useCalcStore.getState();
-            const patch = normalizePersistedFileBinding(state);
-            useCalcStore.setState({
-              ...(patch ?? {}),
-              // Preserve edits made before persist rehydrate finishes.
-              isProjectDirty: state.isProjectDirty,
+          if (!error) {
+            withoutProjectDirtyTracking(() => {
+              const state = useCalcStore.getState();
+              const patch = normalizePersistedFileBinding(state);
+              useCalcStore.setState({
+                ...(patch ?? {}),
+                // Preserve edits made before persist rehydrate finishes.
+                isProjectDirty: state.isProjectDirty,
+              });
             });
-          });
+          }
           trackProjectDirty = true;
         };
         queueMicrotask(apply);
@@ -493,11 +494,9 @@ export const useCalcStore = create<CalcStore>()(
   ),
 );
 
-let trackProjectDirty = useCalcStore.persist.hasHydrated();
-
-useCalcStore.persist.onFinishHydration(() => {
-  trackProjectDirty = true;
-});
+// persist is inner to temporal(zundo) — useCalcStore.persist is undefined at runtime.
+// Enable tracking after rehydrate in onRehydrateStorage below.
+let trackProjectDirty = false;
 
 // Undo/redo restores tracked fields without calling setters — subscribe marks dirty for those paths only.
 useCalcStore.subscribe((state, prevState) => {
