@@ -331,6 +331,25 @@ def _library_warnings_not_in_structured(
     return extra
 
 
+def _axle_load_distribution(traffic: Any) -> list[dict[str, int]]:
+    """Wheel-load histogram aligned with haul-pave coverages wheel positions."""
+    from haulpave.traffic.coverages import _wheel_load_kn, _wheel_positions
+
+    axle_dist: list[dict[str, int]] = []
+    for fu in traffic.fleet:
+        trip_passes = round(
+            fu.trips_per_day
+            * traffic.working_days_per_year
+            * traffic.design_life_years
+        )
+        for ag in fu.vehicle.axle_groups:
+            axle_dist.append({
+                "axle_kn": round(_wheel_load_kn(ag)),
+                "passes": trip_passes * _wheel_positions(ag),
+            })
+    return axle_dist
+
+
 def _call_compute_cesa(params: dict[str, Any]) -> Any:
     from haulpave.traffic.cesa import compute_cesa
     from haulpave.traffic.coverages import compute_coverages
@@ -338,16 +357,7 @@ def _call_compute_cesa(params: dict[str, Any]) -> Any:
     traffic = _build_traffic(params)
     cesa_result = compute_cesa(traffic)
     cov_result = compute_coverages(traffic)
-
-    # Build axle load distribution from fleet vehicles
-    axle_dist = []
-    for fu in traffic.fleet:
-        total_passes = fu.trips_per_day * traffic.working_days_per_year * traffic.design_life_years
-        for ag in fu.vehicle.axle_groups:
-            axle_dist.append({
-                "axle_kn": round(ag.gross_load_kn),
-                "passes": round(total_passes),
-            })
+    axle_dist = _axle_load_distribution(traffic)
 
     return {
         "cesa": cesa_result.total_cesa,
