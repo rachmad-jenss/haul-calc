@@ -226,4 +226,17 @@ export const test = base.extend<Record<string, never>>({
   },
 });
 
+/** Fresh page that lands on Dashboard with one render error queued (DAS-136 E2E). */
+export const testE2eThrow = base.extend<Record<string, never>>({
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      window.__HAULCALC_E2E_SHOULD_THROW__ = true;
+    });
+    await page.addInitScript(TAURI_MOCK);
+    await page.goto("/#/dashboard");
+    await page.waitForTimeout(800);
+    await use(page);
+  },
+});
+
 export { expect } from "@playwright/test";

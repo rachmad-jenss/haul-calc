@@ -8,6 +8,10 @@ import { useCalcStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
 
 export default function Dashboard() {
+  if (window.__HAULCALC_E2E_SHOULD_THROW__) {
+    throw new Error("E2E render error");
+  }
+
   const store = useCalcStore();
   const {
     fleet,
