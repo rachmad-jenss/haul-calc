@@ -17,3 +17,13 @@ export function resolveActiveFilePath(store: FileBindingState): string | null {
   const match = store.recentFiles.find((p) => basenameFromPath(p) === name);
   return match?.trim() || null;
 }
+
+/** Apply after persist rehydrate: drop orphan names or heal path from recents. */
+export function normalizePersistedFileBinding(
+  state: FileBindingState,
+): Partial<FileBindingState> | null {
+  const path = resolveActiveFilePath(state);
+  if (state.activeFileName && !path) return { activeFileName: null };
+  if (path && !state.activeFilePath?.trim()) return { activeFilePath: path };
+  return null;
+}

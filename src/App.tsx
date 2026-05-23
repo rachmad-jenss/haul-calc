@@ -20,7 +20,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
-import { resolveActiveFilePath } from "@/lib/file-binding";
+import { normalizePersistedFileBinding, resolveActiveFilePath } from "@/lib/file-binding";
 import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAutoUpdate } from "@/hooks/useAutoUpdate";
@@ -44,6 +44,17 @@ export default function App() {
     store;
   const boundFilePath = resolveActiveFilePath({ activeFilePath, activeFileName, recentFiles });
   const hasBoundFile = Boolean(boundFilePath);
+
+  useEffect(() => {
+    const apply = () => {
+      const state = useCalcStore.getState();
+      const patch = normalizePersistedFileBinding(state);
+      if (patch) useCalcStore.setState(patch);
+    };
+    apply();
+    const id = window.setTimeout(apply, 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Open a .hcalc file passed as a CLI arg at launch (double-click in File Explorer).
   // Uses a drainable slot so React StrictMode double-invoke is safe.

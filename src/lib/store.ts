@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { temporal } from "zundo";
-import { resolveActiveFilePath } from "@/lib/file-binding";
+import { normalizePersistedFileBinding } from "@/lib/file-binding";
 import type {
   CesaResult,
   CostComparison,
@@ -372,13 +372,12 @@ export const useCalcStore = create<CalcStore>()(
       }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) return;
-        const state = useCalcStore.getState();
-        const path = resolveActiveFilePath(state);
-        if (state.activeFileName && !path) {
-          useCalcStore.setState({ activeFileName: null });
-        } else if (path && !state.activeFilePath?.trim()) {
-          useCalcStore.setState({ activeFilePath: path });
-        }
+        const apply = () => {
+          const state = useCalcStore.getState();
+          const patch = normalizePersistedFileBinding(state);
+          if (patch) useCalcStore.setState(patch);
+        };
+        queueMicrotask(apply);
       },
     },
   ),
