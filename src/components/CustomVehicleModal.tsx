@@ -143,11 +143,8 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
                   key={cv.id}
                   className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                 >
-                  <span className="truncate">
-                    {cv.name}{" "}
-                    <span className="text-muted-foreground">
-                      — {cv.gvw_kn} kN / {cv.axles} axles
-                    </span>
+                  <span className="truncate text-muted-foreground">
+                    {cv.name} — {cv.gvw_kn} kN / {cv.axles} axles
                   </span>
                   <Button
                     variant="ghost"
