@@ -28,14 +28,11 @@ const TAURI_MOCK = `(function () {
   var CESA = {
     cesa: 12480000, design_coverages: 72000, design_life_years: 10,
     axle_load_distribution: [
-      // 797F front axle (GVW/4 × 0.4): ~600 kN × 642,400 passes
-      { axle_kn: 600,  passes: 642400  },
-      // 797F rear axle (GVW/4 × 1.6 per rear): ~1400 kN × 642,400
-      { axle_kn: 1400, passes: 642400  },
-      // 789D front axle: ~400 kN × 350,400
-      { axle_kn: 400,  passes: 350400  },
-      // 789D rear axle: ~800 kN × 350,400
-      { axle_kn: 800,  passes: 350400  },
+      // Per-wheel loads; passes scale with wheel positions (DAS-142)
+      { axle_kn: 763,  passes: 642400   },
+      { axle_kn: 286,  passes: 5139200  },
+      { axle_kn: 400,  passes: 350400   },
+      { axle_kn: 800,  passes: 2803200  },
     ],
   };
   // CBR method (USACE): CBR=8%, 72,000 design coverages, ultra-heavy vehicles
