@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calculator, ArrowDownToLine, AlertTriangle } from "lucide-react";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
@@ -38,6 +38,10 @@ export default function PavementDesign() {
   const [compareResult, setCompareResult] = useState<(CompareMethodsResult & { stub: boolean; stubMessage?: string }) | null>(null);
   const [comparing, setComparing] = useState(false);
 
+  useEffect(() => {
+    setCompareResult(null);
+  }, [subgradeCbr, coverages, trhCategory]);
+
   const importFromCesa = () => {
     if (cesaResult) {
       setCoverages(cesaResult.design_coverages);
@@ -69,9 +73,13 @@ export default function PavementDesign() {
         haulPave.trh14Thickness(trhParsed.data),
       ]);
 
+      setCbrResult(cbrRes.data, cbrRes.stub, cbrRes.stubMessage);
+      setTrhResult(trhRes.data, trhRes.stub, trhRes.stubMessage);
+
       const usace = toMethodResult(cbrRes.data, coverages, cesaResult?.cesa);
       const trh14 = toMethodResult(trhRes.data, coverages);
       const confidence = minConfidence(usace.confidence, trh14.confidence);
+      const stubMessages = [cbrRes.stubMessage, trhRes.stubMessage].filter(Boolean);
 
       setCompareResult({
         usace,
@@ -80,7 +88,7 @@ export default function PavementDesign() {
         subgrade_cbr: subgradeCbr,
         confidence,
         stub: cbrRes.stub || trhRes.stub,
-        stubMessage: cbrRes.stubMessage ?? trhRes.stubMessage,
+        stubMessage: stubMessages.length > 0 ? stubMessages.join(" · ") : undefined,
       });
     } catch (err) {
       const e = err as CallError;
@@ -334,7 +342,10 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
                   </span>
                 )}
               </div>
-              <div className="mb-1 font-mono text-2xl font-bold">
+              <div
+                className="mb-1 font-mono text-2xl font-bold"
+                data-testid={`compare-${key}-thickness-mm`}
+              >
                 {formatNumber(m.total_thickness_mm, 0)} mm
               </div>
               <div className="text-xs text-muted-foreground">{m.method}</div>
@@ -388,7 +399,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
         <span>·</span>
-        <span>Total: <span className="font-mono">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
+        <span>Total: <span className="font-mono" data-testid="pavement-total-thickness">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
         <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
           {result.confidence} confidence
         </span>

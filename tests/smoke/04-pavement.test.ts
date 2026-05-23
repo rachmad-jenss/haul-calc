@@ -48,4 +48,34 @@ test.describe("Pavement Design page", () => {
     expect(text?.toLowerCase()).toMatch(/mm/);
     await page.screenshot({ path: SS("04-pavement-compare-tab") });
   });
+
+  test("Compare thickness matches USACE and TRH tabs (DAS-128)", async ({ page }) => {
+    await page.getByRole("button", { name: /compute/i }).click();
+    await page.waitForTimeout(3000);
+
+    await page.getByRole("tab", { name: /cbr/i }).click();
+    const cbrTabMm = await page.getByTestId("pavement-total-thickness").innerText();
+    const cbrMm = parseInt(cbrTabMm.replace(/[^\d]/g, ""), 10);
+
+    await page.getByRole("tab", { name: /trh/i }).click();
+    await page.waitForTimeout(400);
+    const trhTabMm = await page.getByTestId("pavement-total-thickness").innerText();
+    const trhMm = parseInt(trhTabMm.replace(/[^\d]/g, ""), 10);
+
+    await page.getByRole("tab", { name: /compare/i }).click();
+    await page.getByRole("button", { name: /run comparison/i }).click();
+    await page.waitForTimeout(3000);
+
+    const compareUsace = parseInt(
+      await page.getByTestId("compare-usace-thickness-mm").innerText(),
+      10,
+    );
+    const compareTrh = parseInt(
+      await page.getByTestId("compare-trh14-thickness-mm").innerText(),
+      10,
+    );
+
+    expect(compareUsace).toBe(cbrMm);
+    expect(compareTrh).toBe(trhMm);
+  });
 });
