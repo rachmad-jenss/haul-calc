@@ -64,7 +64,13 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
-    if (open && catalogPrefill) {
+    if (!open) {
+      setForm(EMPTY_FORM);
+      setFormError(null);
+      setStubMessage(undefined);
+      return;
+    }
+    if (catalogPrefill) {
       setForm(formFromTemplate(catalogPrefill));
       setFormError(null);
     }
@@ -104,7 +110,16 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
     try {
       const res = await haulPave.customMaterial(parsed.data);
       setStubMessage(res.stub ? res.stubMessage : undefined);
-      addCustomMaterial(parsed.data);
+      addCustomMaterial({
+        name: res.data.name,
+        material_type: res.data.material_type,
+        elastic_modulus_mpa: res.data.elastic_modulus_mpa,
+        cbr_percent: res.data.cbr_percent,
+        poisson_ratio: res.data.poisson_ratio,
+        layer_coefficient: res.data.layer_coefficient,
+        thickness_mm: res.data.thickness_mm,
+        description: res.data.description,
+      });
       toast.success(`Custom material "${parsed.data.name}" added`);
       setForm(EMPTY_FORM);
     } catch (err) {
@@ -258,7 +273,11 @@ export function CustomMaterialModal({ open, onOpenChange, catalogPrefill }: Prop
             />
           </div>
 
-          {formError ? <p className="text-xs text-destructive">{formError}</p> : null}
+          {formError ? (
+            <p className="text-xs text-destructive" role="alert">
+              {formError}
+            </p>
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={validating}>
             {validating ? "Validating…" : "Add material"}
