@@ -81,7 +81,7 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
       <DialogContent ref={contentRef} className="max-w-md" aria-describedby={undefined}>
-        <DialogHeader className="flex-row items-center justify-between space-y-0">
+        <DialogHeader>
           <DialogTitle id="custom-vehicles-title">Custom Vehicles</DialogTitle>
         </DialogHeader>
 
