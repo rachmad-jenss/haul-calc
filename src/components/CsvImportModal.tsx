@@ -1,75 +1,8 @@
 import { useRef, useState } from "react";
 import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { parseFleetCsv, type FleetCsvParseResult } from "@/lib/fleet-csv";
 import type { FleetEntry } from "@/lib/types";
-
-interface ParsedRow {
-  vehicle_id: string;
-  count: number;
-  trips_per_day: number;
-  payload_kn: number;
-}
-
-interface ParseResult {
-  rows: ParsedRow[];
-  errors: string[];
-}
-
-function parseCsv(text: string): ParseResult {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) {
-    return { rows: [], errors: ["CSV must have a header row and at least one data row."] };
-  }
-
-  const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
-  const required = ["vehicle_id", "count", "trips_per_day", "payload_kn"];
-  const missing = required.filter((r) => !header.includes(r));
-  if (missing.length > 0) {
-    return { rows: [], errors: [`Missing required columns: ${missing.join(", ")}`] };
-  }
-
-  const idx = {
-    vehicle_id: header.indexOf("vehicle_id"),
-    count: header.indexOf("count"),
-    trips_per_day: header.indexOf("trips_per_day"),
-    payload_kn: header.indexOf("payload_kn"),
-  };
-
-  const rows: ParsedRow[] = [];
-  const errors: string[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const cols = line.split(",").map((c) => c.trim());
-
-    const vehicle_id = cols[idx.vehicle_id] ?? "";
-    const count = Number(cols[idx.count]);
-    const trips_per_day = Number(cols[idx.trips_per_day]);
-    const payload_kn = Number(cols[idx.payload_kn]);
-
-    if (!vehicle_id) {
-      errors.push(`Row ${i}: vehicle_id is empty.`);
-      continue;
-    }
-    if (!Number.isInteger(count) || count < 1) {
-      errors.push(`Row ${i}: count must be a positive integer (got "${cols[idx.count]}").`);
-      continue;
-    }
-    if (!Number.isFinite(trips_per_day) || trips_per_day < 0) {
-      errors.push(`Row ${i}: trips_per_day must be a non-negative number.`);
-      continue;
-    }
-    if (!Number.isFinite(payload_kn) || payload_kn <= 0) {
-      errors.push(`Row ${i}: payload_kn must be a positive number.`);
-      continue;
-    }
-
-    rows.push({ vehicle_id, count, trips_per_day, payload_kn });
-  }
-
-  return { rows, errors };
-}
 
 interface Props {
   open: boolean;
@@ -79,7 +12,7 @@ interface Props {
 
 export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [parseResult, setParseResult] = useState<FleetCsvParseResult | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
   if (!open) return null;
@@ -97,7 +30,7 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      setParseResult(parseCsv(text));
+      setParseResult(parseFleetCsv(text));
     };
     reader.readAsText(file);
     e.target.value = "";
