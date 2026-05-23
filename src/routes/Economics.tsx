@@ -19,6 +19,13 @@ import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -242,21 +249,26 @@ function OpexTab() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label>Surface</Label>
-                    <select
+                    <Select
                       value={s.surface}
-                      onChange={(e) =>
-                        update(s._id, { surface: e.target.value as CostScenario["surface"] })
+                      onValueChange={(surface) =>
+                        update(s._id, { surface: surface as CostScenario["surface"] })
                       }
-                      className={cn(
-                        "h-9 w-full rounded-md border border-input bg-background px-3 text-sm",
-                        scenarioFieldError(s._id, "surface") && "border-destructive",
-                      )}
-                      aria-invalid={scenarioFieldError(s._id, "surface") ? true : undefined}
                     >
-                      <option value="asphalt">Asphalt</option>
-                      <option value="gravel">Gravel</option>
-                      <option value="concrete">Concrete</option>
-                    </select>
+                      <SelectTrigger
+                        className={cn(
+                          scenarioFieldError(s._id, "surface") && "border-destructive",
+                        )}
+                        aria-invalid={scenarioFieldError(s._id, "surface") ? true : undefined}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="asphalt">Asphalt</SelectItem>
+                        <SelectItem value="gravel">Gravel</SelectItem>
+                        <SelectItem value="concrete">Concrete</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FieldError message={scenarioFieldError(s._id, "surface")} />
                   </div>
                   <NumField

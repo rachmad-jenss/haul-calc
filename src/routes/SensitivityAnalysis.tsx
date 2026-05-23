@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
@@ -192,36 +199,34 @@ export default function SensitivityAnalysis() {
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="sens-param">Sweep parameter</Label>
-              <select
-                id="sens-param"
-                value={param}
-                disabled={running}
-                onChange={(e) => handleParamChange(e.target.value as SensParam)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {(Object.entries(PARAM_CONFIG) as [SensParam, ParamConfig][]).map(([key, c]) => (
-                  <option key={key} value={key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={param} disabled={running} onValueChange={(v) => handleParamChange(v as SensParam)}>
+                <SelectTrigger id="sens-param">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(PARAM_CONFIG) as [SensParam, ParamConfig][]).map(([key, c]) => (
+                    <SelectItem key={key} value={key}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">
               <Label htmlFor="sens-metric">Y-axis metric</Label>
-              <select
-                id="sens-metric"
-                value={metric}
-                disabled={running}
-                onChange={(e) => handleMetricChange(e.target.value as SensMetric)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {(Object.entries(METRIC_CONFIG) as [SensMetric, MetricConfig][]).map(([key, c]) => (
-                  <option key={key} value={key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={metric} disabled={running} onValueChange={(v) => handleMetricChange(v as SensMetric)}>
+                <SelectTrigger id="sens-metric">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(METRIC_CONFIG) as [SensMetric, MetricConfig][]).map(([key, c]) => (
+                    <SelectItem key={key} value={key}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">

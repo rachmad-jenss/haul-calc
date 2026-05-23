@@ -9,6 +9,13 @@ import { StubBanner } from "@/components/StubBanner";
 import { WarningBanner } from "@/components/WarningBanner";
 import { FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -279,29 +286,32 @@ export default function PavementDesign() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="category">TRH 14 category</Label>
-              <select
-                id="category"
+              <Select
                 value={trhCategory}
-                onChange={(e) => {
+                onValueChange={(v) => {
                   setFieldErrors((prev) => {
                     if (!("category" in prev)) return prev;
                     const next = { ...prev };
                     delete next.category;
                     return next;
                   });
-                  setTrhCategory(e.target.value as "A" | "B" | "C" | "D");
+                  setTrhCategory(v as "A" | "B" | "C" | "D");
                 }}
-                className={cn(
-                  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm",
-                  fieldErrors.category && "border-destructive",
-                )}
-                aria-invalid={fieldErrors.category ? true : undefined}
               >
-                <option value="A">A — heavily trafficked</option>
-                <option value="B">B — primary</option>
-                <option value="C">C — secondary</option>
-                <option value="D">D — light</option>
-              </select>
+                <SelectTrigger
+                  id="category"
+                  className={cn(fieldErrors.category && "border-destructive")}
+                  aria-invalid={fieldErrors.category ? true : undefined}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A">A — heavily trafficked</SelectItem>
+                  <SelectItem value="B">B — primary</SelectItem>
+                  <SelectItem value="C">C — secondary</SelectItem>
+                  <SelectItem value="D">D — light</SelectItem>
+                </SelectContent>
+              </Select>
               <FieldError message={fieldErrors.category} />
             </div>
 

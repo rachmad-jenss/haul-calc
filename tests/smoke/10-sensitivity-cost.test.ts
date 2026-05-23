@@ -1,12 +1,17 @@
 import { test, expect, navigate } from "../fixtures";
 
+async function chooseSelect(page: import("@playwright/test").Page, triggerId: string, optionName: RegExp) {
+  await page.locator(`#${triggerId}`).click();
+  await page.getByRole("option", { name: optionName }).click();
+}
+
 test.describe("DAS-134 sensitivity cost_total", () => {
   test.beforeEach(async ({ page }) => {
     await navigate(page, "/sensitivity");
   });
 
   test("rejects cost_total sweep unless parameter is trips/day multiplier", async ({ page }) => {
-    await page.locator("#sens-metric").selectOption("cost_total");
+    await chooseSelect(page, "sens-metric", /annual cost/i);
     await page.getByRole("button", { name: /run analysis/i }).click();
     await expect(
       page.getByText(/annual cost sensitivity only supports trips\/day multiplier/i),
@@ -15,8 +20,8 @@ test.describe("DAS-134 sensitivity cost_total", () => {
   });
 
   test("trips/day cost sweep renders chart with varying Y values", async ({ page }) => {
-    await page.locator("#sens-metric").selectOption("cost_total");
-    await page.locator("#sens-param").selectOption("trips_per_day");
+    await chooseSelect(page, "sens-metric", /annual cost/i);
+    await chooseSelect(page, "sens-param", /trips\/day \(multiplier\)/i);
     await page.getByRole("button", { name: /run analysis/i }).click();
     await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 15_000 });
 
