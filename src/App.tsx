@@ -17,7 +17,6 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
@@ -155,69 +154,6 @@ export default function App() {
       // Ignore if not in Tauri
     }
   }, [activeFileName, hasBoundFile, isProjectDirty]);
-
-  // Intercept window close only when the project has unsaved edits.
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const win = getCurrentWindow();
-        // Sync handler only — an `async` listener makes Tauri wait for the promise and can block
-        // WM_CLOSE even when the project is clean (X appears to do nothing).
-        unlisten = await win.onCloseRequested((event) => {
-          const dirty = useCalcStore.getState().isProjectDirty;
-          if (!dirty) return;
-
-          event.preventDefault();
-          void (async () => {
-            let settled = false;
-            const forceExit = async () => {
-              if (settled) return;
-              settled = true;
-              try {
-                await win.destroy();
-              } catch {
-                // ignore
-              }
-              await exit(0);
-            };
-            const timeoutId = window.setTimeout(() => {
-              void forceExit();
-            }, 5000);
-            try {
-              const confirmed = await ask(
-                "You have unsaved changes. Are you sure you want to exit without saving?",
-                { title: "Unsaved Changes", kind: "warning" },
-              );
-              if (settled) return;
-              settled = true;
-              window.clearTimeout(timeoutId);
-              if (confirmed) await forceExit();
-            } catch (err) {
-              if (settled) return;
-              settled = true;
-              window.clearTimeout(timeoutId);
-              console.error("Close confirmation failed:", err);
-              await forceExit();
-            }
-          })();
-        });
-        if (cancelled) {
-          unlisten();
-          unlisten = undefined;
-        }
-      } catch {
-        // Not in a Tauri context (browser / tests)
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, []);
 
   const handleNewProject = async () => {
     if (useCalcStore.getState().isProjectDirty) {
