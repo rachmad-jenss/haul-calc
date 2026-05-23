@@ -130,12 +130,16 @@ function loadSnapshot(snap: Snapshot, filePath: string, store: OpenStore): void 
   useCalcStore.temporal.getState().clear();
 }
 
-export function parseSnapshot(text: string): Snapshot {
+export function parseSnapshot(text: string | Snapshot): Snapshot {
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("File tidak valid atau corrupt.");
+  if (typeof text === "object" && text !== null && "version" in text) {
+    parsed = text;
+  } else {
+    try {
+      parsed = JSON.parse(text as string);
+    } catch {
+      throw new Error("File tidak valid atau corrupt.");
+    }
   }
   if (typeof parsed !== "object" || parsed === null || !("version" in parsed)) {
     throw new Error("File tidak valid atau corrupt.");
