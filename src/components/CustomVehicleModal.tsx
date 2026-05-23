@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCalcStore } from "@/lib/store";
@@ -23,8 +29,19 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
   const { customVehicles, addCustomVehicle, removeCustomVehicle } = useCalcStore();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<FormState>>({});
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) {
+      setForm(EMPTY_FORM);
+      setErrors({});
+      return;
+    }
+    const t = window.setTimeout(() => {
+      contentRef.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   const handleClose = () => {
     setForm(EMPTY_FORM);
@@ -62,34 +79,12 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="custom-vehicles-title"
-      tabIndex={-1}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") handleClose();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-    >
-      <div className="w-full max-w-md rounded-lg border bg-background p-6 shadow-xl">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="custom-vehicles-title" className="text-lg font-semibold">Custom Vehicles</h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
+      <DialogContent ref={contentRef} className="max-w-md" aria-describedby={undefined}>
+        <DialogHeader className="flex-row items-center justify-between space-y-0">
+          <DialogTitle id="custom-vehicles-title">Custom Vehicles</DialogTitle>
+        </DialogHeader>
 
-        {/* Add form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="cv-name">Vehicle name</Label>
@@ -137,7 +132,6 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
           </Button>
         </form>
 
-        {/* Existing custom vehicles */}
         {customVehicles.length > 0 && (
           <div className="mt-5">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -169,7 +163,7 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
             </ul>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
