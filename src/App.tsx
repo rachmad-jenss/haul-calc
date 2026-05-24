@@ -4,21 +4,22 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
-  Truck,
-  Layers,
-  Coins,
-  FileText,
-  Settings as SettingsIcon,
-  FolderOpen,
-  FilePlus,
-  Save,
-  FileOutput,
-  TrendingUp,
-  LayoutDashboard,
-  GitCompareArrows,
-  Undo2,
-  Redo2,
-} from "lucide-react";
+  IconArrowDottedRotateAnticlockwiseOutline18,
+  IconChartBarTrendUpOutline18,
+  IconClipboardOutline18,
+  IconFileContentOutline18,
+  IconFolderOpenOutline18,
+  IconForkliftOutline18,
+  IconGear2Outline18,
+  IconLayers3Outline18,
+  IconMoneyBillCoinOutline18,
+  IconRefresh2Outline18,
+  IconSitemap4Outline18,
+  IconSquareDottedArrowBottomRightOutline18,
+  IconSquarePlusOutline18,
+  IconWindowChartLineOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps, type NucleoIconComponent } from "@/lib/icons";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { ask } from "@tauri-apps/plugin-dialog";
@@ -31,16 +32,19 @@ import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAutoUpdate } from "@/hooks/useAutoUpdate";
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/fleet", label: "Fleet & Traffic", icon: Truck },
-  { to: "/pavement", label: "Pavement Design", icon: Layers },
-  { to: "/economics", label: "Economics", icon: Coins },
-  { to: "/reports", label: "Reports", icon: FileText },
-  { to: "/sensitivity", label: "Sensitivity", icon: TrendingUp },
-  { to: "/compare", label: "Compare", icon: GitCompareArrows },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
-] as const;
+const NAV: { to: string; label: string; icon: NucleoIconComponent }[] = [
+  { to: "/dashboard", label: "Dashboard", icon: IconWindowChartLineOutline18 },
+  { to: "/fleet", label: "Fleet & Traffic", icon: IconForkliftOutline18 },
+  { to: "/pavement", label: "Pavement Design", icon: IconLayers3Outline18 },
+  { to: "/economics", label: "Economics", icon: IconMoneyBillCoinOutline18 },
+  { to: "/reports", label: "Reports", icon: IconFileContentOutline18 },
+  { to: "/sensitivity", label: "Sensitivity", icon: IconChartBarTrendUpOutline18 },
+  { to: "/compare", label: "Compare", icon: IconSitemap4Outline18 },
+  { to: "/settings", label: "Settings", icon: IconGear2Outline18 },
+];
+
+const FILE_BAR_ICON = nucleoIconProps({ size: 14 });
+const NAV_ICON = nucleoIconProps({ size: 16 });
 
 let closeGuardUnlisten: (() => void) | undefined;
 
@@ -308,7 +312,7 @@ export default function App() {
         <div className="flex h-14 flex-col justify-center border-b px-4 gap-1">
           <div className="flex items-center">
             <span className="text-base font-semibold tracking-tight">HaulCalc</span>
-            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase text-subtle">
               v{__APP_VERSION__}
             </span>
           </div>
@@ -317,60 +321,60 @@ export default function App() {
               type="button"
               onClick={() => undo()}
               disabled={!canUndo}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong disabled:opacity-40 disabled:pointer-events-none"
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
             >
-              <Undo2 className="h-3.5 w-3.5" />
+              <IconArrowDottedRotateAnticlockwiseOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => redo()}
               disabled={!canRedo}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong disabled:opacity-40 disabled:pointer-events-none"
               title="Redo (Ctrl+Y)"
               aria-label="Redo"
             >
-              <Redo2 className="h-3.5 w-3.5" />
+              <IconRefresh2Outline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             <button
               type="button"
               onClick={handleNewProject}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
               title="New project (Ctrl+N)"
               aria-label="New project"
             >
-              <FilePlus className="h-3.5 w-3.5" aria-hidden />
+              <IconSquarePlusOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
               title="Open project (Ctrl+O)"
               aria-label="Open project"
             >
-              <FolderOpen className="h-3.5 w-3.5" aria-hidden />
+              <IconFolderOpenOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
               title="Save (Ctrl+S)"
               aria-label="Save project"
             >
-              <Save className="h-3.5 w-3.5" aria-hidden />
+              <IconClipboardOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
               title="Save As (Ctrl+Shift+S)"
               aria-label="Save project as"
             >
-              <FileOutput className="h-3.5 w-3.5" aria-hidden />
+              <IconSquareDottedArrowBottomRightOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
             {displayName && (
-              <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>
+              <span className="truncate text-2xs text-subtle" title={activeFileName ?? undefined}>
                 {displayName}{isProjectDirty ? " *" : ""}
               </span>
             )}
@@ -383,19 +387,19 @@ export default function App() {
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
+                    ? "bg-selected text-strong"
+                    : "text-body hover:bg-selected hover:text-strong",
                 )
               }
             >
-              <Icon className="h-4 w-4" />
+              <Icon {...NAV_ICON} aria-hidden />
               {label}
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-3 text-[11px] text-muted-foreground">
+        <div className="border-t p-3 text-2xs text-subtle">
           <div className="flex items-center justify-between">
             <span>
               Powered by{" "}

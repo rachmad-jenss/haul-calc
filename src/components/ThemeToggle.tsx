@@ -1,14 +1,18 @@
-import { Sun, Moon, Monitor } from "lucide-react";
+import {
+  IconComputerOutline18,
+  IconDarkLightOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps, type NucleoIconComponent } from "@/lib/icons";
 
 interface ThemeToggleProps {
   theme: 'light' | 'dark' | 'system';
   onToggle: () => void;
 }
 
-const ICONS = {
-  light: Sun,
-  dark: Moon,
-  system: Monitor,
+const ICONS: Record<ThemeToggleProps["theme"], NucleoIconComponent> = {
+  light: IconDarkLightOutline18,
+  dark: IconDarkLightOutline18,
+  system: IconComputerOutline18,
 } as const;
 
 const TITLES = {
@@ -23,11 +27,11 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
     <button
       type="button"
       onClick={onToggle}
-      className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+      className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
       title={TITLES[theme]}
       aria-label={TITLES[theme]}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon {...nucleoIconProps({ size: 14 })} aria-hidden />
     </button>
   );
 }
