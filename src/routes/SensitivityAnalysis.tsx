@@ -245,7 +245,7 @@ export default function SensitivityAnalysis() {
       <div className="grid flex-1 gap-4 overflow-auto p-6 lg:grid-cols-[320px,1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Inputs</CardTitle>
+            <CardTitle className="text-md font-medium">Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
@@ -320,8 +320,8 @@ export default function SensitivityAnalysis() {
               />
             </div>
 
-            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Fixed inputs</p>
+            <div className="space-y-1 rounded-md border bg-muted/40 px-3 py-2 text-2xs text-subtle">
+              <p className="font-medium text-strong">Fixed inputs</p>
               {param !== "subgrade_cbr" && <p>Subgrade CBR: {subgradeCbr}%</p>}
               {param !== "design_coverages" && param !== "design_life_years" && param !== "trips_per_day" && (
                 <p>Design coverages: {coverages.toLocaleString()}</p>
@@ -340,13 +340,13 @@ export default function SensitivityAnalysis() {
 
         <Card>
           <CardHeader className="flex-row items-center gap-2">
-            <CardTitle>Results — {metricCfg.label}</CardTitle>
+            <CardTitle className="text-md font-medium">Results — {metricCfg.label}</CardTitle>
             {hasData && (
               <div className="ml-auto">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-1 px-2 text-xs"
+                  className="h-8 gap-1 px-2 text-2xs"
                   onClick={handleExport}
                   disabled={exporting}
                 >
@@ -358,14 +358,14 @@ export default function SensitivityAnalysis() {
           </CardHeader>
           <CardContent>
             {!hasData ? (
-              <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-[400px] w-full min-h-0 shrink-0 items-center justify-center text-base text-subtle">
                 Configure inputs and click "Run analysis" to see the sensitivity curve.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
                 {stubInfo.stub ? <StubBanner message={stubInfo.message} /> : null}
                 {validPoints < chartData.length && (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-2xs text-amber-600 dark:text-amber-400">
                     {chartData.length - validPoints} point(s) failed and were skipped.
                   </p>
                 )}
@@ -375,7 +375,7 @@ export default function SensitivityAnalysis() {
                   onShowDataChange={setShowData}
                   seriesDescription={`Line series: ${metricCfg.label} (primary color).`}
                   chart={
-                    <div className="h-[400px]" ref={chartContainerRef}>
+                    <div className="h-[400px] w-full min-h-0 shrink-0" ref={chartContainerRef}>
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={displayChartData.filter((p) => p.y !== null)}
@@ -450,12 +450,12 @@ export default function SensitivityAnalysis() {
                     </div>
                   }
                   table={
-                    <table className="w-full text-sm">
+                    <table className="w-full text-base">
                       <caption className="sr-only">
                         Sensitivity sweep — {paramCfg.label} vs {metricCfg.label} (includes failed
                         points as em dash; line chart omits nulls)
                       </caption>
-                      <thead className="text-xs uppercase text-muted-foreground">
+                      <thead className="text-2xs uppercase text-subtle">
                         <tr>
                           <th className="px-2 py-1 text-left font-medium">
                             {paramCfg.label}
