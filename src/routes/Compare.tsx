@@ -118,7 +118,11 @@ export default function Compare() {
                   <span className="font-medium text-foreground">{workspaceLabel}</span>.
                 </>
               ) : (
-                <>No project file is bound in the workspace — use File → Open on another page to edit a project.</>
+                <>
+                  No project file is bound in the workspace — use{" "}
+                  <span className="font-medium text-foreground">Open (Ctrl+O)</span> in the sidebar to
+                  edit a project.
+                </>
               )}
             </p>
           </CardContent>
