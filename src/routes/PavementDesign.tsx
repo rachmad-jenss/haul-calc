@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Calculator, ArrowDownToLine, AlertTriangle, Layers } from "lucide-react";
+import {
+  IconDesktopArrowDownOutline18,
+  IconGauge3Outline18,
+  IconLayers3Outline18,
+  IconTriangleWarningOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { CustomMaterialModal } from "@/components/CustomMaterialModal";
 import { MaterialLibraryPanel } from "@/components/MaterialLibraryPanel";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
@@ -197,7 +203,7 @@ export default function PavementDesign() {
         description="Compute layer thicknesses via USACE CBR and TRH 14 methods."
         actions={
           <Button onClick={compute} disabled={running}>
-            <Calculator className="h-4 w-4" />
+            <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
             {running ? "Computing..." : "Compute thickness"}
           </Button>
         }
@@ -229,13 +235,13 @@ export default function PavementDesign() {
               />
               {subgradeCbr < 3 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very weak subgrade — consider soil improvement
                 </p>
               )}
               {subgradeCbr > 30 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   CBR &gt; 30% is unusually strong for native subgrade
                 </p>
               )}
@@ -249,7 +255,7 @@ export default function PavementDesign() {
                     onClick={importFromCesa}
                     className="flex items-center gap-1 text-xs text-primary hover:underline"
                   >
-                    <ArrowDownToLine className="h-3 w-3" />
+                    <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                     Import from CESA ({formatNumber(cesaResult.design_coverages, 0)})
                   </button>
                 )}
@@ -274,13 +280,13 @@ export default function PavementDesign() {
               <FieldError message={fieldErrors.design_coverages} />
               {coverages > 2_000_000 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very high coverages — verify CESA computation
                 </p>
               )}
               {coverages > 0 && coverages < 10_000 && (
                 <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very low coverages — verify fleet traffic inputs
                 </p>
               )}
@@ -336,7 +342,7 @@ export default function PavementDesign() {
                   setShowCustomMaterialModal(true);
                 }}
               >
-                <Layers className="mr-2 h-4 w-4" />
+                <IconLayers3Outline18 {...nucleoIconProps({ size: 16, className: "mr-2" })} aria-hidden />
                 Custom materials…
               </Button>
             </div>
@@ -370,7 +376,7 @@ export default function PavementDesign() {
               <TabsContent value="compare" className="space-y-3">
                 <div className="flex justify-end">
                   <Button size="sm" onClick={compare} disabled={comparing}>
-                    <Calculator className="h-4 w-4" />
+                    <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
                     {comparing ? "Comparing..." : "Run comparison"}
                   </Button>
                 </div>

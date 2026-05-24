@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { Download, FileText, FileOutput } from "lucide-react";
+import {
+  IconDesktopArrowDownOutline18,
+  IconFileContentOutline18,
+  IconSquareDottedArrowBottomRightOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
@@ -136,15 +141,15 @@ export default function Reports() {
         actions={
           <>
             <Button variant="outline" onClick={generate} disabled={running}>
-              <FileText className="h-4 w-4" />
+              <IconFileContentOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               {running ? "Generating..." : "Generate summary"}
             </Button>
             <Button variant="outline" onClick={exportPdf} disabled={!reportSummary}>
-              <FileOutput className="h-4 w-4" />
+              <IconSquareDottedArrowBottomRightOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               Export PDF
             </Button>
             <Button onClick={exportJson} disabled={!reportSummary}>
-              <Download className="h-4 w-4" />
+              <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               Export JSON
             </Button>
           </>
@@ -352,7 +357,7 @@ function BoqSection({
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Material BoQ</CardTitle>
         <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
-          <Download className="mr-2 h-4 w-4" />
+          <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 16, className: "mr-2" })} aria-hidden />
           Export CSV
         </Button>
       </CardHeader>
