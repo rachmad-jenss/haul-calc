@@ -241,10 +241,10 @@ export default function FleetTraffic() {
         }
       />
 
-      <div className="grid flex-1 gap-4 overflow-auto p-6 lg:grid-cols-[1fr,360px]">
-        <Card>
+      <div className="grid min-h-0 flex-1 gap-4 p-6 lg:grid-cols-[1fr,360px]">
+        <Card className="flex min-h-0 flex-col">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Fleet composition</CardTitle>
+            <CardTitle className="text-md">Fleet composition</CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowCustomModal(true)}>
                 <IconFacePlusOutline18 {...ICON_16} aria-hidden />
@@ -272,7 +272,7 @@ export default function FleetTraffic() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex min-h-0 flex-1 flex-col">
             {fleet.length === 0 ? (
               <div
                 className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed py-12 text-center"
@@ -284,7 +284,7 @@ export default function FleetTraffic() {
                 <IconForkliftOutline18 {...ICON_40_MUTED} aria-hidden />
                 <div className="space-y-1">
                   <p className="font-medium">No vehicles in fleet</p>
-                  <p className="max-w-sm text-sm text-muted-foreground">
+                  <p className="max-w-sm text-base text-subtle">
                     Add a row or load the sample fleet to start CESA and coverages.
                   </p>
                 </div>
@@ -300,9 +300,9 @@ export default function FleetTraffic() {
                 </div>
               </div>
             ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+              <table className="w-full text-base">
+                <thead className="border-b text-left text-2xs uppercase tracking-wide text-subtle">
                   <tr>
                     <th className="px-2 py-2 font-medium">Vehicle</th>
                     <th className="px-2 py-2 font-medium">Count</th>
@@ -391,7 +391,7 @@ export default function FleetTraffic() {
                             }
                           />
                           {unitSystem === "Imperial" && (
-                            <span className="shrink-0 text-xs text-muted-foreground">
+                            <span className="shrink-0 text-2xs text-subtle">
                               {formatNumber(convertPayload(row.payload_kn, unitSystem), 1)}{" "}
                               {unitLabels.Imperial.payload}
                             </span>
@@ -498,7 +498,7 @@ export default function FleetTraffic() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="flex-row items-center gap-2">
-              <CardTitle>CESA result</CardTitle>
+              <CardTitle className="text-md">CESA result</CardTitle>
               {cesaResult && cesaDirty && (
                 <ResultStaleBadge onRecalculate={compute} recalculating={running} />
               )}
@@ -515,7 +515,7 @@ export default function FleetTraffic() {
                   <Metric label="Design life" value={`${cesaResult.design_life_years} yr`} />
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-subtle">
                   Run "Compute CESA" to see results here.
                 </p>
               )}
@@ -525,11 +525,11 @@ export default function FleetTraffic() {
           {cesaResult?.axle_load_distribution?.length ? (
             <Card>
               <CardHeader>
-                <CardTitle>Axle load distribution</CardTitle>
+                <CardTitle className="text-md">Axle load distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <table className="w-full text-sm">
-                  <thead className="text-xs uppercase text-muted-foreground">
+                <table className="w-full text-base">
+                  <thead className="text-2xs uppercase tracking-wide text-subtle">
                     <tr>
                       <th className="px-2 py-1 text-left font-medium">
                         {labelWithUnit("Axle", unitSystem, "force")}
