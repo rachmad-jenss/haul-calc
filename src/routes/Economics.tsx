@@ -210,11 +210,16 @@ function OpexTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-1">
         <Button onClick={compute} disabled={running || costScenarios.length < 2}>
           <Calculator className="h-4 w-4" />
           {running ? "Computing..." : "Compare scenarios"}
         </Button>
+        {costScenarios.length < 2 && (
+          <p className="text-sm text-muted-foreground">
+            Add at least two scenarios to compare operating costs.
+          </p>
+        )}
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr,1fr]">
         <Card>

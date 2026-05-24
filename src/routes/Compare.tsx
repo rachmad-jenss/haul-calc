@@ -156,10 +156,12 @@ export default function Compare() {
                 <span className="font-medium">{p.snapshot.projectName || p.fileName}</span>
                 <span className="text-muted-foreground">({p.fileName})</span>
                 <button
+                  type="button"
                   onClick={() => removeProject(p.filePath)}
                   className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={`Remove ${p.snapshot.projectName || p.fileName} from comparison`}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden />
                 </button>
               </div>
             ))}
