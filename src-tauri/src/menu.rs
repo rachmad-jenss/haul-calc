@@ -17,7 +17,19 @@ pub fn install(handle: &AppHandle) -> tauri::Result<()> {
         .build(handle)?;
     let file_exit = MenuItemBuilder::with_id("file_exit", "Exit")
         .build(handle)?;
+    #[cfg(target_os = "macos")]
+    let file_quit = MenuItemBuilder::with_id("file_exit", "Quit")
+        .accelerator("CmdOrCtrl+Q")
+        .build(handle)?;
 
+    #[cfg(target_os = "macos")]
+    let file_menu = SubmenuBuilder::new(handle, "File")
+        .item(&file_new)
+        .item(&file_open)
+        .item(&file_save)
+        .item(&file_save_as)
+        .build()?;
+    #[cfg(not(target_os = "macos"))]
     let file_menu = SubmenuBuilder::new(handle, "File")
         .item(&file_new)
         .item(&file_open)
@@ -45,7 +57,7 @@ pub fn install(handle: &AppHandle) -> tauri::Result<()> {
             let app_menu = SubmenuBuilder::new(handle, "HaulCalc")
                 .about(None)
                 .separator()
-                .item(&file_exit)
+                .item(&file_quit)
                 .build()?;
             MenuBuilder::new(handle)
                 .item(&app_menu)
