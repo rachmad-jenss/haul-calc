@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
 import { PageHeader } from "@/components/PageHeader";
+import { ResultStaleBadge } from "@/components/ResultStaleBadge";
 import { StubBanner } from "@/components/StubBanner";
 import { FieldError, Metric } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
@@ -471,9 +472,7 @@ export default function FleetTraffic() {
             <CardHeader className="flex-row items-center gap-2">
               <CardTitle>CESA result</CardTitle>
               {cesaResult && cesaDirty && (
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                  Stale
-                </span>
+                <ResultStaleBadge onRecalculate={compute} recalculating={running} />
               )}
             </CardHeader>
             <CardContent className="space-y-3">

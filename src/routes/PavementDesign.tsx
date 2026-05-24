@@ -5,6 +5,7 @@ import { MaterialLibraryPanel } from "@/components/MaterialLibraryPanel";
 import { PavementCrossSection } from "@/components/PavementCrossSection";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { ResultStaleBadge } from "@/components/ResultStaleBadge";
 import { StubBanner } from "@/components/StubBanner";
 import { WarningBanner } from "@/components/WarningBanner";
 import { FieldError, NumField } from "@/components/FormFields";
@@ -346,9 +347,7 @@ export default function PavementDesign() {
           <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Recommended structure</CardTitle>
             {(cbrResult || trhResult) && pavementDirty && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                Stale
-              </span>
+              <ResultStaleBadge onRecalculate={compute} recalculating={running} />
             )}
           </CardHeader>
           <CardContent>
