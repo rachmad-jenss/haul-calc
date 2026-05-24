@@ -32,7 +32,7 @@ import type {
   MaterialTemplate,
   PavementResult,
 } from "@/lib/types";
-import { convertThickness, unitLabels } from "@/lib/unit-convert";
+import { convertThickness, formatThicknessMm, unitLabels } from "@/lib/unit-convert";
 import { formatNumber, parseNumericInput } from "@/lib/utils";
 
 export default function PavementDesign() {
@@ -409,6 +409,9 @@ const CONFIDENCE_COLOR: Record<string, string> = {
 };
 
 function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
+  const { unitSystem } = useCalcStore();
+  const thicknessDecimals = unitSystem === "Imperial" ? 1 : 0;
+
   if (!result) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -452,7 +455,9 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
                 className="mb-1 font-mono text-2xl font-bold"
                 data-testid={`compare-${key}-thickness-mm`}
               >
-                {formatNumber(m.total_thickness_mm, 0)} mm
+                {formatThicknessMm(m.total_thickness_mm, unitSystem, {
+                  decimals: thicknessDecimals,
+                })}
               </div>
               <div className="text-xs text-muted-foreground">{m.method}</div>
               <div className="mt-2 flex flex-wrap gap-1">
@@ -472,7 +477,9 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 
       <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-sm">
         <span className="text-muted-foreground">Δ Thickness:</span>
-        <span className="font-mono font-semibold">{formatNumber(Math.abs(result.delta_mm), 0)} mm</span>
+        <span className="font-mono font-semibold">
+          {formatThicknessMm(Math.abs(result.delta_mm), unitSystem, { decimals: thicknessDecimals })}
+        </span>
         <span className="text-muted-foreground">·</span>
         <span className="text-muted-foreground">Subgrade CBR:</span>
         <span className="font-mono font-semibold">{result.subgrade_cbr}%</span>

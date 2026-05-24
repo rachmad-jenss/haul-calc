@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { TrendingUp, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,11 @@ import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
 import { useCalcStore } from "@/lib/store";
 import type { SensitivityRequest } from "@/lib/types";
+import {
+  convertThickness,
+  type UnitSystem,
+  unitLabels,
+} from "@/lib/unit-convert";
 
 type SensParam = "subgrade_cbr" | "design_coverages" | "design_life_years" | "trips_per_day";
 type SensMetric = "total_thickness_mm" | "cesa" | "cost_total";
@@ -52,11 +57,35 @@ const PARAM_CONFIG: Record<SensParam, ParamConfig> = {
   trips_per_day: { label: "Trips/day (multiplier)", defaultMin: 0.5, defaultMax: 2.0, unit: "×" },
 };
 
-const METRIC_CONFIG: Record<SensMetric, MetricConfig> = {
-  total_thickness_mm: { label: "Pavement thickness", yAxisLabel: "Thickness (mm)", unit: "mm", decimals: 0 },
-  cesa: { label: "CESA", yAxisLabel: "CESA", unit: "", decimals: 0 },
-  cost_total: { label: "Annual cost (USD/yr)", yAxisLabel: "Cost (USD/yr)", unit: "USD/yr", decimals: 0 },
-};
+function getMetricConfig(system: UnitSystem): Record<SensMetric, MetricConfig> {
+  const thickUnit = unitLabels[system].thickness;
+  return {
+    total_thickness_mm: {
+      label: "Pavement thickness",
+      yAxisLabel: `Thickness (${thickUnit})`,
+      unit: thickUnit,
+      decimals: system === "Imperial" ? 1 : 0,
+    },
+    cesa: { label: "CESA", yAxisLabel: "CESA", unit: "", decimals: 0 },
+    cost_total: {
+      label: "Annual cost (USD/yr)",
+      yAxisLabel: "Cost (USD/yr)",
+      unit: "USD/yr",
+      decimals: 0,
+    },
+  };
+}
+
+function displayMetricY(
+  y: number,
+  metric: SensMetric,
+  system: UnitSystem,
+): number {
+  if (metric === "total_thickness_mm" && system === "Imperial") {
+    return convertThickness(y, system);
+  }
+  return y;
+}
 
 interface ChartPoint {
   x: number;
@@ -64,7 +93,15 @@ interface ChartPoint {
 }
 
 export default function SensitivityAnalysis() {
-  const { subgradeCbr, coverages, designLifeYears, workingDaysPerYear, fleet, costScenarios } = useCalcStore();
+  const {
+    subgradeCbr,
+    coverages,
+    designLifeYears,
+    workingDaysPerYear,
+    fleet,
+    costScenarios,
+    unitSystem,
+  } = useCalcStore();
   const runIdRef = useRef(0);
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -174,9 +211,18 @@ export default function SensitivityAnalysis() {
   };
 
   const paramCfg = PARAM_CONFIG[param];
-  const metricCfg = METRIC_CONFIG[metric];
-  const hasData = chartData.length > 0;
-  const validPoints = chartData.filter((p) => p.y !== null).length;
+  const metricCfg = getMetricConfig(unitSystem)[metric];
+  const displayChartData = useMemo(
+    () =>
+      chartData.map((p) =>
+        p.y === null
+          ? p
+          : { ...p, y: displayMetricY(p.y, metric, unitSystem) },
+      ),
+    [chartData, metric, unitSystem],
+  );
+  const hasData = displayChartData.length > 0;
+  const validPoints = displayChartData.filter((p) => p.y !== null).length;
 
   return (
     <div className="flex h-full flex-col">
@@ -220,7 +266,8 @@ export default function SensitivityAnalysis() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(METRIC_CONFIG) as [SensMetric, MetricConfig][]).map(([key, c]) => (
+                  {(Object.entries(getMetricConfig(unitSystem)) as [SensMetric, MetricConfig][]).map(
+                    ([key, c]) => (
                     <SelectItem key={key} value={key}>
                       {c.label}
                     </SelectItem>
@@ -328,7 +375,7 @@ export default function SensitivityAnalysis() {
                 <div className="h-[400px]" ref={chartContainerRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={chartData.filter((p) => p.y !== null)}
+                      data={displayChartData.filter((p) => p.y !== null)}
                       margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -405,14 +452,16 @@ export default function SensitivityAnalysis() {
                         </tr>
                       </thead>
                       <tbody>
-                        {chartData.map((p) => (
+                        {displayChartData.map((p) => (
                           <tr key={p.x} className="border-t">
                             <td className="px-2 py-1 font-mono">
                               {p.x.toLocaleString(undefined, { maximumFractionDigits: 3 })}
                             </td>
                             <td className="px-2 py-1 text-right font-mono">
                               {p.y !== null
-                                ? p.y.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })
+                                ? p.y.toLocaleString(undefined, {
+                                    maximumFractionDigits: metricCfg.decimals,
+                                  })
                                 : "—"}
                             </td>
                           </tr>
