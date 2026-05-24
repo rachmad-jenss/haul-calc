@@ -205,37 +205,41 @@ export default function Settings() {
       <div className="grid flex-1 auto-rows-min gap-4 overflow-auto p-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Sidecar</CardTitle>
+            <CardTitle className="text-md font-medium">Sidecar</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3">
             <Row label="Process status">
               <SidecarStatusBadge status={status?.sidecarStatus} error={status?.error} />
             </Row>
             <Row label="haul-pave loaded">
               {status?.loaded ? (
-                <span className="flex items-center gap-1 text-emerald-600">
+                <span className="flex items-center gap-1 text-base text-emerald-600">
                   <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden /> Yes
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-amber-600">
+                <span className="flex items-center gap-1 text-base text-amber-600">
                   <IconXmarkOutline18 {...ICON_16_AMBER} aria-hidden /> Stub mode
                 </span>
               )}
             </Row>
             <Row label="haul-pave version">
-              <span className="font-mono">{status?.haulpaveVersion ?? "—"}</span>
+              <span className="font-mono text-base text-strong">
+                {status?.haulpaveVersion ?? "—"}
+              </span>
             </Row>
             <Row label="Bridge version">
-              <span className="font-mono">{status?.bridgeVersion ?? "—"}</span>
+              <span className="font-mono text-base text-strong">
+                {status?.bridgeVersion ?? "—"}
+              </span>
             </Row>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Updates</CardTitle>
+            <CardTitle className="text-md font-medium">Updates</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3">
             <UpdatePanel
               state={updateState}
               relaunching={relaunching}
@@ -248,23 +252,35 @@ export default function Settings() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Keyboard Shortcuts</CardTitle>
+            <CardTitle className="text-md font-medium">Keyboard Shortcuts</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <Row label="New project"><span className="font-mono text-foreground">Ctrl+N</span></Row>
-            <Row label="Open project"><span className="font-mono text-foreground">Ctrl+O</span></Row>
-            <Row label="Save project"><span className="font-mono text-foreground">Ctrl+S</span></Row>
-            <Row label="Save project as"><span className="font-mono text-foreground">Ctrl+Shift+S</span></Row>
-            <Row label="Undo"><span className="font-mono text-foreground">Ctrl+Z</span></Row>
-            <Row label="Redo"><span className="font-mono text-foreground">Ctrl+Y</span></Row>
+          <CardContent className="space-y-3">
+            <Row label="New project">
+              <span className="font-mono text-base text-strong">Ctrl+N</span>
+            </Row>
+            <Row label="Open project">
+              <span className="font-mono text-base text-strong">Ctrl+O</span>
+            </Row>
+            <Row label="Save project">
+              <span className="font-mono text-base text-strong">Ctrl+S</span>
+            </Row>
+            <Row label="Save project as">
+              <span className="font-mono text-base text-strong">Ctrl+Shift+S</span>
+            </Row>
+            <Row label="Undo">
+              <span className="font-mono text-base text-strong">Ctrl+Z</span>
+            </Row>
+            <Row label="Redo">
+              <span className="font-mono text-base text-strong">Ctrl+Y</span>
+            </Row>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Conventions</CardTitle>
+            <CardTitle className="text-md font-medium">Conventions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <CardContent className="space-y-3">
             <Row label="Unit system">
               <UnitSystemToggle value={unitSystem} onChange={setUnitSystem} />
             </Row>
@@ -272,36 +288,36 @@ export default function Settings() {
               <AutoCheckToggle value={autoCheckUpdates} onChange={setAutoCheckUpdates} />
             </Row>
             <Row label="Currency">
-              <span className="font-medium text-foreground">USD</span>
+              <span className="text-base font-medium text-strong">USD</span>
             </Row>
             <Row label="Geometric design">
-              <span className="font-medium text-foreground">Out of scope (v1)</span>
+              <span className="text-base text-subtle">Out of scope (v1)</span>
             </Row>
             <Row label="Haul cycle simulation">
-              <span className="font-medium text-foreground">Out of scope (v1)</span>
+              <span className="text-base text-subtle">Out of scope (v1)</span>
             </Row>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>About</CardTitle>
+            <CardTitle className="text-md font-medium">About</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <CardContent className="space-y-3">
             <Row label="App version">
-              <span className="font-mono font-medium text-foreground">
+              <span className="font-mono text-base font-medium text-strong">
                 {__APP_VERSION__}
               </span>
             </Row>
             <Row label="License">
-              <span className="font-medium text-foreground">MIT</span>
+              <span className="text-base font-medium text-strong">MIT</span>
             </Row>
             <Row label="Source code">
               <a
                 href="https://github.com/rachmad-jenss/haul-calc"
                 target="_blank"
                 rel="noreferrer"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="text-base font-medium text-primary underline-offset-4 hover:underline"
               >
                 github.com/rachmad-jenss/haul-calc
               </a>
@@ -311,7 +327,7 @@ export default function Settings() {
                 href="https://github.com/rachmad-jenss/haul-pave"
                 target="_blank"
                 rel="noreferrer"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="text-base font-medium text-primary underline-offset-4 hover:underline"
               >
                 haul-pave
               </a>
@@ -338,7 +354,7 @@ function AutoCheckToggle({
         onChange={(e) => onChange(e.target.checked)}
         className="accent-primary"
       />
-      <span className="text-sm">Check for updates on startup</span>
+      <span className="text-base text-strong">Check for updates on startup</span>
     </label>
   );
 }
@@ -362,7 +378,7 @@ function UnitSystemToggle({
             onChange={() => onChange(sys)}
             className="accent-primary"
           />
-          <span className="font-medium text-foreground">
+          <span className="text-base font-medium text-strong">
             {sys === "SI" ? "SI (metric)" : "Imperial"}
           </span>
         </label>
@@ -394,7 +410,7 @@ function UpdatePanel({
   }
   if (state.phase === "checking") {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="flex items-center gap-2 text-base text-subtle">
         <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden />
         Checking for updates…
       </div>
@@ -403,7 +419,7 @@ function UpdatePanel({
   if (state.phase === "up-to-date") {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-emerald-600">
+        <div className="flex items-center gap-2 text-base text-emerald-600">
           <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden />
           You&apos;re on the latest version.
         </div>
@@ -416,17 +432,17 @@ function UpdatePanel({
   if (state.phase === "available") {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 font-medium">
+        <div className="flex flex-wrap items-center gap-2 text-base font-medium text-strong">
           <IconDesktopArrowDownOutline18 {...ICON_16_PRIMARY} aria-hidden />
           Version {state.version} available
           {state.date && (
-            <span className="font-normal text-muted-foreground">
+            <span className="font-normal text-subtle">
               ({new Date(state.date).toLocaleDateString()})
             </span>
           )}
         </div>
         {state.body && (
-          <p className="text-xs text-muted-foreground line-clamp-3">{state.body}</p>
+          <p className="line-clamp-3 text-2xs text-subtle">{state.body}</p>
         )}
         <Button onClick={onInstall} className="w-full">
           <IconDesktopArrowDownOutline18 {...ICON_16} aria-hidden />
@@ -437,8 +453,8 @@ function UpdatePanel({
   }
   if (state.phase === "downloading") {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-base text-subtle">
           <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden />
           Downloading… {state.percent > 0 ? `${state.percent}%` : ""}
         </div>
@@ -454,7 +470,7 @@ function UpdatePanel({
   if (state.phase === "ready") {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-emerald-600">
+        <div className="flex items-center gap-2 text-base text-emerald-600">
           <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden />
           Update installed. Restart to apply.
         </div>
@@ -467,7 +483,7 @@ function UpdatePanel({
   }
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-destructive">
+      <div className="flex items-center gap-2 text-base text-destructive">
         <IconXmarkOutline18 {...ICON_16_DESTRUCTIVE} aria-hidden />
         {state.message}
       </div>
@@ -485,31 +501,31 @@ function SidecarStatusBadge({
   status?: SidecarStatus;
   error?: string;
 }) {
-  if (!status) return <span className="text-muted-foreground">—</span>;
+  if (!status) return <span className="text-base text-subtle">—</span>;
 
   if (status === "running") {
     return (
-      <span className="flex items-center gap-1 text-emerald-600">
+      <span className="flex items-center gap-1 text-base text-emerald-600">
         <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden /> Running
       </span>
     );
   }
   if (status === "restarting") {
     return (
-      <span className="flex items-center gap-1 text-amber-600">
+      <span className="flex items-center gap-1 text-base text-amber-600">
         <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden /> Restarting…
       </span>
     );
   }
   if (status === "killed") {
     return (
-      <span className="flex items-center gap-1 text-muted-foreground">
+      <span className="flex items-center gap-1 text-base text-subtle">
         <IconXmarkOutline18 {...ICON_16_MUTED} aria-hidden /> Stopped
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-destructive">
+    <span className="flex items-center gap-1 text-base text-destructive">
       <IconXmarkOutline18 {...ICON_16_DESTRUCTIVE} aria-hidden />
       {error ?? "Crashed"}
     </span>
