@@ -264,8 +264,9 @@ export const useCalcStore = create<CalcStore>()(
           }),
         ),
 
-      setFleet: (fleet) => set({ fleet, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
-      setWorkingDaysPerYear: (workingDaysPerYear) => set({ workingDaysPerYear, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
+      setFleet: (fleet) => set({ fleet, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
+      setWorkingDaysPerYear: (workingDaysPerYear) =>
+        set({ workingDaysPerYear, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       addCustomVehicle: (v) =>
         set((s) => ({
           customVehicles: [...s.customVehicles, { ...v, id: "custom-" + crypto.randomUUID() }],
@@ -275,7 +276,6 @@ export const useCalcStore = create<CalcStore>()(
         set((s) => ({
           customVehicles: s.customVehicles.filter((c) => c.id !== id),
           fleet: s.fleet.filter((f) => f.vehicle_id !== id),
-          cesaResult: null,
           cesaDirty: true,
           reportSummary: null,
           isProjectDirty: true,
@@ -305,7 +305,8 @@ export const useCalcStore = create<CalcStore>()(
           reportSummary: null,
           isProjectDirty: true,
         })),
-      setDesignLifeYears: (designLifeYears) => set({ designLifeYears, cesaResult: null, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
+      setDesignLifeYears: (designLifeYears) =>
+        set({ designLifeYears, cesaDirty: true, reportSummary: null, isProjectDirty: true }),
       setCesaResult: (result, stub, stubMessage) =>
         withoutProjectDirtyTracking(() =>
           set((s) => ({
@@ -317,9 +318,12 @@ export const useCalcStore = create<CalcStore>()(
             pavementDirty: s.coverages !== result.design_coverages ? true : s.pavementDirty,
           })),
         ),
-      setSubgradeCbr: (subgradeCbr) => set({ subgradeCbr, cbrResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
-      setCoverages: (coverages) => set({ coverages, cbrResult: null, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
-      setTrhCategory: (trhCategory) => set({ trhCategory, trhResult: null, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setSubgradeCbr: (subgradeCbr) =>
+        set({ subgradeCbr, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setCoverages: (coverages) =>
+        set({ coverages, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
+      setTrhCategory: (trhCategory) =>
+        set({ trhCategory, pavementDirty: true, reportSummary: null, isProjectDirty: true }),
       setCbrResult: (result, stub, stubMessage) =>
         withoutProjectDirtyTracking(() =>
           set({ cbrResult: { ...result, stub, stubMessage }, pavementDirty: false }),
@@ -328,7 +332,8 @@ export const useCalcStore = create<CalcStore>()(
         withoutProjectDirtyTracking(() =>
           set({ trhResult: { ...result, stub, stubMessage }, pavementDirty: false }),
         ),
-      setCostScenarios: (costScenarios) => set({ costScenarios, costResult: null, economicsDirty: true, reportSummary: null, isProjectDirty: true }),
+      setCostScenarios: (costScenarios) =>
+        set({ costScenarios, economicsDirty: true, reportSummary: null, isProjectDirty: true }),
       setCostResult: (result, stub, stubMessage) =>
         withoutProjectDirtyTracking(() =>
           set({ costResult: { ...result, stub, stubMessage }, economicsDirty: false }),

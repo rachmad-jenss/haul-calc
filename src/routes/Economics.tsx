@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { PageHeader } from "@/components/PageHeader";
+import { ResultStaleBadge } from "@/components/ResultStaleBadge";
 import { StubBanner } from "@/components/StubBanner";
 import { FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
@@ -299,9 +300,7 @@ function OpexTab() {
           <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Comparison</CardTitle>
             {costResult && economicsDirty && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                Stale
-              </span>
+              <ResultStaleBadge onRecalculate={compute} recalculating={running} />
             )}
             {chartData.length > 0 && (
               <div className="ml-auto flex items-center gap-2">
