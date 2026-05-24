@@ -18,6 +18,8 @@ test.describe("Visual identity sprint smoke (DAS-236)", () => {
       "/pavement",
       "/economics",
       "/reports",
+      "/sensitivity",
+      "/compare",
       "/settings",
     ]) {
       await navigate(page, route);
@@ -33,8 +35,10 @@ test.describe("Visual identity sprint smoke (DAS-236)", () => {
 
     const labels: string[] = [];
     for (let i = 0; i < 3; i++) {
-      labels.push((await toggle.getAttribute("aria-label")) ?? "");
+      const before = (await toggle.getAttribute("aria-label")) ?? "";
+      labels.push(before);
       await toggle.click();
+      await expect(toggle).not.toHaveAttribute("aria-label", before);
       await expect(page.locator("main")).toBeVisible();
     }
 
