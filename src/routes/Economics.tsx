@@ -15,6 +15,7 @@ import { Plus, Trash2, Calculator, Download } from "lucide-react";
 import { toast } from "sonner";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { ChartAccessibleView } from "@/components/ChartAccessibleView";
 import { PageHeader } from "@/components/PageHeader";
 import { ResultStaleBadge } from "@/components/ResultStaleBadge";
 import { StubBanner } from "@/components/StubBanner";
@@ -41,6 +42,21 @@ import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
 import { labelWithUnit } from "@/lib/unit-convert";
 import { formatCurrency, toSafeCsvCell } from "@/lib/utils";
+
+const OPEX_STACKED_LEGEND: Record<string, string> = {
+  Tires: "Tires — annual cost (USD)",
+  Fuel: "Fuel — annual cost (USD)",
+  Maintenance: "Maintenance — annual cost (USD)",
+};
+
+const LCCA_NPV_LEGEND: Record<string, string> = {
+  "NPV (USD)": "Net present value (USD)",
+  "AEC (USD/yr)": "Annual equivalent cost (USD/yr)",
+};
+
+function formatChartLegend(value: string, map: Record<string, string>) {
+  return map[value] ?? value;
+}
 
 // ---------------------------------------------------------------------------
 // Economics page — two tabs: Operating Cost and LCCA
@@ -318,46 +334,6 @@ function OpexTab() {
             {costResult && economicsDirty && (
               <ResultStaleBadge onRecalculate={compute} recalculating={running} />
             )}
-            {chartData.length > 0 && (
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={() => setShowData(!showData)}
-                >
-                  {showData ? "Hide Data" : "Show Data"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={handleExportCsv}
-                >
-                  <Download className="h-3 w-3" />
-                  Export CSV
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={handleExportExcel}
-                >
-                  <Download className="h-3 w-3" />
-                  Export Excel
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={handleExport}
-                  disabled={exporting}
-                >
-                  <Download className="h-3 w-3" />
-                  {exporting ? "Exporting…" : "Export PNG"}
-                </Button>
-              </div>
-            )}
           </CardHeader>
           <CardContent className="space-y-3">
             {costResult?.stub ? <StubBanner message={costResult.stubMessage} /> : null}
@@ -366,27 +342,61 @@ function OpexTab() {
                 Run "Compare scenarios" to see operating cost breakdown.
               </p>
             ) : (
-              <>
-                <div className="h-72 w-full" ref={chartRef}>
-                  <ResponsiveContainer>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                      <Legend />
-                      <Bar dataKey="Tires" stackId="a" fill="#ef4444" />
-                      <Bar dataKey="Fuel" stackId="a" fill="#f59e0b" />
-                      <Bar dataKey="Maintenance" stackId="a" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                {showData && (
-                  <div className="overflow-x-auto">
-                    <SummaryTable rows={costResult?.scenarios ?? []} />
+              <ChartAccessibleView
+                id="opex-comparison-chart"
+                showData={showData}
+                onShowDataChange={setShowData}
+                seriesDescription="Stacked bars: Tires (red), Fuel (amber), Maintenance (blue) per scenario."
+                toolbar={
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 px-2 text-xs"
+                      onClick={handleExportCsv}
+                    >
+                      <Download className="h-3 w-3" aria-hidden />
+                      Export CSV
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 px-2 text-xs"
+                      onClick={handleExportExcel}
+                    >
+                      <Download className="h-3 w-3" aria-hidden />
+                      Export Excel
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1 px-2 text-xs"
+                      onClick={handleExport}
+                      disabled={exporting}
+                    >
+                      <Download className="h-3 w-3" aria-hidden />
+                      {exporting ? "Exporting…" : "Export PNG"}
+                    </Button>
+                  </>
+                }
+                chart={
+                  <div className="h-72 w-full" ref={chartRef}>
+                    <ResponsiveContainer>
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Legend formatter={(value) => formatChartLegend(String(value), OPEX_STACKED_LEGEND)} />
+                        <Bar dataKey="Tires" stackId="a" fill="#ef4444" name="Tires" />
+                        <Bar dataKey="Fuel" stackId="a" fill="#f59e0b" name="Fuel" />
+                        <Bar dataKey="Maintenance" stackId="a" fill="#3b82f6" name="Maintenance" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                )}
-              </>
+                }
+                table={<SummaryTable rows={costResult?.scenarios ?? []} />}
+              />
             )}
           </CardContent>
         </Card>
@@ -399,6 +409,9 @@ function SummaryTable({ rows }: { rows: ScenarioComparison[] }) {
   if (!rows.length) return null;
   return (
     <table className="w-full text-sm">
+      <caption className="sr-only">
+        Operating cost breakdown by scenario — same values as the stacked bar chart
+      </caption>
       <thead className="text-xs uppercase text-muted-foreground">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
@@ -446,8 +459,10 @@ const SCENARIO_COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 function LccaTab() {
   const { costScenarios, lccaInputs, lccaResult, setLccaInputs, setLccaResult } = useCalcStore();
   const [exporting, setExporting] = useState(false);
-  const [showData, setShowData] = useState(true);
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [showSummaryData, setShowSummaryData] = useState(true);
+  const [showNpvData, setShowNpvData] = useState(true);
+  const [showCumulativeData, setShowCumulativeData] = useState(true);
+  const npvChartRef = useRef<HTMLDivElement>(null);
 
   // Sync scenario list from costScenarios whenever we need it
   const syncedScenarios: LccaScenarioInput[] = costScenarios.map((cs) => {
@@ -480,10 +495,10 @@ function LccaTab() {
   };
 
   const handleExport = async () => {
-    if (!chartRef.current) return;
+    if (!npvChartRef.current) return;
     setExporting(true);
     try {
-      await exportChartToPng(chartRef.current, "haul-calc-lcca");
+      await exportChartToPng(npvChartRef.current, "haul-calc-lcca");
     } catch (err) {
       toast.error(`Export failed: ${String(err)}`);
     } finally {
@@ -630,38 +645,41 @@ function LccaTab() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={() => setShowData(!showData)}
-                >
-                  {showData ? "Hide Data" : "Show Data"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
+                  className="h-8 gap-1 px-2 text-xs"
                   onClick={handleExportCsv}
                 >
-                  <Download className="h-3 w-3" />
+                  <Download className="h-3 w-3" aria-hidden />
                   Export CSV
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={handleExport}
-                  disabled={exporting}
-                >
-                  <Download className="h-3 w-3" />
-                  {exporting ? "Exporting…" : "Export PNG"}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {showData && (
-                <div className="overflow-x-auto">
+              <p className="text-xs text-muted-foreground">
+                Summary metrics per scenario (no chart — table is the primary view).
+              </p>
+              <Button
+                type="button"
+                variant={showSummaryData ? "secondary" : "outline"}
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                aria-pressed={showSummaryData}
+                aria-controls="lcca-summary-data-table"
+                aria-expanded={showSummaryData}
+                onClick={() => setShowSummaryData(!showSummaryData)}
+              >
+                {showSummaryData ? "Hide data table" : "Show data table"}
+              </Button>
+              {showSummaryData ? (
+                <div
+                  id="lcca-summary-data-table"
+                  className="overflow-x-auto rounded-md border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  tabIndex={0}
+                  role="region"
+                  aria-label="LCCA summary data table"
+                >
                   <LccaSummaryTable rows={lccaResult.scenarios} />
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
 
@@ -671,19 +689,40 @@ function LccaTab() {
               <CardTitle>NPV Comparison</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 w-full" ref={chartRef}>
-                <ResponsiveContainer>
-                  <BarChart data={npvChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend />
-                    <Bar dataKey="NPV (USD)" fill="#3b82f6" />
-                    <Bar dataKey="AEC (USD/yr)" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartAccessibleView
+                id="lcca-npv-chart"
+                showData={showNpvData}
+                onShowDataChange={setShowNpvData}
+                seriesDescription="Bars: NPV (blue) and annual equivalent cost (green) per scenario."
+                toolbar={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 px-2 text-xs"
+                    onClick={handleExport}
+                    disabled={exporting}
+                  >
+                    <Download className="h-3 w-3" aria-hidden />
+                    {exporting ? "Exporting…" : "Export PNG"}
+                  </Button>
+                }
+                chart={
+                  <div className="h-64 w-full" ref={npvChartRef}>
+                    <ResponsiveContainer>
+                      <BarChart data={npvChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Legend formatter={(value) => formatChartLegend(String(value), LCCA_NPV_LEGEND)} />
+                        <Bar dataKey="NPV (USD)" fill="#3b82f6" name="NPV (USD)" />
+                        <Bar dataKey="AEC (USD/yr)" fill="#10b981" name="AEC (USD/yr)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                }
+                table={<NpvComparisonTable rows={npvChartData} />}
+              />
             </CardContent>
           </Card>
 
@@ -693,32 +732,109 @@ function LccaTab() {
               <CardTitle>Cumulative Present Value over Time</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 w-full">
-                <ResponsiveContainer>
-                  <LineChart data={cumulativeData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" label={{ value: "Year", position: "insideBottom", offset: -5 }} />
-                    <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend />
-                    {lccaResult.scenarios.map((s, i) => (
-                      <Line
-                        key={s._id}
-                        type="monotone"
-                        dataKey={s.name}
-                        stroke={SCENARIO_COLORS[i % SCENARIO_COLORS.length]}
-                        dot={false}
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartAccessibleView
+                id="lcca-cumulative-chart"
+                showData={showCumulativeData}
+                onShowDataChange={setShowCumulativeData}
+                seriesDescription={`Lines by scenario (${lccaResult.scenarios.map((s) => s.name).join(", ")}).`}
+                chart={
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer>
+                      <LineChart data={cumulativeData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="year" label={{ value: "Year", position: "insideBottom", offset: -5 }} />
+                        <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <Legend
+                          formatter={(value) => `${value} — cumulative PV (USD)`}
+                        />
+                        {lccaResult.scenarios.map((s, i) => (
+                          <Line
+                            key={s._id}
+                            type="monotone"
+                            dataKey={s.name}
+                            name={s.name}
+                            stroke={SCENARIO_COLORS[i % SCENARIO_COLORS.length]}
+                            dot={false}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                }
+                table={<CumulativePvTable rows={cumulativeData} />}
+              />
             </CardContent>
           </Card>
         </>
       )}
     </div>
+  );
+}
+
+function NpvComparisonTable({
+  rows,
+}: {
+  rows: { name: string; "NPV (USD)": number; "AEC (USD/yr)": number }[];
+}) {
+  if (!rows.length) return null;
+  return (
+    <table className="w-full text-sm">
+      <caption className="sr-only">NPV and annual equivalent cost — same series as the bar chart</caption>
+      <thead className="text-xs uppercase text-muted-foreground">
+        <tr>
+          <th className="px-2 py-1 text-left font-medium">Scenario</th>
+          <th className="px-2 py-1 text-right font-medium">NPV (USD)</th>
+          <th className="px-2 py-1 text-right font-medium">AEC (USD/yr)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.name} className="border-t">
+            <td className="px-2 py-1">{row.name}</td>
+            <td className="px-2 py-1 text-right font-mono">{formatCurrency(row["NPV (USD)"])}</td>
+            <td className="px-2 py-1 text-right font-mono">
+              {formatCurrency(row["AEC (USD/yr)"])}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function CumulativePvTable({ rows }: { rows: Record<string, number | string>[] }) {
+  if (!rows.length) return null;
+  const scenarioKeys = Object.keys(rows[0]).filter((k) => k !== "year");
+  return (
+    <table className="w-full text-sm">
+      <caption className="sr-only">
+        Cumulative present value by year and scenario — same series as the line chart
+      </caption>
+      <thead className="text-xs uppercase text-muted-foreground">
+        <tr>
+          <th className="px-2 py-1 text-left font-medium">Year</th>
+          {scenarioKeys.map((key) => (
+            <th key={key} className="px-2 py-1 text-right font-medium">
+              {key}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={String(row.year)} className="border-t">
+            <td className="px-2 py-1 font-mono">{row.year}</td>
+            {scenarioKeys.map((key) => (
+              <td key={key} className="px-2 py-1 text-right font-mono">
+                {formatCurrency(Number(row[key]))}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -731,6 +847,7 @@ function LccaSummaryTable({
   const best = rows.reduce((a, b) => (a.npvUsd < b.npvUsd ? a : b));
   return (
     <table className="w-full text-sm">
+      <caption className="sr-only">LCCA summary — NPV and annual equivalent cost by scenario</caption>
       <thead className="text-xs uppercase text-muted-foreground">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
