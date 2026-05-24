@@ -27,7 +27,7 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
     <button
       type="button"
       onClick={onToggle}
-      className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
+      className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       title={TITLES[theme]}
       aria-label={TITLES[theme]}
     >

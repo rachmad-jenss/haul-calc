@@ -321,7 +321,7 @@ export default function App() {
               type="button"
               onClick={() => undo()}
               disabled={!canUndo}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
             >
@@ -331,7 +331,7 @@ export default function App() {
               type="button"
               onClick={() => redo()}
               disabled={!canRedo}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
               title="Redo (Ctrl+Y)"
               aria-label="Redo"
             >
@@ -389,8 +389,8 @@ export default function App() {
                 cn(
                   "flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium transition-colors",
                   isActive
-                    ? "bg-selected text-strong"
-                    : "text-body hover:bg-selected hover:text-strong",
+                    ? "bg-selected text-strong font-medium"
+                    : "text-body hover:bg-selected/60 hover:text-strong",
                 )
               }
             >
