@@ -3,6 +3,7 @@ import { Clock, Truck, Layers, Coins, FileText, FolderOpen } from "lucide-react"
 import { NavLink } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { WorkflowGuidanceBanner } from "@/components/WorkflowGuidanceBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { openProjectFromPath } from "@/lib/project-file";
@@ -56,6 +57,8 @@ export default function Dashboard() {
         title="Dashboard"
         description="Summary of the current project state across all modules."
       />
+
+      <WorkflowGuidanceBanner />
 
       <div className="grid flex-1 gap-4 overflow-auto p-6 sm:grid-cols-2">
         <DashboardNavCard to="/fleet">
