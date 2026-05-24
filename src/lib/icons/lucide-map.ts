@@ -31,7 +31,10 @@ export const LUCIDE_TO_NUCLEO_MAP = {
   Monitor: { nucleo: "IconComputerOutline18", note: "system theme" },
   Moon: { nucleo: "IconDarkLightOutline18", note: "ThemeToggle uses combined dark/light icon" },
   Plus: { nucleo: "IconPlusOutline18", note: "" },
-  Redo2: { nucleo: "IconRefresh2Outline18", note: "redo; no dedicated redo in Essential" },
+  Redo2: {
+    nucleo: "IconRefresh2Outline18",
+    note: "KNOWN: same glyph as RefreshCw in Essential — distinguish with label/tooltip at usage site",
+  },
   RefreshCw: { nucleo: "IconRefresh2Outline18", note: "refresh/recalculate" },
   RotateCcw: { nucleo: "IconArrowDottedRotateAnticlockwiseOutline18", note: "reset" },
   Save: { nucleo: "IconClipboardOutline18", note: "save; no floppy in Essential" },
