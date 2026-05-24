@@ -367,7 +367,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Save As (Ctrl+Shift+S)"
               aria-label="Save project as"
             >
