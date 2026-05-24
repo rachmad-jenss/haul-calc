@@ -10,6 +10,7 @@ import {
   FileText,
   Settings as SettingsIcon,
   FolderOpen,
+  FilePlus,
   Save,
   FileOutput,
   TrendingUp,
@@ -337,32 +338,36 @@ export default function App() {
               onClick={handleNewProject}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="New project (Ctrl+N)"
+              aria-label="New project"
             >
-              <FileText className="h-3.5 w-3.5" />
+              <FilePlus className="h-3.5 w-3.5" aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Open project (Ctrl+O)"
+              aria-label="Open project"
             >
-              <FolderOpen className="h-3.5 w-3.5" />
+              <FolderOpen className="h-3.5 w-3.5" aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save (Ctrl+S)"
+              aria-label="Save project"
             >
-              <Save className="h-3.5 w-3.5" />
+              <Save className="h-3.5 w-3.5" aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
               className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="Save As (Ctrl+Shift+S)"
+              aria-label="Save project as"
             >
-              <FileOutput className="h-3.5 w-3.5" />
+              <FileOutput className="h-3.5 w-3.5" aria-hidden />
             </button>
             {displayName && (
               <span className="truncate text-[10px] text-muted-foreground" title={activeFileName ?? undefined}>
