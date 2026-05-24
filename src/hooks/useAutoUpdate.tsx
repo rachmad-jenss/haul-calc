@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { useCalcStore } from "@/lib/store";
 
 interface UpdateInfo {
@@ -34,14 +35,15 @@ export function useAutoUpdate() {
 
         toast.info(
           <div className="space-y-2">
-            <div className="font-medium">Update available: v{info.version}</div>
+            <div className="text-base font-medium text-strong">Update available: v{info.version}</div>
             {info.date && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-2xs text-subtle">
                 Released: {new Date(info.date).toLocaleDateString()}
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <button
+              <Button
+                size="sm"
                 onClick={async () => {
                   toast.dismiss("auto-update");
                   if (!pendingUpdate) return;
@@ -58,16 +60,12 @@ export function useAutoUpdate() {
                     toast.error(`Update failed: ${msg}`, { id: "update-download" });
                   }
                 }}
-                className="rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Update now
-              </button>
-              <button
-                onClick={() => toast.dismiss("auto-update")}
-                className="rounded bg-muted px-3 py-1 text-xs font-medium hover:bg-muted/80"
-              >
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => toast.dismiss("auto-update")}>
                 Later
-              </button>
+              </Button>
             </div>
           </div>,
           {
