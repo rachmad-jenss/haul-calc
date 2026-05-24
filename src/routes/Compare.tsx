@@ -2,8 +2,14 @@ import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
-import { FolderOpen, X, Plus, Trophy } from "lucide-react";
+import {
+  IconAwardOutline18,
+  IconFolderOpenOutline18,
+  IconPlusOutline18,
+  IconXmarkOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { PageHeader } from "@/components/PageHeader";
+import { nucleoIconProps } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseSnapshot, type Snapshot } from "@/lib/project-file";
@@ -97,7 +103,7 @@ export default function Compare() {
         description="Load 2–4 .hcalc files and compare key results side-by-side"
         actions={
           <Button onClick={addFiles} disabled={loading || projects.length >= 4}>
-            <Plus className="mr-2 h-4 w-4" />
+            <IconPlusOutline18 {...nucleoIconProps({ size: 16, className: "mr-2" })} aria-hidden />
             {projects.length === 0 ? "Load Files" : "Add File"}
           </Button>
         }
@@ -131,7 +137,10 @@ export default function Compare() {
         {projects.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
-              <FolderOpen className="h-12 w-12 text-muted-foreground" />
+              <IconFolderOpenOutline18
+                {...nucleoIconProps({ size: 48, className: "text-muted-foreground" })}
+                aria-hidden
+              />
               <div className="text-center">
                 <p className="font-medium">No projects loaded</p>
                 <p className="text-sm text-muted-foreground">
@@ -139,7 +148,7 @@ export default function Compare() {
                 </p>
               </div>
               <Button onClick={addFiles} disabled={loading}>
-                <FolderOpen className="mr-2 h-4 w-4" />
+                <IconFolderOpenOutline18 {...nucleoIconProps({ size: 16, className: "mr-2" })} aria-hidden />
                 Select Files
               </Button>
             </CardContent>
@@ -161,7 +170,7 @@ export default function Compare() {
                   className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Remove ${p.snapshot.projectName || p.fileName} from comparison`}
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden />
+                  <IconXmarkOutline18 {...nucleoIconProps({ size: 14 })} aria-hidden />
                 </button>
               </div>
             ))}
@@ -342,7 +351,9 @@ function Row({
             >
               <span className="inline-flex items-center gap-1">
                 {fmt(v, decimals)}
-                {best === i && <Trophy className="inline h-3.5 w-3.5" />}
+                {best === i && (
+                  <IconAwardOutline18 {...nucleoIconProps({ size: 14, className: "inline" })} aria-hidden />
+                )}
               </span>
             </td>
           ))}
