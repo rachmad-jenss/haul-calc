@@ -11,7 +11,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, Trash2, Calculator, Download } from "lucide-react";
+import {
+  IconDesktopArrowDownOutline18,
+  IconGauge3Outline18,
+  IconPlusOutline18,
+  IconTrashOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { toast } from "sonner";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -229,7 +235,7 @@ function OpexTab() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-end gap-1">
         <Button onClick={compute} disabled={running || costScenarios.length < 2}>
-          <Calculator className="h-4 w-4" />
+          <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
           {running ? "Computing..." : "Compare scenarios"}
         </Button>
         {costScenarios.length < 2 && (
@@ -243,7 +249,7 @@ function OpexTab() {
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Scenarios</CardTitle>
             <Button variant="outline" size="sm" onClick={add}>
-              <Plus className="h-4 w-4" />
+              <IconPlusOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               Add scenario
             </Button>
           </CardHeader>
@@ -266,7 +272,7 @@ function OpexTab() {
                     onClick={() => remove(s._id)}
                     aria-label="Remove scenario"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <IconTrashOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -355,7 +361,7 @@ function OpexTab() {
                       className="h-8 gap-1 px-2 text-xs"
                       onClick={handleExportCsv}
                     >
-                      <Download className="h-3 w-3" aria-hidden />
+                      <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                       Export CSV
                     </Button>
                     <Button
@@ -364,7 +370,7 @@ function OpexTab() {
                       className="h-8 gap-1 px-2 text-xs"
                       onClick={handleExportExcel}
                     >
-                      <Download className="h-3 w-3" aria-hidden />
+                      <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                       Export Excel
                     </Button>
                     <Button
@@ -374,7 +380,7 @@ function OpexTab() {
                       onClick={handleExport}
                       disabled={exporting}
                     >
-                      <Download className="h-3 w-3" aria-hidden />
+                      <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                       {exporting ? "Exporting…" : "Export PNG"}
                     </Button>
                   </>
@@ -589,7 +595,7 @@ function LccaTab() {
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Scenario Costs</CardTitle>
           <Button onClick={compute} size="sm">
-            <Calculator className="h-4 w-4" />
+            <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
             Compute LCCA
           </Button>
         </CardHeader>
@@ -648,7 +654,7 @@ function LccaTab() {
                   className="h-8 gap-1 px-2 text-xs"
                   onClick={handleExportCsv}
                 >
-                  <Download className="h-3 w-3" aria-hidden />
+                  <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Export CSV
                 </Button>
               </div>
@@ -702,7 +708,7 @@ function LccaTab() {
                     onClick={handleExport}
                     disabled={exporting}
                   >
-                    <Download className="h-3 w-3" aria-hidden />
+                    <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                     {exporting ? "Exporting…" : "Export PNG"}
                   </Button>
                 }
