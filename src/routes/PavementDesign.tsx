@@ -420,7 +420,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 
   if (!result) {
     return (
-      <p className="text-md text-subtle">
+      <p className="text-base text-subtle">
         Click "Run comparison" to compare USACE CBR and TRH 14 methods side-by-side.
       </p>
     );
@@ -428,7 +428,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 
   if (!result.usace || !result.trh14) {
     return (
-      <p className="text-md text-destructive">
+      <p className="text-base text-destructive">
         Comparison result is incomplete. Please try again.
       </p>
     );
@@ -481,7 +481,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
         })}
       </div>
 
-      <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-md">
+      <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-base">
         <span className="text-subtle">Δ Thickness:</span>
         <span className="font-mono font-semibold">
           {formatThicknessMm(Math.abs(result.delta_mm), unitSystem, { decimals: thicknessDecimals })}
@@ -504,7 +504,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   if (!result) {
     return (
-      <p className="text-md text-subtle">
+      <p className="text-base text-subtle">
         Run "Compute thickness" to see the recommended pavement structure.
       </p>
     );
@@ -515,7 +515,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-md text-subtle">
+      <div className="flex flex-wrap items-center gap-2 text-base text-subtle">
         <span>Method: <span className="font-medium text-strong">{result.method}</span></span>
         <span>·</span>
         <span>Total: <span className="font-mono" data-testid="pavement-total-thickness">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
