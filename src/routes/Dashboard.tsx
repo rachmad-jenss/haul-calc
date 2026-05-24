@@ -1,14 +1,25 @@
 import type { ReactNode } from "react";
-import { Clock, Truck, Layers, Coins, FileText, FolderOpen } from "lucide-react";
+import {
+  IconAlarmClockOutline18,
+  IconFileContentOutline18,
+  IconFolderOpenOutline18,
+  IconForkliftOutline18,
+  IconLayers3Outline18,
+  IconMoneyBillCoinOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { NavLink } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { WorkflowGuidanceBanner } from "@/components/WorkflowGuidanceBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { nucleoIconProps } from "@/lib/icons";
 import { openProjectFromPath } from "@/lib/project-file";
 import { useCalcStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
+
+const ICON_16_MUTED = nucleoIconProps({ size: 16, className: "text-muted-foreground" });
+const ICON_12 = nucleoIconProps({ size: 12 });
 
 export default function Dashboard() {
   if (window.__HAULCALC_E2E_SHOULD_THROW__) {
@@ -63,7 +74,7 @@ export default function Dashboard() {
       <div className="grid flex-1 gap-4 overflow-auto p-6 sm:grid-cols-2">
         <DashboardNavCard to="/fleet">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <Truck className="h-4 w-4 text-muted-foreground" />
+            <IconForkliftOutline18 {...ICON_16_MUTED} aria-hidden />
             <CardTitle className="text-sm font-medium">Fleet &amp; Traffic</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
@@ -86,7 +97,7 @@ export default function Dashboard() {
 
         <DashboardNavCard to="/pavement">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <Layers className="h-4 w-4 text-muted-foreground" />
+            <IconLayers3Outline18 {...ICON_16_MUTED} aria-hidden />
             <CardTitle className="text-sm font-medium">Pavement Design</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
@@ -115,7 +126,7 @@ export default function Dashboard() {
 
         <DashboardNavCard to="/economics">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <Coins className="h-4 w-4 text-muted-foreground" />
+            <IconMoneyBillCoinOutline18 {...ICON_16_MUTED} aria-hidden />
             <CardTitle className="text-sm font-medium">Economics</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
@@ -134,7 +145,7 @@ export default function Dashboard() {
 
         <DashboardNavCard to="/reports">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <IconFileContentOutline18 {...ICON_16_MUTED} aria-hidden />
             <CardTitle className="text-sm font-medium">Reports</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
@@ -161,7 +172,7 @@ export default function Dashboard() {
 
         <Card className="sm:col-span-2">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <IconAlarmClockOutline18 {...ICON_16_MUTED} aria-hidden />
             <CardTitle className="text-sm font-medium">Recent Files</CardTitle>
           </CardHeader>
           <CardContent>
@@ -180,7 +191,7 @@ export default function Dashboard() {
                         className="h-7 shrink-0 gap-1 px-2 text-xs"
                         onClick={() => handleOpenRecent(filePath)}
                       >
-                        <FolderOpen className="h-3 w-3" />
+                        <IconFolderOpenOutline18 {...ICON_12} aria-hidden />
                         Open
                       </Button>
                     </li>

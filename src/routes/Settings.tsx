@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, XCircle, RefreshCw, RotateCcw, Loader2, Download } from "lucide-react";
+import {
+  IconArrowDottedRotateAnticlockwiseOutline18,
+  IconCircleHalfDottedCheckOutline18,
+  IconDesktopArrowDownOutline18,
+  IconLoaderOutline18,
+  IconRefresh2Outline18,
+  IconXmarkOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
@@ -19,6 +27,14 @@ interface Status {
   bridgeVersion: string;
   sidecarStatus: SidecarStatus;
 }
+
+const ICON_16 = nucleoIconProps({ size: 16 });
+const ICON_16_SPIN = nucleoIconProps({ size: 16, className: "animate-spin" });
+const ICON_16_SUCCESS = nucleoIconProps({ size: 16, className: "text-emerald-600" });
+const ICON_16_AMBER = nucleoIconProps({ size: 16, className: "text-amber-600" });
+const ICON_16_MUTED = nucleoIconProps({ size: 16, className: "text-muted-foreground" });
+const ICON_16_DESTRUCTIVE = nucleoIconProps({ size: 16, className: "text-destructive" });
+const ICON_16_PRIMARY = nucleoIconProps({ size: 16, className: "text-primary" });
 
 type UpdateState =
   | { phase: "idle" }
@@ -171,15 +187,15 @@ export default function Settings() {
                 disabled={restarting}
               >
                 {restarting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden />
                 ) : (
-                  <RotateCcw className="h-4 w-4" />
+                  <IconArrowDottedRotateAnticlockwiseOutline18 {...ICON_16} aria-hidden />
                 )}
                 {restarting ? "Restarting…" : "Restart Sidecar"}
               </Button>
             )}
             <Button variant="outline" onClick={refresh} disabled={refreshing || restarting}>
-              <RefreshCw className="h-4 w-4" />
+              <IconRefresh2Outline18 {...ICON_16} aria-hidden />
               Refresh
             </Button>
           </div>
@@ -198,11 +214,11 @@ export default function Settings() {
             <Row label="haul-pave loaded">
               {status?.loaded ? (
                 <span className="flex items-center gap-1 text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" /> Yes
+                  <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden /> Yes
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-amber-600">
-                  <XCircle className="h-4 w-4" /> Stub mode
+                  <IconXmarkOutline18 {...ICON_16_AMBER} aria-hidden /> Stub mode
                 </span>
               )}
             </Row>
@@ -371,7 +387,7 @@ function UpdatePanel({
   if (state.phase === "idle") {
     return (
       <Button variant="outline" onClick={onCheck} className="w-full">
-        <Download className="h-4 w-4" />
+        <IconDesktopArrowDownOutline18 {...ICON_16} aria-hidden />
         Check for Updates
       </Button>
     );
@@ -379,7 +395,7 @@ function UpdatePanel({
   if (state.phase === "checking") {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden />
         Checking for updates…
       </div>
     );
@@ -388,7 +404,7 @@ function UpdatePanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-emerald-600">
-          <CheckCircle2 className="h-4 w-4" />
+          <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden />
           You&apos;re on the latest version.
         </div>
         <Button variant="outline" size="sm" onClick={onCheck}>
@@ -401,7 +417,7 @@ function UpdatePanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 font-medium">
-          <Download className="h-4 w-4 text-primary" />
+          <IconDesktopArrowDownOutline18 {...ICON_16_PRIMARY} aria-hidden />
           Version {state.version} available
           {state.date && (
             <span className="font-normal text-muted-foreground">
@@ -413,7 +429,7 @@ function UpdatePanel({
           <p className="text-xs text-muted-foreground line-clamp-3">{state.body}</p>
         )}
         <Button onClick={onInstall} className="w-full">
-          <Download className="h-4 w-4" />
+          <IconDesktopArrowDownOutline18 {...ICON_16} aria-hidden />
           Download &amp; Install
         </Button>
       </div>
@@ -423,7 +439,7 @@ function UpdatePanel({
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden />
           Downloading… {state.percent > 0 ? `${state.percent}%` : ""}
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -439,11 +455,11 @@ function UpdatePanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-emerald-600">
-          <CheckCircle2 className="h-4 w-4" />
+          <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden />
           Update installed. Restart to apply.
         </div>
         <Button onClick={onRelaunch} disabled={relaunching} className="w-full">
-          {relaunching ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {relaunching ? <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden /> : null}
           {relaunching ? "Restarting…" : "Restart Now"}
         </Button>
       </div>
@@ -452,7 +468,7 @@ function UpdatePanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-destructive">
-        <XCircle className="h-4 w-4" />
+        <IconXmarkOutline18 {...ICON_16_DESTRUCTIVE} aria-hidden />
         {state.message}
       </div>
       <Button variant="outline" size="sm" onClick={onCheck}>
@@ -474,27 +490,27 @@ function SidecarStatusBadge({
   if (status === "running") {
     return (
       <span className="flex items-center gap-1 text-emerald-600">
-        <CheckCircle2 className="h-4 w-4" /> Running
+        <IconCircleHalfDottedCheckOutline18 {...ICON_16_SUCCESS} aria-hidden /> Running
       </span>
     );
   }
   if (status === "restarting") {
     return (
       <span className="flex items-center gap-1 text-amber-600">
-        <Loader2 className="h-4 w-4 animate-spin" /> Restarting…
+        <IconLoaderOutline18 {...ICON_16_SPIN} aria-hidden /> Restarting…
       </span>
     );
   }
   if (status === "killed") {
     return (
       <span className="flex items-center gap-1 text-muted-foreground">
-        <XCircle className="h-4 w-4" /> Stopped
+        <IconXmarkOutline18 {...ICON_16_MUTED} aria-hidden /> Stopped
       </span>
     );
   }
   return (
     <span className="flex items-center gap-1 text-destructive">
-      <XCircle className="h-4 w-4" />
+      <IconXmarkOutline18 {...ICON_16_DESTRUCTIVE} aria-hidden />
       {error ?? "Crashed"}
     </span>
   );

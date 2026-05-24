@@ -1,5 +1,19 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Download, Plus, Trash2, Calculator, UserPlus, FileUp, FileJson, AlertTriangle, Copy, Truck } from "lucide-react";
+import {
+  IconChevronDownOutline18,
+  IconChevronUpOutline18,
+  IconDesktopArrowDownOutline18,
+  IconFacePlusOutline18,
+  IconFileContentOutline18,
+  IconFiles2Outline18,
+  IconForkliftOutline18,
+  IconGauge3Outline18,
+  IconInboxArrowDownOutline18,
+  IconPlusOutline18,
+  IconTrashOutline18,
+  IconTriangleWarningOutline18,
+} from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { toast } from "sonner";
 import { CsvImportModal } from "@/components/CsvImportModal";
 import { CustomVehicleModal } from "@/components/CustomVehicleModal";
@@ -33,6 +47,10 @@ import {
   unitLabels,
 } from "@/lib/unit-convert";
 import { cn, formatNumber, parseNumericInput, toSafeCsvCell } from "@/lib/utils";
+
+const ICON_16 = nucleoIconProps({ size: 16 });
+const ICON_12 = nucleoIconProps({ size: 12 });
+const ICON_40_MUTED = nucleoIconProps({ size: 40, className: "text-muted-foreground" });
 
 export default function FleetTraffic() {
   const {
@@ -217,7 +235,7 @@ export default function FleetTraffic() {
         description="Define mining fleet composition and compute CESA + design coverages."
         actions={
           <Button onClick={compute} disabled={running}>
-            <Calculator className="h-4 w-4" />
+            <IconGauge3Outline18 {...ICON_16} aria-hidden />
             {running ? "Computing..." : "Compute CESA"}
           </Button>
         }
@@ -229,27 +247,27 @@ export default function FleetTraffic() {
             <CardTitle>Fleet composition</CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowCustomModal(true)}>
-                <UserPlus className="h-4 w-4" />
+                <IconFacePlusOutline18 {...ICON_16} aria-hidden />
                 Custom vehicles
               </Button>
               {fleet.length > 0 ? (
                 <>
                   <Button variant="outline" size="sm" onClick={handleLoadSample}>
-                    <FileJson className="h-4 w-4" />
+                    <IconFileContentOutline18 {...ICON_16} aria-hidden />
                     Sample Fleet
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                    <Download className="h-4 w-4" />
+                    <IconDesktopArrowDownOutline18 {...ICON_16} aria-hidden />
                     Export CSV
                   </Button>
                   <Button variant="outline" size="sm" onClick={addRow}>
-                    <Plus className="h-4 w-4" />
+                    <IconPlusOutline18 {...ICON_16} aria-hidden />
                     Add row
                   </Button>
                 </>
               ) : null}
               <Button variant="outline" size="sm" onClick={() => setShowCsvModal(true)}>
-                <FileUp className="h-4 w-4" />
+                <IconInboxArrowDownOutline18 {...ICON_16} aria-hidden />
                 Import CSV
               </Button>
             </div>
@@ -263,7 +281,7 @@ export default function FleetTraffic() {
                 {fieldErrors.fleet ? (
                   <FieldError message={fieldErrors.fleet} />
                 ) : null}
-                <Truck className="h-10 w-10 text-muted-foreground" aria-hidden />
+                <IconForkliftOutline18 {...ICON_40_MUTED} aria-hidden />
                 <div className="space-y-1">
                   <p className="font-medium">No vehicles in fleet</p>
                   <p className="max-w-sm text-sm text-muted-foreground">
@@ -272,11 +290,11 @@ export default function FleetTraffic() {
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Button onClick={addRow}>
-                    <Plus className="h-4 w-4" />
+                    <IconPlusOutline18 {...ICON_16} aria-hidden />
                     Add row
                   </Button>
                   <Button variant="outline" onClick={handleLoadSample}>
-                    <FileJson className="h-4 w-4" />
+                    <IconFileContentOutline18 {...ICON_16} aria-hidden />
                     Sample fleet
                   </Button>
                 </div>
@@ -353,7 +371,7 @@ export default function FleetTraffic() {
                         <FieldError message={rowFieldError(idx, "trips_per_day")} />
                         {row.trips_per_day > 100 && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             High — verify trip count
                           </p>
                         )}
@@ -381,7 +399,7 @@ export default function FleetTraffic() {
                         </div>
                         {row.payload_kn > PAYLOAD_TYPICAL_MAX_KN && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             Exceeds typical max (~{formatForceKn(PAYLOAD_TYPICAL_MAX_KN, unitSystem)})
                           </p>
                         )}
@@ -389,7 +407,7 @@ export default function FleetTraffic() {
                           row.payload_kn > 0 &&
                           row.payload_kn < PAYLOAD_TYPICAL_LOW_KN && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             Very low — verify units (kN)
                           </p>
                         )}
@@ -403,7 +421,7 @@ export default function FleetTraffic() {
                           onClick={() => moveRow(idx, -1)}
                           aria-label="Move row up"
                         >
-                          <ChevronUp className="h-4 w-4" />
+                          <IconChevronUpOutline18 {...ICON_16} aria-hidden />
                         </Button>
                         <Button
                           variant="ghost"
@@ -412,7 +430,7 @@ export default function FleetTraffic() {
                           onClick={() => moveRow(idx, 1)}
                           aria-label="Move row down"
                         >
-                          <ChevronDown className="h-4 w-4" />
+                          <IconChevronDownOutline18 {...ICON_16} aria-hidden />
                         </Button>
                         <Button
                           variant="ghost"
@@ -420,7 +438,7 @@ export default function FleetTraffic() {
                           onClick={() => duplicateRow(idx)}
                           aria-label="Duplicate row"
                         >
-                          <Copy className="h-4 w-4" />
+                          <IconFiles2Outline18 {...ICON_16} aria-hidden />
                         </Button>
                         <Button
                           variant="ghost"
@@ -428,7 +446,7 @@ export default function FleetTraffic() {
                           onClick={() => removeRow(idx)}
                           aria-label="Remove row"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <IconTrashOutline18 {...ICON_16} aria-hidden />
                         </Button>
                       </td>
                     </tr>
