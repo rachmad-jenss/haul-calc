@@ -111,9 +111,9 @@ export default function Compare() {
 
       <div className="space-y-6 p-6">
         <Card className="border-dashed bg-muted/20">
-          <CardContent className="py-3 text-sm text-muted-foreground">
+          <CardContent className="py-3 text-base text-subtle">
             <p>
-              <span className="font-medium text-foreground">Read-only comparison.</span>{" "}
+              <span className="font-medium text-strong">Read-only comparison.</span>{" "}
               Files loaded here are not opened in the main workspace and do not change your
               active project.
             </p>
@@ -121,12 +121,12 @@ export default function Compare() {
               {workspaceLabel ? (
                 <>
                   Save (Ctrl+S) still applies to{" "}
-                  <span className="font-medium text-foreground">{workspaceLabel}</span>.
+                  <span className="font-medium text-strong">{workspaceLabel}</span>.
                 </>
               ) : (
                 <>
                   No project file is bound in the workspace — use{" "}
-                  <span className="font-medium text-foreground">Open (Ctrl+O)</span> in the sidebar to
+                  <span className="font-medium text-strong">Open (Ctrl+O)</span> in the sidebar to
                   edit a project.
                 </>
               )}
@@ -138,12 +138,12 @@ export default function Compare() {
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
               <IconFolderOpenOutline18
-                {...nucleoIconProps({ size: 48, className: "text-muted-foreground" })}
+                {...nucleoIconProps({ size: 48, className: "text-subtle" })}
                 aria-hidden
               />
               <div className="text-center">
-                <p className="font-medium">No projects loaded</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-md font-medium text-strong">No projects loaded</p>
+                <p className="text-base text-subtle">
                   Click "Load Files" to select 2–4 .hcalc project files for comparison.
                 </p>
               </div>
@@ -160,14 +160,14 @@ export default function Compare() {
             {projects.map((p) => (
               <div
                 key={p.filePath}
-                className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm"
+                className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-base"
               >
-                <span className="font-medium">{p.snapshot.projectName || p.fileName}</span>
-                <span className="text-muted-foreground">({p.fileName})</span>
+                <span className="font-medium text-strong">{p.snapshot.projectName || p.fileName}</span>
+                <span className="text-subtle">({p.fileName})</span>
                 <button
                   type="button"
                   onClick={() => removeProject(p.filePath)}
-                  className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  className="rounded p-0.5 text-subtle hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Remove ${p.snapshot.projectName || p.fileName} from comparison`}
                 >
                   <IconXmarkOutline18 {...nucleoIconProps({ size: 14 })} aria-hidden />
@@ -175,7 +175,7 @@ export default function Compare() {
               </div>
             ))}
             {projects.length < 2 && (
-              <p className="self-center text-sm text-muted-foreground">
+              <p className="self-center text-base text-subtle">
                 Add at least one more file to compare.
               </p>
             )}
@@ -229,7 +229,7 @@ export default function Compare() {
                 if (maxScenarios === 0) {
                   return (
                     <tr>
-                      <td colSpan={projects.length + 1} className="px-4 py-3 text-center text-sm text-muted-foreground">
+                      <td colSpan={projects.length + 1} className="px-4 py-3 text-center text-base text-subtle">
                         No cost data available in loaded projects.
                       </td>
                     </tr>
@@ -261,7 +261,7 @@ export default function Compare() {
 
                   rows.push(
                     <tr key={`hdr-${i}`} className="bg-muted/30">
-                      <td colSpan={projects.length + 1} className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <td colSpan={projects.length + 1} className="px-4 py-1.5 text-2xs font-medium uppercase tracking-wide text-subtle">
                         {label}
                       </td>
                     </tr>,
@@ -293,16 +293,18 @@ function ComparisonSection({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
+        <CardTitle className="text-md font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-base">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2 text-left font-medium text-muted-foreground">Metric</th>
+                <th className="px-4 py-2 text-left text-2xs font-medium uppercase tracking-wide text-subtle">
+                  Metric
+                </th>
                 {projects.map((p) => (
-                  <th key={p.filePath} className="px-4 py-2 text-right font-medium">
+                  <th key={p.filePath} className="px-4 py-2 text-right text-2xs font-medium text-strong">
                     {p.snapshot.projectName || p.fileName}
                   </th>
                 ))}
@@ -335,7 +337,11 @@ function Row({
 
   return (
     <tr>
-      <td className={`px-4 py-2 text-muted-foreground ${bold ? "font-semibold" : ""}`}>{label}</td>
+      <td
+        className={`px-4 py-2 text-subtle ${bold ? "font-medium text-strong" : ""}`}
+      >
+        {label}
+      </td>
       {textValues
         ? textValues.map((v, i) => (
             <td key={i} className="px-4 py-2 text-right">
@@ -345,7 +351,7 @@ function Row({
         : values?.map((v, i) => (
             <td
               key={i}
-              className={`px-4 py-2 text-right ${bold ? "font-semibold" : ""} ${
+              className={`px-4 py-2 text-right font-mono ${bold ? "font-medium text-strong" : ""} ${
                 best === i ? "text-green-600 dark:text-green-400" : ""
               }`}
             >
