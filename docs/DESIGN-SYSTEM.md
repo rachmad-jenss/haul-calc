@@ -129,7 +129,7 @@ Footer control cycles **light → dark → system → light**. Uses `IconDarkLig
 
 - Strategy: `darkMode: "class"` in Tailwind; toggle adds/removes `dark` on `document.documentElement`.
 - System theme: listens to `prefers-color-scheme` when `theme === 'system'`.
-- Window theme: when not in system mode, Tauri window theme follows app light/dark (`App.tsx`).
+- In-app theme: `dark` class on `<html>` via `App.tsx`; Tauri `setTitle` reflects file + dirty state (native window theme API is not wired yet).
 
 ## Scrollbars
 
@@ -156,8 +156,8 @@ Configured in `src/main.tsx` (`<Toaster position="top-right" closeButton />`). G
 
 ### Patterns
 
-- **Default:** `toast.success()`, `toast.error()`, `toast.info()` — use for RPC outcomes, import/export, and validation summaries.
-- **Styling:** Prefer Sonner defaults + `toastOptions.classNames` in `main.tsx`. Do not add ad-hoc button classes inside individual `toast()` calls.
+- **Default:** `toast.success()`, `toast.error()`, `toast.info()`, `toast.warning()`, and `toast.loading()` (use `{ id }` when updating a loading toast) — RPC outcomes, import/export, validation, and long-running actions.
+- **Styling:** `globals.css` sets title/description typography tokens; `toastOptions.classNames` in `main.tsx` adds surface/border classes. Do not add ad-hoc button classes inside individual `toast()` calls.
 - **Typography:** Toast title uses `--text-strong` (500 weight); description uses `--text-subtle` at `text-base` scale (13px).
 
 ### Accessibility
