@@ -26,6 +26,10 @@ const config: Config = {
         medium: "500",
       },
       colors: {
+        strong: "hsl(var(--text-strong) / <alpha-value>)",
+        body: "hsl(var(--text-default) / <alpha-value>)",
+        subtle: "hsl(var(--text-subtle) / <alpha-value>)",
+        selected: "hsl(var(--bg-selected) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
         ring: "hsl(var(--ring) / <alpha-value>)",

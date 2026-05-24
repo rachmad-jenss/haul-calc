@@ -4,47 +4,60 @@
 
 @layer base {
   :root {
+    /* Semantic visual identity (HC-VI) */
+    --text-strong: 0 0% 16%;
+    --text-default: 0 0% 36%;
+    --text-subtle: 0 0% 50%;
+    --bg-selected: 0 0% 96%;
+    --border-neutral: 0 0% 95%;
+
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: var(--text-strong);
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: var(--text-strong);
     --primary: 215 90% 36%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --secondary: var(--bg-selected);
+    --secondary-foreground: var(--text-strong);
+    --muted: var(--bg-selected);
+    --muted-foreground: var(--text-subtle);
+    --accent: var(--bg-selected);
+    --accent-foreground: var(--text-strong);
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 12%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: var(--border-neutral);
+    --input: var(--border-neutral);
     --ring: 215 90% 36%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --text-strong: 0 0% 96%;
+    --text-default: 0 0% 64%;
+    --text-subtle: 0 0% 52%;
+    --bg-selected: 0 0% 16%;
+    --border-neutral: 0 0% 23%;
+
+    --background: 0 0% 8%;
+    --foreground: var(--text-strong);
+    --card: 0 0% 11%;
+    --card-foreground: var(--text-strong);
     --primary: 215 90% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 11%;
+    --secondary: var(--bg-selected);
+    --secondary-foreground: var(--text-strong);
+    --muted: var(--bg-selected);
+    --muted-foreground: var(--text-subtle);
+    --accent: var(--bg-selected);
+    --accent-foreground: var(--text-strong);
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 12%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --border: var(--border-neutral);
+    --input: var(--border-neutral);
     --ring: 215 90% 60%;
   }
 
