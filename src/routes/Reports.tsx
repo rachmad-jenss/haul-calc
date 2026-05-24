@@ -160,7 +160,7 @@ export default function Reports() {
         <div className="grid gap-4 lg:grid-cols-[360px,1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Metadata</CardTitle>
+            <CardTitle className="text-md font-medium">Metadata</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1">
@@ -180,21 +180,21 @@ export default function Reports() {
                 placeholder="Name, certification"
               />
             </div>
-            <div className="rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Data available</p>
+            <div className="rounded-md border bg-muted/50 space-y-1 p-3 text-2xs text-subtle">
+              <p className="font-medium text-strong">Data available</p>
               <DataBadge label="CESA" active={!!cesaResult} />
               <DataBadge label="CBR thickness" active={!!cbrResult} />
               <DataBadge label="TRH 14 thickness" active={!!trhResult} />
               <DataBadge label="Cost comparison" active={!!costResult} />
               {!hasData && (
-                <p className="pt-1 text-xs text-amber-600">
+                <p className="pt-1 text-2xs text-amber-600 dark:text-amber-400">
                   Run calculations on other tabs first for a complete report.
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-foreground">PDF sections</p>
+              <p className="text-2xs font-medium text-strong">PDF sections</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <SectionToggle
                   id="sec-cesa"
@@ -238,14 +238,14 @@ export default function Reports() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle>Summary preview</CardTitle>
+            <CardTitle className="text-md font-medium">Summary preview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {reportSummary?.stub ? <StubBanner message={reportSummary.stubMessage} /> : null}
             {reportSummary ? (
               <ReportSummaryPreview summary={reportSummary} />
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-subtle">
                 Click "Generate summary" to build a design report from the most recent
                 calculations.
               </p>
@@ -274,7 +274,7 @@ function DataBadge({ label, active }: { label: string; active: boolean }) {
       <span
         className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
       />
-      <span className={active ? "text-foreground" : ""}>{label}</span>
+      <span className={active ? "text-strong" : "text-subtle"}>{label}</span>
     </div>
   );
 }
@@ -302,7 +302,7 @@ function SectionToggle({
       />
       <label
         htmlFor={id}
-        className={`text-xs ${disabled ? "cursor-not-allowed" : "cursor-pointer"} select-none`}
+        className={`text-2xs text-body ${disabled ? "cursor-not-allowed" : "cursor-pointer"} select-none`}
       >
         {label}
       </label>
@@ -355,7 +355,7 @@ function BoqSection({
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between">
-        <CardTitle>Material BoQ</CardTitle>
+        <CardTitle className="text-md font-medium">Material BoQ</CardTitle>
         <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
           <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 16, className: "mr-2" })} aria-hidden />
           Export CSV
@@ -387,9 +387,9 @@ function BoqSection({
         </div>
 
         <div className="overflow-auto rounded-md border">
-          <table className="w-full text-sm">
+          <table className="w-full text-base">
             <thead>
-              <tr className="border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
+              <tr className="border-b bg-muted/50 text-2xs font-medium uppercase tracking-wide text-subtle">
                 <th className="px-3 py-2 text-left">Layer</th>
                 <th className="px-3 py-2 text-right">Thickness (mm)</th>
                 <th className="px-3 py-2 text-right">Area (m²)</th>
@@ -412,7 +412,7 @@ function BoqSection({
             </tbody>
             <tfoot>
               <tr className="border-t bg-muted/50 font-semibold">
-                <td className="px-3 py-2 text-xs text-muted-foreground" colSpan={5}>
+                <td className="px-3 py-2 text-2xs text-subtle" colSpan={5}>
                   Total mass
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
