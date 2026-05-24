@@ -1,6 +1,6 @@
 # HaulCalc Design System (HC-VI)
 
-Reference for the HaulCalc desktop visual identity sprint (initiative **HC-VI**, parent issue DAS-224). Tokens and patterns below match `src/styles/globals.css`, `tailwind.config.ts`, and `src/lib/icons/`.
+Reference for the HaulCalc desktop visual identity sprint (initiative **HC-VI**, parents DAS-224 and DAS-251). Tokens and patterns below match `src/styles/globals.css`, `tailwind.config.ts`, and `src/lib/icons/`.
 
 ## Typography
 
@@ -129,7 +129,90 @@ Footer control cycles **light → dark → system → light**. Uses `IconDarkLig
 
 - Strategy: `darkMode: "class"` in Tailwind; toggle adds/removes `dark` on `document.documentElement`.
 - System theme: listens to `prefers-color-scheme` when `theme === 'system'`.
-- Native title bar: synced via Tauri when not in system mode (`App.tsx`).
+- Window theme: when not in system mode, Tauri window theme follows app light/dark (`App.tsx`).
+
+## Scrollbars
+
+Global scrollbar styling lives in `src/styles/globals.css` (`@layer base`).
+
+### Tokens
+
+| Variable | Role |
+|----------|------|
+| `--scrollbar-track` | Track background (maps to `--bg-selected`) |
+| `--scrollbar-thumb` | Thumb fill (light ~78% gray; dark ~38%) |
+| `--scrollbar-thumb-hover` | Thumb hover state |
+
+### Implementation
+
+- **Firefox:** `scrollbar-width: thin` and `scrollbar-color` on `*`.
+- **WebKit:** `::-webkit-scrollbar` (10px), rounded thumb with 2px track border.
+
+Apply to any scrollable region (`main`, tables, dialogs). Avoid nesting `overflow-auto` panels without need — double scrollbars are a common regression on Fleet and Pavement.
+
+## Toasts (Sonner)
+
+Configured in `src/main.tsx` (`<Toaster position="top-right" closeButton />`). Global toast chrome is in `globals.css` under `[data-sonner-toaster]` and `[data-sonner-toast]`.
+
+### Patterns
+
+- **Default:** `toast.success()`, `toast.error()`, `toast.info()` — use for RPC outcomes, import/export, and validation summaries.
+- **Styling:** Prefer Sonner defaults + `toastOptions.classNames` in `main.tsx`. Do not add ad-hoc button classes inside individual `toast()` calls.
+- **Typography:** Toast title uses `--text-strong` (500 weight); description uses `--text-subtle` at `text-base` scale (13px).
+
+### Accessibility
+
+- Toasts are announced by the live region Sonner provides; keep messages short and actionable.
+- Do not rely on toast alone for field-level validation — use inline errors (see UX polish issues).
+
+## Custom title bar
+
+`src/components/TitleBar.tsx` replaces native window decorations (`decorations: false` in `src-tauri/tauri.conf.json`).
+
+### Layout
+
+- Height: `h-9` (36px), `border-b`, `bg-card`.
+- **Drag region:** `data-tauri-drag-region` on the left cluster (app name + optional subtitle).
+- **Window controls:** Minimize, maximize/restore, close — Nucleo @ 14px, `aria-label` on each button.
+- **Test hook:** `data-testid="app-titlebar"`.
+
+### Subtitle / dirty state
+
+`App.tsx` passes `subtitle`:
+
+- Bound file: `filename` + ` *` when `isProjectDirty`
+- No file but dirty: `Unsaved project *`
+
+File name in the sidebar file bar is separate (truncated display); title bar subtitle is the canonical dirty indicator in E2E.
+
+## Confirm dialogs
+
+Destructive or data-loss flows use `ConfirmDialog` (`src/components/ConfirmDialog.tsx`) built on Radix `Dialog` — **not** native `window.confirm` or Tauri `ask()`.
+
+| Flow | Trigger | Copy highlights |
+|------|---------|-----------------|
+| Exit with unsaved changes | Close window while dirty | "Exit without saving" / "Stay" |
+| New project while dirty | File bar **New project** or Ctrl+N | "New project" / "Cancel" |
+
+### vs feature modals
+
+- **ConfirmDialog:** binary confirm/cancel, `max-w-md`, destructive confirm uses `variant="destructive"`.
+- **Feature modals** (e.g. Custom Vehicles): full `Dialog` content with forms — see `CustomVehicleModal.tsx`.
+
+Radix overlay: `bg-background/80 backdrop-blur-sm`, content `bg-card shadow-lg` (`src/components/ui/dialog.tsx`).
+
+## Page fidelity checklist
+
+Use when adding or refactoring a route under `src/routes/`:
+
+1. **Typography:** `text-base` / `text-2xs` / `text-md` / `text-lg` — no new arbitrary `text-[Npx]` or legacy `text-sm` unless matching an existing exception.
+2. **Colors:** `text-strong`, `text-body`, `text-subtle`, `bg-selected`, `border-border` — no raw blue primary for nav or chips.
+3. **Icons:** Nucleo via `nucleoIconProps()` — no Lucide class names in markup or tests.
+4. **Spacing:** Card sections `space-y-3`; page headers consistent with sibling routes (see Dashboard, Fleet, Settings passes).
+5. **Forms:** Native `<select>` only where Radix Select is not yet wired; prefer shared `Select` when available.
+6. **Feedback:** Inline Zod errors on compute/save paths; block warnings via `WarningBanner` tokens.
+7. **Scroll:** One primary scroll container per page; tables inside `overflow-auto` only when needed.
+8. **E2E:** Add or extend `tests/smoke/` when changing shell, dialogs, or cross-route navigation.
 
 ## Related issues
 
@@ -142,3 +225,12 @@ Footer control cycles **light → dark → system → light**. Uses `IconDarkLig
 | DAS-234 | Remove ad-hoc font sizes |
 | DAS-235 | Remove `lucide-react` dependency |
 | DAS-236 | E2E smoke for visual identity |
+| DAS-251 | Parent: UI Fidelity — Pages and Surfaces (Wave 4) |
+| DAS-252 | Global scrollbar styling |
+| DAS-253 | Sonner toast theme |
+| DAS-254 | Dialog overlay polish |
+| DAS-255 | Custom window titlebar |
+| DAS-256 | Migrate `ask()` to in-app Dialog |
+| DAS-257–264 | Per-route page UI passes |
+| DAS-265 | E2E smoke — UI fidelity wave |
+| DAS-266 | Design system docs (this file, Wave 4 surfaces) |
