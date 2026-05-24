@@ -57,7 +57,7 @@ export function NumField({
         onChange={(e) => onChange(parseNumericInput(e.target.value, value))}
       />
       {description ? (
-        <p id={descId} className="text-xs text-muted-foreground">
+        <p id={descId} className="text-md text-subtle">
           {description}
         </p>
       ) : null}
@@ -69,7 +69,7 @@ export function NumField({
 export function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between border-b pb-2 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-md text-subtle">{label}</span>
       <span className="font-mono text-base font-semibold">{value}</span>
     </div>
   );
@@ -84,7 +84,7 @@ export function Row({
 }) {
   return (
     <div className="flex items-center justify-between border-b pb-2 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-md text-subtle">{label}</span>
       <span>{children}</span>
     </div>
   );

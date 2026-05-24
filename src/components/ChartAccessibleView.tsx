@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Table2 } from "lucide-react";
+import { IconTasks2Outline18 } from "nucleo-ui-essential-outline-18";
 import { Button } from "@/components/ui/button";
+import { nucleoIconProps } from "@/lib/icons";
 
 /**
  * Accessible chart + data table pattern (DAS-199).
@@ -34,7 +35,7 @@ export function ChartAccessibleView({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground" id={`${id}-series-desc`}>
+      <p className="text-md text-subtle" id={`${id}-series-desc`}>
         {seriesDescription} Chart colors distinguish series; use the data table for exact
         values (color-only encoding).
       </p>
@@ -43,14 +44,14 @@ export function ChartAccessibleView({
           type="button"
           variant={showData ? "secondary" : "outline"}
           size="sm"
-          className="h-8 gap-1.5 text-xs"
+          className="h-8 gap-1.5 text-md"
           aria-pressed={showData}
           aria-controls={tableId}
           aria-expanded={showData}
           aria-describedby={`${id}-series-desc`}
           onClick={() => onShowDataChange(!showData)}
         >
-          <Table2 className="h-3.5 w-3.5" aria-hidden />
+          <IconTasks2Outline18 {...nucleoIconProps({ size: 14 })} aria-hidden />
           {showData ? "Hide data table" : "Show data table"}
         </Button>
         {toolbar}
