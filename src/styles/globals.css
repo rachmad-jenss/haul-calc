@@ -15,8 +15,8 @@
     --foreground: var(--text-strong);
     --card: 0 0% 100%;
     --card-foreground: var(--text-strong);
-    --primary: 215 90% 36%;
-    --primary-foreground: 210 40% 98%;
+    --primary: var(--text-strong);
+    --primary-foreground: 0 0% 100%;
     --secondary: var(--bg-selected);
     --secondary-foreground: var(--text-strong);
     --muted: var(--bg-selected);
@@ -29,7 +29,7 @@
     --warning-foreground: 38 92% 12%;
     --border: var(--border-neutral);
     --input: var(--border-neutral);
-    --ring: 215 90% 36%;
+    --ring: var(--text-strong);
     --radius: 0.5rem;
   }
 
@@ -44,7 +44,7 @@
     --foreground: var(--text-strong);
     --card: 0 0% 11%;
     --card-foreground: var(--text-strong);
-    --primary: 215 90% 60%;
+    --primary: var(--text-strong);
     --primary-foreground: 0 0% 11%;
     --secondary: var(--bg-selected);
     --secondary-foreground: var(--text-strong);
@@ -58,7 +58,7 @@
     --warning-foreground: 38 92% 12%;
     --border: var(--border-neutral);
     --input: var(--border-neutral);
-    --ring: 215 90% 60%;
+    --ring: var(--text-strong);
   }
 
   * {
