@@ -12,6 +12,7 @@ import Reports from "@/routes/Reports";
 import Settings from "@/routes/Settings";
 import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
 import Compare from "@/routes/Compare";
+import "@fontsource-variable/google-sans-flex/wght.css";
 import "@/styles/globals.css";
 
 const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;

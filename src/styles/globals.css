@@ -52,7 +52,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+    @apply bg-background text-base font-normal text-foreground antialiased;
+    font-family: "Google Sans Flex Variable", "Google Sans Flex", system-ui, sans-serif;
   }
 }

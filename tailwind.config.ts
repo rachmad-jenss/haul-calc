@@ -10,6 +10,21 @@ const config: Config = {
       padding: "1rem",
     },
     extend: {
+      fontFamily: {
+        sans: ['"Google Sans Flex Variable"', '"Google Sans Flex"', "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        "2xs": ["12px", { lineHeight: "16px" }],
+        base: ["13px", { lineHeight: "18px" }],
+        md: ["14px", { lineHeight: "20px" }],
+        lg: ["16px", { lineHeight: "24px" }],
+        xl: ["18px", { lineHeight: "28px" }],
+        "2xl": ["24px", { lineHeight: "32px" }],
+      },
+      fontWeight: {
+        normal: "400",
+        medium: "500",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
