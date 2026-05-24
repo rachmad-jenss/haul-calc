@@ -52,9 +52,8 @@ test.describe("UI fidelity wave smoke (DAS-265)", () => {
     await markProjectDirty(page);
     await page.getByRole("button", { name: "New project" }).click();
 
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("dialog", { name: "Unsaved Changes" });
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText("Unsaved Changes");
     await expect(dialog).toContainText("Start a new project anyway");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -78,7 +77,8 @@ test.describe("UI fidelity wave smoke (DAS-265)", () => {
     } else {
       await page.getByRole("button", { name: /sample fleet/i }).click();
     }
-    await expect(page.locator("[data-sonner-toast]").first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("[data-sonner-toast]").first()).toContainText(/sample vehicles/i);
+    await expect(
+      page.locator("[data-sonner-toast]").filter({ hasText: /loaded \d+ sample vehicles/i }),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });
