@@ -253,7 +253,7 @@ export default function PavementDesign() {
                   <button
                     type="button"
                     onClick={importFromCesa}
-                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    className="flex items-center gap-1 text-2xs text-primary hover:underline"
                   >
                     <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                     Import from CESA ({formatNumber(cesaResult.design_coverages, 0)})
@@ -323,7 +323,7 @@ export default function PavementDesign() {
             </div>
 
             <div className="space-y-2 border-t pt-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-2xs font-medium uppercase tracking-wide text-subtle">
                 Materials
               </p>
               <MaterialLibraryPanel
@@ -420,7 +420,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 
   if (!result) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-md text-subtle">
         Click "Run comparison" to compare USACE CBR and TRH 14 methods side-by-side.
       </p>
     );
@@ -428,7 +428,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
 
   if (!result.usace || !result.trh14) {
     return (
-      <p className="text-sm text-destructive">
+      <p className="text-md text-destructive">
         Comparison result is incomplete. Please try again.
       </p>
     );
@@ -448,7 +448,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
               className={`rounded-lg border p-4 ${isWinner ? "border-primary bg-primary/5" : ""}`}
             >
               <div className="mb-2 flex items-start justify-between gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">
                   {key === "usace" ? "USACE CBR" : "TRH 14"}
                 </span>
                 {isWinner && (
@@ -465,7 +465,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
                   decimals: thicknessDecimals,
                 })}
               </div>
-              <div className="text-xs text-muted-foreground">{m.method}</div>
+              <div className="text-2xs text-subtle">{m.method}</div>
               <div className="mt-2 flex flex-wrap gap-1">
                 <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[m.confidence]}`}>
                   {m.confidence} confidence
@@ -481,16 +481,16 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
         })}
       </div>
 
-      <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-sm">
-        <span className="text-muted-foreground">Δ Thickness:</span>
+      <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-3 text-md">
+        <span className="text-subtle">Δ Thickness:</span>
         <span className="font-mono font-semibold">
           {formatThicknessMm(Math.abs(result.delta_mm), unitSystem, { decimals: thicknessDecimals })}
         </span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">Subgrade CBR:</span>
+        <span className="text-subtle">·</span>
+        <span className="text-subtle">Subgrade CBR:</span>
         <span className="font-mono font-semibold">{result.subgrade_cbr}%</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">Overall:</span>
+        <span className="text-subtle">·</span>
+        <span className="text-subtle">Overall:</span>
         <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
           {result.confidence}
         </span>
@@ -504,7 +504,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   if (!result) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-md text-subtle">
         Run "Compute thickness" to see the recommended pavement structure.
       </p>
     );
@@ -515,8 +515,8 @@ function PavementChart({ result }: { result?: PavementResult }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
+      <div className="flex flex-wrap items-center gap-2 text-md text-subtle">
+        <span>Method: <span className="font-medium text-strong">{result.method}</span></span>
         <span>·</span>
         <span>Total: <span className="font-mono" data-testid="pavement-total-thickness">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
         <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
