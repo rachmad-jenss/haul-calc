@@ -36,6 +36,8 @@ Reserve for **engineering data** only:
 
 Do not use mono for general UI labels or navigation.
 
+**Migration note:** Some routes still use default Tailwind `text-xs` / `text-sm` or ad-hoc `text-[10px]` / `text-[11px]` until DAS-234 lands. Prefer the scale above for new edits.
+
 ## Color tokens
 
 Semantic neutrals replace the legacy blue primary. Components should prefer semantic utilities (`text-strong`, `bg-selected`, etc.) over raw HSL.
@@ -66,12 +68,18 @@ Same token names; values invert for readable contrast on `~8%` background. Card 
 | `bg-selected` | `--bg-selected` |
 | `bg-background` | `--background` |
 | `text-primary` | `--primary` (neutral strong, not blue) |
+| `text-foreground` / `text-muted-foreground` | `--foreground` / `--text-subtle` |
+| `bg-card` | Sidebar and elevated surfaces |
+| `border-border` | Default border (`--border` → `--border-neutral`) |
+| `bg-warning` / `text-warning` | Block warning banners |
 
 ### Usage rules
 
 - **Active sidebar item:** `bg-selected text-strong` — not `bg-primary` blue.
+- **Inactive nav:** `text-body hover:bg-selected/60 hover:text-strong`.
 - **Primary actions:** `bg-primary text-primary-foreground` (strong neutral on light/dark).
-- **Warnings:** `text-amber-*` for inline field warnings; `WarningBanner` / `StubBanner` for blocks.
+- **Block warnings:** `WarningBanner` / `StubBanner` use semantic `warning` tokens.
+- **Inline field warnings:** `text-amber-600 dark:text-amber-400` on the field hint line.
 
 ## Icons (Nucleo Essential)
 
@@ -92,7 +100,7 @@ import { nucleoIconProps } from "@/lib/icons";
 
 ### Lucide migration map
 
-`src/lib/icons/lucide-map.ts` documents Lucide → Nucleo equivalents for waves 2–3. New UI must import Nucleo directly — **do not** add `lucide-react`.
+`src/lib/icons/lucide-map.ts` documents Lucide → Nucleo equivalents for waves 2–3. New UI must import Nucleo directly — **do not** add `lucide-react` (removed in DAS-235).
 
 ### Accessibility
 
