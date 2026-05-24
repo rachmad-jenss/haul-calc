@@ -64,7 +64,9 @@ export default function App() {
   const [newProjectConfirmOpen, setNewProjectConfirmOpen] = useState(false);
   /** Scoped to App lifecycle — reset on effect cleanup so a stuck dialog cannot block future closes. */
   const closeConfirmInFlightRef = useRef(false);
+  const isForceClosingRef = useRef(false);
   const forceExitRef = useRef<(() => Promise<void>) | null>(null);
+  const exitFailOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const store = useCalcStore();
   const { activeFileName, activeFilePath, recentFiles, theme, setTheme, isProjectDirty, resetProject } =
@@ -206,6 +208,16 @@ export default function App() {
     }
   }, [activeFileName, hasBoundFile, isProjectDirty]);
 
+  useEffect(() => {
+    if (!isProjectDirty) {
+      setExitConfirmOpen(false);
+      if (exitFailOpenTimerRef.current) {
+        clearTimeout(exitFailOpenTimerRef.current);
+        exitFailOpenTimerRef.current = null;
+      }
+    }
+  }, [isProjectDirty]);
+
   // Register close guard only while dirty. A permanent listener blocks WM_CLOSE on Windows
   // even when the project is clean; useLayoutEffect minimizes the attach race after edits.
   useLayoutEffect(() => {
@@ -222,10 +234,13 @@ export default function App() {
       try {
         const win = getCurrentWindow();
         const unlisten = await win.onCloseRequested((event) => {
+          if (isForceClosingRef.current) return;
           event.preventDefault();
           if (closeConfirmInFlightRef.current) return;
           closeConfirmInFlightRef.current = true;
           forceExitRef.current = async () => {
+            isForceClosingRef.current = true;
+            setExitConfirmOpen(false);
             try {
               await win.destroy();
             } catch {
@@ -234,6 +249,11 @@ export default function App() {
             await exit(0);
           };
           setExitConfirmOpen(true);
+          if (exitFailOpenTimerRef.current) clearTimeout(exitFailOpenTimerRef.current);
+          exitFailOpenTimerRef.current = setTimeout(() => {
+            if (!closeConfirmInFlightRef.current) return;
+            void forceExitRef.current?.();
+          }, 5000);
         });
         if (cancelled) {
           unlisten();
@@ -260,6 +280,7 @@ export default function App() {
   };
 
   const handleNewProject = () => {
+    if (exitConfirmOpen || newProjectConfirmOpen) return;
     if (useCalcStore.getState().isProjectDirty) {
       setNewProjectConfirmOpen(true);
       return;
@@ -410,8 +431,14 @@ export default function App() {
         onOpenChange={(open) => {
           setExitConfirmOpen(open);
           if (!open) {
-            closeConfirmInFlightRef.current = false;
-            forceExitRef.current = null;
+            if (exitFailOpenTimerRef.current) {
+              clearTimeout(exitFailOpenTimerRef.current);
+              exitFailOpenTimerRef.current = null;
+            }
+            if (!isForceClosingRef.current) {
+              closeConfirmInFlightRef.current = false;
+              forceExitRef.current = null;
+            }
           }
         }}
         title="Unsaved Changes"
@@ -420,6 +447,10 @@ export default function App() {
         cancelLabel="Stay"
         destructive
         onConfirm={() => {
+          if (exitFailOpenTimerRef.current) {
+            clearTimeout(exitFailOpenTimerRef.current);
+            exitFailOpenTimerRef.current = null;
+          }
           void forceExitRef.current?.();
         }}
       />
@@ -431,7 +462,10 @@ export default function App() {
         confirmLabel="New project"
         cancelLabel="Cancel"
         destructive
-        onConfirm={startNewProject}
+        onConfirm={() => {
+          setNewProjectConfirmOpen(false);
+          startNewProject();
+        }}
       />
     </div>
   );

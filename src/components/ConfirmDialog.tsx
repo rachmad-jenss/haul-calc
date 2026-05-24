@@ -1,3 +1,4 @@
+import { useId } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,12 +30,14 @@ export function ConfirmDialog({
   destructive = false,
   onConfirm,
 }: ConfirmDialogProps) {
+  const descriptionId = useId();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" aria-describedby="confirm-dialog-description">
+      <DialogContent className="max-w-md" aria-describedby={descriptionId}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription id="confirm-dialog-description">{description}</DialogDescription>
+          <DialogDescription id={descriptionId}>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -45,7 +48,6 @@ export function ConfirmDialog({
             variant={destructive ? "destructive" : "default"}
             onClick={() => {
               onConfirm();
-              onOpenChange(false);
             }}
           >
             {confirmLabel}
