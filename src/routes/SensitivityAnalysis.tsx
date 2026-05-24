@@ -1,6 +1,10 @@
 import { useMemo, useRef, useState } from "react";
-import { TrendingUp, Download } from "lucide-react";
+import {
+  IconChartBarTrendUpOutline18,
+  IconDesktopArrowDownOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { toast } from "sonner";
+import { nucleoIconProps } from "@/lib/icons";
 import {
   LineChart,
   Line,
@@ -232,7 +236,7 @@ export default function SensitivityAnalysis() {
         description="See how an output metric changes as a single input parameter varies across a range."
         actions={
           <Button onClick={runAnalysis} disabled={running}>
-            <TrendingUp className="h-4 w-4" />
+            <IconChartBarTrendUpOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
             {running ? "Running..." : "Run analysis"}
           </Button>
         }
@@ -346,7 +350,7 @@ export default function SensitivityAnalysis() {
                   onClick={handleExport}
                   disabled={exporting}
                 >
-                  <Download className="h-3 w-3" aria-hidden />
+                  <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   {exporting ? "Exporting…" : "Export PNG"}
                 </Button>
               </div>
