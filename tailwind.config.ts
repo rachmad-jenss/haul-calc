@@ -11,6 +11,10 @@ const config: Config = {
     },
     extend: {
       colors: {
+        strong: "hsl(var(--text-strong))",
+        default: "hsl(var(--text-default))",
+        subtle: "hsl(var(--text-subtle))",
+        selected: "hsl(var(--bg-selected))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
