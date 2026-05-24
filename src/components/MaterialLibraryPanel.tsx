@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import {
+  IconLoaderOutline18,
+  IconTriangleWarningOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { StubBanner } from "@/components/StubBanner";
+import { nucleoIconProps } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { haulPave } from "@/lib/haulpave-client";
@@ -72,7 +76,10 @@ export function MaterialLibraryPanel({ onPickTemplate }: Props) {
       {stubMessage ? <StubBanner message={stubMessage} /> : null}
 
       <p className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
-        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+        <IconTriangleWarningOutline18
+          {...nucleoIconProps({ size: 12, className: "mt-0.5" })}
+          aria-hidden
+        />
         Templates are non-normative guidance. Do not use for final design without laboratory verification.
       </p>
 
@@ -85,7 +92,10 @@ export function MaterialLibraryPanel({ onPickTemplate }: Props) {
 
       {loading ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <IconLoaderOutline18
+            {...nucleoIconProps({ size: 16, className: "animate-spin" })}
+            aria-hidden
+          />
           Loading catalog…
         </p>
       ) : null}
