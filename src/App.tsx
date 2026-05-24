@@ -340,7 +340,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleNewProject}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="New project (Ctrl+N)"
               aria-label="New project"
             >
@@ -349,7 +349,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Open project (Ctrl+O)"
               aria-label="Open project"
             >
@@ -358,7 +358,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong"
+              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Save (Ctrl+S)"
               aria-label="Save project"
             >
