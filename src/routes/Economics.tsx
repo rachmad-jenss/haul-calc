@@ -239,7 +239,7 @@ function OpexTab() {
           {running ? "Computing..." : "Compare scenarios"}
         </Button>
         {costScenarios.length < 2 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-subtle">
             Add at least two scenarios to compare operating costs.
           </p>
         )}
@@ -247,7 +247,7 @@ function OpexTab() {
       <div className="grid gap-4 lg:grid-cols-[1fr,1fr]">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Scenarios</CardTitle>
+            <CardTitle className="text-md font-medium">Scenarios</CardTitle>
             <Button variant="outline" size="sm" onClick={add}>
               <IconPlusOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               Add scenario
@@ -336,7 +336,7 @@ function OpexTab() {
 
         <Card>
           <CardHeader className="flex-row items-center gap-2">
-            <CardTitle>Comparison</CardTitle>
+            <CardTitle className="text-md font-medium">Comparison</CardTitle>
             {costResult && economicsDirty && (
               <ResultStaleBadge onRecalculate={compute} recalculating={running} />
             )}
@@ -344,7 +344,7 @@ function OpexTab() {
           <CardContent className="space-y-3">
             {costResult?.stub ? <StubBanner message={costResult.stubMessage} /> : null}
             {chartData.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-subtle">
                 Run "Compare scenarios" to see operating cost breakdown.
               </p>
             ) : (
@@ -358,7 +358,7 @@ function OpexTab() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1 px-2 text-xs"
+                      className="h-8 gap-1 px-2 text-2xs"
                       onClick={handleExportCsv}
                     >
                       <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
@@ -367,7 +367,7 @@ function OpexTab() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1 px-2 text-xs"
+                      className="h-8 gap-1 px-2 text-2xs"
                       onClick={handleExportExcel}
                     >
                       <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
@@ -376,7 +376,7 @@ function OpexTab() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1 px-2 text-xs"
+                      className="h-8 gap-1 px-2 text-2xs"
                       onClick={handleExport}
                       disabled={exporting}
                     >
@@ -386,7 +386,7 @@ function OpexTab() {
                   </>
                 }
                 chart={
-                  <div className="h-72 w-full" ref={chartRef}>
+                  <div className="h-[400px] w-full" ref={chartRef}>
                     <ResponsiveContainer>
                       <BarChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -414,11 +414,11 @@ function OpexTab() {
 function SummaryTable({ rows }: { rows: ScenarioComparison[] }) {
   if (!rows.length) return null;
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-base">
       <caption className="sr-only">
         Operating cost breakdown by scenario — same values as the stacked bar chart
       </caption>
-      <thead className="text-xs uppercase text-muted-foreground">
+      <thead className="text-2xs uppercase text-subtle">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
           <th className="px-2 py-1 text-right font-medium">Tires</th>
@@ -568,7 +568,7 @@ function LccaTab() {
       {/* Global LCCA parameters */}
       <Card>
         <CardHeader>
-          <CardTitle>LCCA Parameters</CardTitle>
+          <CardTitle className="text-md font-medium">LCCA Parameters</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -593,7 +593,7 @@ function LccaTab() {
       {/* Per-scenario cost inputs */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Scenario Costs</CardTitle>
+          <CardTitle className="text-md font-medium">Scenario Costs</CardTitle>
           <Button onClick={compute} size="sm">
             <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
             Compute LCCA
@@ -601,13 +601,13 @@ function LccaTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           {costScenarios.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-subtle">
               Add scenarios in the Operating Cost tab first.
             </p>
           ) : (
             syncedScenarios.map((s) => (
               <div key={s._id} className="rounded border p-3">
-                <p className="mb-2 text-sm font-medium">{s.name}</p>
+                <p className="mb-2 text-md font-medium text-strong">{s.name}</p>
                 <div className="grid grid-cols-3 gap-2">
                   <NumField
                     label="Construction cost (USD)"
@@ -641,9 +641,9 @@ function LccaTab() {
           {/* Summary table */}
           <Card>
             <CardHeader className="flex-row items-center gap-2">
-              <CardTitle>LCCA Results</CardTitle>
+              <CardTitle className="text-md font-medium">LCCA Results</CardTitle>
               {lccaResult.breakEvenYear !== null && hasTwoScenarios && (
-                <span className="text-sm text-muted-foreground">
+                <span className="text-base text-subtle">
                   Break-even at year {lccaResult.breakEvenYear}
                 </span>
               )}
@@ -651,7 +651,7 @@ function LccaTab() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-1 px-2 text-xs"
+                  className="h-8 gap-1 px-2 text-2xs"
                   onClick={handleExportCsv}
                 >
                   <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
@@ -660,14 +660,14 @@ function LccaTab() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-2xs text-subtle">
                 Summary metrics per scenario (no chart — table is the primary view).
               </p>
               <Button
                 type="button"
                 variant={showSummaryData ? "secondary" : "outline"}
                 size="sm"
-                className="h-8 gap-1.5 text-xs"
+                className="h-8 gap-1.5 text-2xs"
                 aria-pressed={showSummaryData}
                 aria-controls="lcca-summary-data-table"
                 aria-expanded={showSummaryData}
@@ -692,7 +692,7 @@ function LccaTab() {
           {/* NPV bar chart */}
           <Card>
             <CardHeader>
-              <CardTitle>NPV Comparison</CardTitle>
+              <CardTitle className="text-md font-medium">NPV Comparison</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartAccessibleView
@@ -704,7 +704,7 @@ function LccaTab() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 gap-1 px-2 text-xs"
+                    className="h-8 gap-1 px-2 text-2xs"
                     onClick={handleExport}
                     disabled={exporting}
                   >
@@ -713,7 +713,7 @@ function LccaTab() {
                   </Button>
                 }
                 chart={
-                  <div className="h-64 w-full" ref={npvChartRef}>
+                  <div className="h-[400px] w-full" ref={npvChartRef}>
                     <ResponsiveContainer>
                       <BarChart data={npvChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -735,7 +735,7 @@ function LccaTab() {
           {/* Cumulative PV line chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Cumulative Present Value over Time</CardTitle>
+              <CardTitle className="text-md font-medium">Cumulative Present Value over Time</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartAccessibleView
@@ -744,7 +744,7 @@ function LccaTab() {
                 onShowDataChange={setShowCumulativeData}
                 seriesDescription={`Lines by scenario (${lccaResult.scenarios.map((s) => s.name).join(", ")}).`}
                 chart={
-                  <div className="h-64 w-full">
+                  <div className="h-[400px] w-full">
                     <ResponsiveContainer>
                       <LineChart data={cumulativeData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -786,9 +786,9 @@ function NpvComparisonTable({
 }) {
   if (!rows.length) return null;
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-base">
       <caption className="sr-only">NPV and annual equivalent cost — same series as the bar chart</caption>
-      <thead className="text-xs uppercase text-muted-foreground">
+      <thead className="text-2xs uppercase text-subtle">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
           <th className="px-2 py-1 text-right font-medium">NPV (USD)</th>
@@ -814,11 +814,11 @@ function CumulativePvTable({ rows }: { rows: Record<string, number | string>[] }
   if (!rows.length) return null;
   const scenarioKeys = Object.keys(rows[0]).filter((k) => k !== "year");
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-base">
       <caption className="sr-only">
         Cumulative present value by year and scenario — same series as the line chart
       </caption>
-      <thead className="text-xs uppercase text-muted-foreground">
+      <thead className="text-2xs uppercase text-subtle">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Year</th>
           {scenarioKeys.map((key) => (
@@ -852,9 +852,9 @@ function LccaSummaryTable({
   if (!rows.length) return null;
   const best = rows.reduce((a, b) => (a.npvUsd < b.npvUsd ? a : b));
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-base">
       <caption className="sr-only">LCCA summary — NPV and annual equivalent cost by scenario</caption>
-      <thead className="text-xs uppercase text-muted-foreground">
+      <thead className="text-2xs uppercase text-subtle">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
           <th className="px-2 py-1 text-right font-medium">NPV</th>
