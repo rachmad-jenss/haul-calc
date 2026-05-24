@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -22,7 +22,6 @@ import {
 import { nucleoIconProps, type NucleoIconComponent } from "@/lib/icons";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { ask } from "@tauri-apps/plugin-dialog";
 import { exit } from "@tauri-apps/plugin-process";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,6 +29,8 @@ import { useCalcStore } from "@/lib/store";
 import { normalizePersistedFileBinding, resolveActiveFilePath } from "@/lib/file-binding";
 import { saveProject, saveAsProject, openProject, openProjectFromPath } from "@/lib/project-file";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TitleBar } from "@/components/TitleBar";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAutoUpdate } from "@/hooks/useAutoUpdate";
 
 const NAV: { to: string; label: string; icon: NucleoIconComponent }[] = [
@@ -59,8 +60,13 @@ export default function App() {
       redo: s.redo,
     })),
   );
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [newProjectConfirmOpen, setNewProjectConfirmOpen] = useState(false);
   /** Scoped to App lifecycle — reset on effect cleanup so a stuck dialog cannot block future closes. */
   const closeConfirmInFlightRef = useRef(false);
+  const isForceClosingRef = useRef(false);
+  const forceExitRef = useRef<(() => Promise<void>) | null>(null);
+  const exitFailOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const store = useCalcStore();
   const { activeFileName, activeFilePath, recentFiles, theme, setTheme, isProjectDirty, resetProject } =
@@ -180,15 +186,6 @@ export default function App() {
     if (theme === 'dark') { root.classList.add('dark'); }
     else if (theme === 'light') { root.classList.remove('dark'); }
 
-    // Sync native window title bar with the selected theme.
-    // Pass null for 'system' so Tauri defers to the OS setting.
-    try {
-      const nativeTheme = theme === 'system' ? null : theme;
-      getCurrentWindow().setTheme(nativeTheme);
-    } catch {
-      // Not in a Tauri context (e.g. browser / test env) — ignore.
-    }
-
     if (theme !== 'system') return;
 
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -211,6 +208,16 @@ export default function App() {
     }
   }, [activeFileName, hasBoundFile, isProjectDirty]);
 
+  useEffect(() => {
+    if (!isProjectDirty) {
+      setExitConfirmOpen(false);
+      if (exitFailOpenTimerRef.current) {
+        clearTimeout(exitFailOpenTimerRef.current);
+        exitFailOpenTimerRef.current = null;
+      }
+    }
+  }, [isProjectDirty]);
+
   // Register close guard only while dirty. A permanent listener blocks WM_CLOSE on Windows
   // even when the project is clean; useLayoutEffect minimizes the attach race after edits.
   useLayoutEffect(() => {
@@ -227,46 +234,26 @@ export default function App() {
       try {
         const win = getCurrentWindow();
         const unlisten = await win.onCloseRequested((event) => {
+          if (isForceClosingRef.current) return;
           event.preventDefault();
           if (closeConfirmInFlightRef.current) return;
           closeConfirmInFlightRef.current = true;
-
-          void (async () => {
-            let settled = false;
-            const forceExit = async () => {
-              if (settled) return;
-              settled = true;
-              try {
-                await win.destroy();
-              } catch {
-                // ignore
-              }
-              await exit(0);
-            };
-            const timeoutId = window.setTimeout(() => {
-              void forceExit();
-            }, 5000);
+          forceExitRef.current = async () => {
+            isForceClosingRef.current = true;
+            setExitConfirmOpen(false);
             try {
-              const confirmed = await ask(
-                "You have unsaved changes. Are you sure you want to exit without saving?",
-                { title: "Unsaved Changes", kind: "warning" },
-              );
-              if (settled) return;
-              window.clearTimeout(timeoutId);
-              if (confirmed) {
-                await forceExit();
-              } else {
-                settled = true;
-              }
-            } catch (err) {
-              if (settled) return;
-              window.clearTimeout(timeoutId);
-              console.error("Close confirmation failed:", err);
-              await forceExit();
-            } finally {
-              closeConfirmInFlightRef.current = false;
+              await win.destroy();
+            } catch {
+              // ignore
             }
-          })();
+            await exit(0);
+          };
+          setExitConfirmOpen(true);
+          if (exitFailOpenTimerRef.current) clearTimeout(exitFailOpenTimerRef.current);
+          exitFailOpenTimerRef.current = setTimeout(() => {
+            if (!closeConfirmInFlightRef.current) return;
+            void forceExitRef.current?.();
+          }, 5000);
         });
         if (cancelled) {
           unlisten();
@@ -287,17 +274,26 @@ export default function App() {
     };
   }, [isProjectDirty]);
 
-  const handleNewProject = async () => {
-    if (useCalcStore.getState().isProjectDirty) {
-      const confirmed = await ask("You have unsaved changes. Start a new project anyway?", {
-        title: "Unsaved Changes",
-        kind: "warning",
-      });
-      if (!confirmed) return;
-    }
+  const startNewProject = () => {
     resetProject();
     useCalcStore.temporal.getState().clear();
   };
+
+  const handleNewProject = () => {
+    if (exitConfirmOpen || newProjectConfirmOpen) return;
+    if (useCalcStore.getState().isProjectDirty) {
+      setNewProjectConfirmOpen(true);
+      return;
+    }
+    startNewProject();
+  };
+
+  const titleBarSubtitle =
+    hasBoundFile && activeFileName
+      ? `${activeFileName}${isProjectDirty ? " *" : ""}`
+      : isProjectDirty
+        ? "Unsaved project *"
+        : null;
 
   const displayName =
     hasBoundFile && activeFileName
@@ -307,7 +303,9 @@ export default function App() {
       : null;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
+      <TitleBar subtitle={titleBarSubtitle} />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside className="flex w-60 shrink-0 flex-col border-r bg-card">
         <div className="flex h-14 flex-col justify-center border-b px-4 gap-1">
           <div className="flex items-center">
@@ -426,6 +424,49 @@ export default function App() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      </div>
+
+      <ConfirmDialog
+        open={exitConfirmOpen}
+        onOpenChange={(open) => {
+          setExitConfirmOpen(open);
+          if (!open) {
+            if (exitFailOpenTimerRef.current) {
+              clearTimeout(exitFailOpenTimerRef.current);
+              exitFailOpenTimerRef.current = null;
+            }
+            if (!isForceClosingRef.current) {
+              closeConfirmInFlightRef.current = false;
+              forceExitRef.current = null;
+            }
+          }
+        }}
+        title="Unsaved Changes"
+        description="You have unsaved changes. Are you sure you want to exit without saving?"
+        confirmLabel="Exit without saving"
+        cancelLabel="Stay"
+        destructive
+        onConfirm={() => {
+          if (exitFailOpenTimerRef.current) {
+            clearTimeout(exitFailOpenTimerRef.current);
+            exitFailOpenTimerRef.current = null;
+          }
+          void forceExitRef.current?.();
+        }}
+      />
+      <ConfirmDialog
+        open={newProjectConfirmOpen}
+        onOpenChange={setNewProjectConfirmOpen}
+        title="Unsaved Changes"
+        description="You have unsaved changes. Start a new project anyway?"
+        confirmLabel="New project"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => {
+          setNewProjectConfirmOpen(false);
+          startNewProject();
+        }}
+      />
     </div>
   );
 }

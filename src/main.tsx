@@ -39,7 +39,20 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary>
       <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
+      <Toaster
+        position="top-right"
+        closeButton
+        toastOptions={{
+          classNames: {
+            toast: "border border-border bg-card text-foreground shadow-md",
+            title: "text-strong font-medium",
+            description: "text-subtle",
+            actionButton: "bg-primary text-primary-foreground",
+            cancelButton: "bg-muted text-foreground",
+            closeButton: "bg-background border-border text-subtle",
+          },
+        }}
+      />
     </ErrorBoundary>
   </React.StrictMode>,
 );
