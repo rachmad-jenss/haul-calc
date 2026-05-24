@@ -75,7 +75,7 @@ export function MaterialLibraryPanel({ onPickTemplate }: Props) {
 
       {stubMessage ? <StubBanner message={stubMessage} /> : null}
 
-      <p className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+      <p className="flex items-start gap-1.5 text-2xs text-amber-700 dark:text-amber-400">
         <IconTriangleWarningOutline18
           {...nucleoIconProps({ size: 12, className: "mt-0.5" })}
           aria-hidden

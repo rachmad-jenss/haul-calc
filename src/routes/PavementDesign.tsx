@@ -234,13 +234,13 @@ export default function PavementDesign() {
                 max={50}
               />
               {subgradeCbr < 3 && (
-                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                   <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very weak subgrade — consider soil improvement
                 </p>
               )}
               {subgradeCbr > 30 && (
-                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                   <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   CBR &gt; 30% is unusually strong for native subgrade
                 </p>
@@ -279,13 +279,13 @@ export default function PavementDesign() {
               />
               <FieldError message={fieldErrors.design_coverages} />
               {coverages > 2_000_000 && (
-                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                   <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very high coverages — verify CESA computation
                 </p>
               )}
               {coverages > 0 && coverages < 10_000 && (
-                <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                   <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 12 })} aria-hidden />
                   Very low coverages — verify fleet traffic inputs
                 </p>
@@ -452,7 +452,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
                   {key === "usace" ? "USACE CBR" : "TRH 14"}
                 </span>
                 {isWinner && (
-                  <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  <span className="rounded bg-primary px-1.5 py-0.5 text-2xs font-semibold text-primary-foreground">
                     Recommended
                   </span>
                 )}
@@ -467,11 +467,11 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
               </div>
               <div className="text-xs text-muted-foreground">{m.method}</div>
               <div className="mt-2 flex flex-wrap gap-1">
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[m.confidence]}`}>
+                <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[m.confidence]}`}>
                   {m.confidence} confidence
                 </span>
                 {m.material_class && (
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium">
                     Class {m.material_class}
                   </span>
                 )}
@@ -491,7 +491,7 @@ function MethodComparisonPanel({ result }: { result?: CompareMethodsResult }) {
         <span className="font-mono font-semibold">{result.subgrade_cbr}%</span>
         <span className="text-muted-foreground">·</span>
         <span className="text-muted-foreground">Overall:</span>
-        <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
+        <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
           {result.confidence}
         </span>
       </div>
@@ -519,7 +519,7 @@ function PavementChart({ result }: { result?: PavementResult }) {
         <span>Method: <span className="font-medium text-foreground">{result.method}</span></span>
         <span>·</span>
         <span>Total: <span className="font-mono" data-testid="pavement-total-thickness">{formatNumber(displayThickness, unitSystem === 'Imperial' ? 2 : 0)} {thicknessLabel}</span></span>
-        <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
+        <span className={`rounded px-1.5 py-0.5 text-2xs font-medium ${CONFIDENCE_COLOR[result.confidence]}`}>
           {result.confidence} confidence
         </span>
       </div>

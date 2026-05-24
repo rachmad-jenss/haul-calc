@@ -868,7 +868,7 @@ function LccaSummaryTable({
               <span className="inline-flex items-center gap-1">
                 {s.name}
                 {s._id === best._id && rows.length > 1 && (
-                  <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                  <span className="rounded bg-green-100 px-1 py-0.5 text-2xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-400">
                     lowest NPV
                   </span>
                 )}
