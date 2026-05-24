@@ -76,7 +76,9 @@ test.describe("Economics page", () => {
     // Results table heading
     await expect(page.getByText(/lcca results/i)).toBeVisible();
     // NPV column header (use role to avoid strict-mode collision with chart legend/badge)
-    await expect(page.getByRole("columnheader", { name: "NPV" })).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "NPV", exact: true }),
+    ).toBeVisible();
     // Charts rendered
     await expect(page.locator("svg.recharts-surface").first()).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: SS("05-lcca-results") });
