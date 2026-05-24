@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  IconCircleInfoOutline18,
   IconCircleHalfDottedCheckOutline18,
   IconInboxArrowDownOutline18,
+  IconTriangleWarningOutline18,
 } from "nucleo-ui-essential-outline-18";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,7 +111,7 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
               {hasErrors && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-md">
                   <div className="mb-1 flex items-center gap-1.5 font-medium text-destructive">
-                    <IconCircleInfoOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
+                    <IconTriangleWarningOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
                     {parseResult.errors.length} error{parseResult.errors.length > 1 ? "s" : ""}
                   </div>
                   <ul className="list-inside list-disc space-y-0.5 text-md text-destructive">
