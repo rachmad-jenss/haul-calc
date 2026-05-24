@@ -18,7 +18,7 @@ import { openProjectFromPath } from "@/lib/project-file";
 import { useCalcStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
 
-const ICON_16_MUTED = nucleoIconProps({ size: 16, className: "text-muted-foreground" });
+const ICON_16_MUTED = nucleoIconProps({ size: 16, className: "text-subtle" });
 const ICON_12 = nucleoIconProps({ size: 12 });
 
 export default function Dashboard() {
@@ -75,19 +75,19 @@ export default function Dashboard() {
         <DashboardNavCard to="/fleet">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <IconForkliftOutline18 {...ICON_16_MUTED} aria-hidden />
-            <CardTitle className="text-sm font-medium">Fleet &amp; Traffic</CardTitle>
+            <CardTitle className="text-md font-medium">Fleet &amp; Traffic</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Vehicles in fleet</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Vehicles in fleet</span>
               <span className="font-mono font-semibold">{totalVehicles}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Design life</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Design life</span>
               <span className="font-mono font-semibold">{designLifeYears} yr</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total CESA</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Total CESA</span>
               <span className="font-mono font-semibold">
                 {cesaResult ? formatNumber(cesaResult.cesa, 0) : "Not computed"}
               </span>
@@ -98,25 +98,25 @@ export default function Dashboard() {
         <DashboardNavCard to="/pavement">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <IconLayers3Outline18 {...ICON_16_MUTED} aria-hidden />
-            <CardTitle className="text-sm font-medium">Pavement Design</CardTitle>
+            <CardTitle className="text-md font-medium">Pavement Design</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subgrade CBR</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Subgrade CBR</span>
               <span className="font-mono font-semibold">{subgradeCbr}%</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Design coverages</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Design coverages</span>
               <span className="font-mono font-semibold">{formatNumber(coverages, 0)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">CBR method total</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">CBR method total</span>
               <span className="font-mono font-semibold">
                 {cbrResult ? `${formatNumber(cbrResult.total_thickness_mm, 0)} mm` : "Not computed"}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">TRH 14 total</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">TRH 14 total</span>
               <span className="font-mono font-semibold">
                 {trhResult ? `${formatNumber(trhResult.total_thickness_mm, 0)} mm` : "Not computed"}
               </span>
@@ -127,15 +127,15 @@ export default function Dashboard() {
         <DashboardNavCard to="/economics">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <IconMoneyBillCoinOutline18 {...ICON_16_MUTED} aria-hidden />
-            <CardTitle className="text-sm font-medium">Economics</CardTitle>
+            <CardTitle className="text-md font-medium">Economics</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Cost scenarios</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Cost scenarios</span>
               <span className="font-mono font-semibold">{costScenarios.length}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Best scenario</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Best scenario</span>
               <span className="font-mono font-semibold">
                 {bestScenario ? bestScenario.name : "Not computed"}
               </span>
@@ -146,23 +146,23 @@ export default function Dashboard() {
         <DashboardNavCard to="/reports">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <IconFileContentOutline18 {...ICON_16_MUTED} aria-hidden />
-            <CardTitle className="text-sm font-medium">Reports</CardTitle>
+            <CardTitle className="text-md font-medium">Reports</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Project</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Project</span>
               <span className="font-semibold truncate ml-4 max-w-[180px] text-right">
                 {projectName || "—"}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Author</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Author</span>
               <span className="font-semibold truncate ml-4 max-w-[180px] text-right">
                 {authorName || "—"}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Report status</span>
+            <div className="flex justify-between text-base">
+              <span className="text-subtle">Report status</span>
               <span className="font-semibold">
                 {reportSummary ? "Generated" : "Not generated"}
               </span>
@@ -173,22 +173,22 @@ export default function Dashboard() {
         <Card className="sm:col-span-2">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
             <IconAlarmClockOutline18 {...ICON_16_MUTED} aria-hidden />
-            <CardTitle className="text-sm font-medium">Recent Files</CardTitle>
+            <CardTitle className="text-md font-medium">Recent Files</CardTitle>
           </CardHeader>
           <CardContent>
             {recentFiles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recent files.</p>
+              <p className="text-base text-subtle">No recent files.</p>
             ) : (
               <ul className="space-y-1">
                 {recentFiles.map((filePath) => {
                   const name = filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
                   return (
                     <li key={filePath} className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm" title={filePath}>{name}</span>
+                      <span className="truncate text-base" title={filePath}>{name}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 shrink-0 gap-1 px-2 text-xs"
+                        className="h-7 shrink-0 gap-1 px-2 text-2xs"
                         onClick={() => handleOpenRecent(filePath)}
                       >
                         <IconFolderOpenOutline18 {...ICON_12} aria-hidden />
