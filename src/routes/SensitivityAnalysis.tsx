@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { ChartAccessibleView } from "@/components/ChartAccessibleView";
 import { PageHeader } from "@/components/PageHeader";
 import { StubBanner } from "@/components/StubBanner";
 import { Button } from "@/components/ui/button";
@@ -337,23 +338,15 @@ export default function SensitivityAnalysis() {
           <CardHeader className="flex-row items-center gap-2">
             <CardTitle>Results — {metricCfg.label}</CardTitle>
             {hasData && (
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={() => setShowData(!showData)}
-                >
-                  {showData ? "Hide Data" : "Show Data"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
+                  className="h-8 gap-1 px-2 text-xs"
                   onClick={handleExport}
                   disabled={exporting}
                 >
-                  <Download className="h-3 w-3" />
+                  <Download className="h-3 w-3" aria-hidden />
                   {exporting ? "Exporting…" : "Export PNG"}
                 </Button>
               </div>
@@ -372,82 +365,101 @@ export default function SensitivityAnalysis() {
                     {chartData.length - validPoints} point(s) failed and were skipped.
                   </p>
                 )}
-                <div className="h-[400px]" ref={chartContainerRef}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={displayChartData.filter((p) => p.y !== null)}
-                      margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis
-                        dataKey="x"
-                        type="number"
-                        domain={["dataMin", "dataMax"]}
-                        tickCount={6}
-                        label={{
-                          value: paramCfg.unit
-                            ? `${paramCfg.label} (${paramCfg.unit})`
-                            : paramCfg.label,
-                          position: "insideBottom",
-                          offset: -12,
-                          fontSize: 12,
-                        }}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <YAxis
-                        dataKey="y"
-                        tickCount={6}
-                        tickFormatter={(v: number) =>
-                          v >= 1_000_000
-                            ? `${(v / 1_000_000).toFixed(1)}M`
-                            : v >= 1_000
-                            ? `${(v / 1_000).toFixed(0)}k`
-                            : v.toFixed(metricCfg.decimals)
-                        }
-                        label={{
-                          value: metricCfg.yAxisLabel,
-                          angle: -90,
-                          position: "insideLeft",
-                          offset: 10,
-                          fontSize: 12,
-                        }}
-                        tick={{ fontSize: 11 }}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          metricCfg.unit
-                            ? `${value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })} ${metricCfg.unit}`
-                            : value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals }),
-                          metricCfg.label,
-                        ]}
-                        labelFormatter={(label: number) =>
-                          `${paramCfg.label}: ${typeof label === "number"
-                            ? label.toLocaleString(undefined, { maximumFractionDigits: 3 })
-                            : label}`
-                        }
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="y"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
-                        connectNulls={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                {showData && (
-                  <div className="overflow-x-auto">
+                <ChartAccessibleView
+                  id="sensitivity-results-chart"
+                  showData={showData}
+                  onShowDataChange={setShowData}
+                  seriesDescription={`Line series: ${metricCfg.label} (primary color).`}
+                  chart={
+                    <div className="h-[400px]" ref={chartContainerRef}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={displayChartData.filter((p) => p.y !== null)}
+                          margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis
+                            dataKey="x"
+                            type="number"
+                            domain={["dataMin", "dataMax"]}
+                            tickCount={6}
+                            label={{
+                              value: paramCfg.unit
+                                ? `${paramCfg.label} (${paramCfg.unit})`
+                                : paramCfg.label,
+                              position: "insideBottom",
+                              offset: -12,
+                              fontSize: 12,
+                            }}
+                            tick={{ fontSize: 11 }}
+                          />
+                          <YAxis
+                            dataKey="y"
+                            tickCount={6}
+                            tickFormatter={(v: number) =>
+                              v >= 1_000_000
+                                ? `${(v / 1_000_000).toFixed(1)}M`
+                                : v >= 1_000
+                                  ? `${(v / 1_000).toFixed(0)}k`
+                                  : v.toFixed(metricCfg.decimals)
+                            }
+                            label={{
+                              value: metricCfg.yAxisLabel,
+                              angle: -90,
+                              position: "insideLeft",
+                              offset: 10,
+                              fontSize: 12,
+                            }}
+                            tick={{ fontSize: 11 }}
+                          />
+                          <Tooltip
+                            formatter={(value: number) => [
+                              metricCfg.unit
+                                ? `${value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })} ${metricCfg.unit}`
+                                : value.toLocaleString(undefined, {
+                                    maximumFractionDigits: metricCfg.decimals,
+                                  }),
+                              metricCfg.label,
+                            ]}
+                            labelFormatter={(label: number) =>
+                              `${paramCfg.label}: ${
+                                typeof label === "number"
+                                  ? label.toLocaleString(undefined, {
+                                      maximumFractionDigits: 3,
+                                    })
+                                  : label
+                              }`
+                            }
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="y"
+                            name={metricCfg.label}
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{ r: 6 }}
+                            connectNulls={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  }
+                  table={
                     <table className="w-full text-sm">
+                      <caption className="sr-only">
+                        Sensitivity sweep — {paramCfg.label} vs {metricCfg.label} (includes failed
+                        points as em dash; line chart omits nulls)
+                      </caption>
                       <thead className="text-xs uppercase text-muted-foreground">
                         <tr>
                           <th className="px-2 py-1 text-left font-medium">
-                            {paramCfg.label}{paramCfg.unit ? ` (${paramCfg.unit})` : ""}
+                            {paramCfg.label}
+                            {paramCfg.unit ? ` (${paramCfg.unit})` : ""}
                           </th>
                           <th className="px-2 py-1 text-right font-medium">
-                            {metricCfg.label}{metricCfg.unit ? ` (${metricCfg.unit})` : ""}
+                            {metricCfg.label}
+                            {metricCfg.unit ? ` (${metricCfg.unit})` : ""}
                           </th>
                         </tr>
                       </thead>
@@ -468,8 +480,8 @@ export default function SensitivityAnalysis() {
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                )}
+                  }
+                />
               </div>
             )}
           </CardContent>
