@@ -1,6 +1,6 @@
 [package]
 name = "haul-calc"
-version = "1.4.1"
+version = "1.5.0"
 description = "Haul road pavement calculations desktop app"
 authors = ["Rachmad Jenss"]
 edition = "2021"
