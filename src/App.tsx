@@ -95,6 +95,39 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Native menu bar (DAS-196) — same handlers as keyboard shortcuts.
+  useEffect(() => {
+    const unlisten = listen<string>("menu-action", (event) => {
+      const id = event.payload;
+      if (id === "file_new") {
+        void handleNewProject();
+      } else if (id === "file_open") {
+        openProject(useCalcStore.getState()).catch((err) => {
+          console.error(err);
+          toast.error(`Open failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
+      } else if (id === "file_save") {
+        saveProject(useCalcStore.getState()).catch((err) => {
+          console.error(err);
+          toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
+      } else if (id === "file_save_as") {
+        saveAsProject(useCalcStore.getState()).catch((err) => {
+          console.error(err);
+          toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
+      } else if (id === "file_exit") {
+        getCurrentWindow().close().catch(console.error);
+      } else if (id === "edit_undo") {
+        useCalcStore.temporal.getState().undo();
+      } else if (id === "edit_redo") {
+        useCalcStore.temporal.getState().redo();
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;

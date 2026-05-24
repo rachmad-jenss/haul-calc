@@ -1,5 +1,6 @@
 mod bridge;
 mod commands;
+mod menu;
 
 use std::sync::Arc;
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
@@ -46,6 +47,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let handle = app.handle().clone();
+            menu::install(&handle)?;
             let client = Arc::new(BridgeClient::spawn(&handle)?);
             app.manage(client);
             Ok(())
