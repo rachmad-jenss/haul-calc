@@ -370,7 +370,7 @@ export default function FleetTraffic() {
                         />
                         <FieldError message={rowFieldError(idx, "trips_per_day")} />
                         {row.trips_per_day > 100 && (
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                          <p className="mt-0.5 flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                             <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             High — verify trip count
                           </p>
@@ -398,7 +398,7 @@ export default function FleetTraffic() {
                           )}
                         </div>
                         {row.payload_kn > PAYLOAD_TYPICAL_MAX_KN && (
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                          <p className="mt-0.5 flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                             <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             Exceeds typical max (~{formatForceKn(PAYLOAD_TYPICAL_MAX_KN, unitSystem)})
                           </p>
@@ -406,7 +406,7 @@ export default function FleetTraffic() {
                         {unitSystem === "SI" &&
                           row.payload_kn > 0 &&
                           row.payload_kn < PAYLOAD_TYPICAL_LOW_KN && (
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                          <p className="mt-0.5 flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400">
                             <IconTriangleWarningOutline18 {...ICON_12} aria-hidden />
                             Very low — verify units (kN)
                           </p>

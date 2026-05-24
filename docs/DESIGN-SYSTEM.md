@@ -36,7 +36,7 @@ Reserve for **engineering data** only:
 
 Do not use mono for general UI labels or navigation.
 
-**Migration note:** Some routes still use default Tailwind `text-xs` / `text-sm` or ad-hoc `text-[10px]` / `text-[11px]` until DAS-234 lands. Prefer the scale above for new edits.
+**Migration note:** Some routes may still use default Tailwind `text-xs` / `text-sm` where equivalent to `text-2xs` / `text-md`. Prefer the HC-VI scale above for new edits; do not add arbitrary `text-[Npx]`.
 
 ## Color tokens
 
