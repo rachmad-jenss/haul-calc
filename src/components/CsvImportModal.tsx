@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  IconCircleInfoOutline18,
+  IconCircleHalfDottedCheckOutline18,
+  IconInboxArrowDownOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { nucleoIconProps } from "@/lib/icons";
 import { parseFleetCsv, type FleetCsvParseResult } from "@/lib/fleet-csv";
 import type { FleetEntry } from "@/lib/types";
 
@@ -77,20 +82,20 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-md text-subtle">
             CSV must include a header row with columns:{" "}
-            <code className="rounded bg-muted px-1 text-xs">
+            <code className="rounded bg-muted px-1 text-2xs">
               vehicle_id, count, trips_per_day, payload_kn
             </code>
           </p>
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-              <Upload className="h-4 w-4" />
+              <IconInboxArrowDownOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               Choose CSV file
             </Button>
             {fileName && (
-              <span className="truncate text-sm text-muted-foreground">{fileName}</span>
+              <span className="truncate text-md text-subtle">{fileName}</span>
             )}
             <input
               ref={fileRef}
@@ -104,12 +109,12 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
           {parseResult && (
             <div className="space-y-2">
               {hasErrors && (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-md">
                   <div className="mb-1 flex items-center gap-1.5 font-medium text-destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <IconCircleInfoOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
                     {parseResult.errors.length} error{parseResult.errors.length > 1 ? "s" : ""}
                   </div>
-                  <ul className="list-inside list-disc space-y-0.5 text-xs text-destructive">
+                  <ul className="list-inside list-disc space-y-0.5 text-md text-destructive">
                     {parseResult.errors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -119,13 +124,16 @@ export function CsvImportModal({ open, onOpenChange, onImport }: Props) {
 
               {hasRows && (
                 <div className="rounded-md border bg-muted/30 p-3">
-                  <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <div className="mb-2 flex items-center gap-1.5 text-md font-medium text-strong">
+                    <IconCircleHalfDottedCheckOutline18
+                      {...nucleoIconProps({ size: 16, className: "text-primary" })}
+                      aria-hidden
+                    />
                     {parseResult.rows.length} row{parseResult.rows.length > 1 ? "s" : ""} ready to import
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead className="text-left text-muted-foreground">
+                    <table className="w-full text-2xs">
+                      <thead className="text-left text-subtle">
                         <tr>
                           <th className="pr-3 py-1 font-medium">Vehicle ID</th>
                           <th className="pr-3 py-1 font-medium">Count</th>

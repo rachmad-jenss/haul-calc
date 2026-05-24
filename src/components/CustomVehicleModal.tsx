@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { IconTrashOutline18 } from "nucleo-ui-essential-outline-18";
+import { nucleoIconProps } from "@/lib/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -155,7 +156,7 @@ export function CustomVehicleModal({ open, onOpenChange }: Props) {
                     aria-label={`Remove ${cv.name}`}
                     className="ml-2 shrink-0"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <IconTrashOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
                   </Button>
                 </li>
               ))}

@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, CircleDot, X } from "lucide-react";
+import {
+  IconCircleHalfDottedCheckOutline18,
+  IconProgressBarOutline18,
+  IconToggle3Outline18,
+  IconXmarkOutline18,
+} from "nucleo-ui-essential-outline-18";
 import { Button } from "@/components/ui/button";
 import { useCalcStore } from "@/lib/store";
+import { nucleoIconProps } from "@/lib/icons";
 import {
   buildWorkflowSteps,
   workflowDismissStorageKey,
@@ -12,12 +18,27 @@ import { cn } from "@/lib/utils";
 
 function StepIcon({ status }: { status: WorkflowStep["status"] }) {
   if (status === "done") {
-    return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />;
+    return (
+      <IconCircleHalfDottedCheckOutline18
+        {...nucleoIconProps({ size: 16, className: "text-primary" })}
+        aria-hidden
+      />
+    );
   }
   if (status === "current") {
-    return <CircleDot className="h-4 w-4 shrink-0 text-primary" />;
+    return (
+      <IconToggle3Outline18
+        {...nucleoIconProps({ size: 16, className: "text-primary" })}
+        aria-hidden
+      />
+    );
   }
-  return <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  return (
+    <IconProgressBarOutline18
+      {...nucleoIconProps({ size: 16, className: "text-subtle" })}
+      aria-hidden
+    />
+  );
 }
 
 export function WorkflowGuidanceBanner() {
@@ -82,8 +103,8 @@ export function WorkflowGuidanceBanner() {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Recommended workflow</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-md font-medium text-strong">Recommended workflow</p>
+          <p className="mt-0.5 text-md text-subtle">
             Fleet → Pavement → Economics → Report. Continue with the highlighted step.
           </p>
           <ol className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
@@ -92,10 +113,11 @@ export function WorkflowGuidanceBanner() {
                 <Link
                   to={step.route}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-sm outline-none transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-md outline-none transition-colors",
                     "hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
-                    step.status === "current" && "font-medium text-foreground",
-                    step.status === "upcoming" && "text-muted-foreground",
+                    step.status === "current" && "font-medium text-strong",
+                    step.status === "upcoming" && "text-subtle",
+                    step.status === "done" && "text-body",
                   )}
                   aria-current={step.status === "current" ? "step" : undefined}
                 >
@@ -114,7 +136,7 @@ export function WorkflowGuidanceBanner() {
           onClick={dismiss}
           aria-label="Dismiss workflow guidance for this session"
         >
-          <X className="h-4 w-4" />
+          <IconXmarkOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
         </Button>
       </div>
     </div>
