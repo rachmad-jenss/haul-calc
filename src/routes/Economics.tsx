@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
+import { labelWithUnit } from "@/lib/unit-convert";
 import { formatCurrency, toSafeCsvCell } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -73,7 +74,7 @@ export default function Economics() {
 // ---------------------------------------------------------------------------
 
 function OpexTab() {
-  const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult } =
+  const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult, unitSystem } =
     useCalcStore();
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -278,15 +279,25 @@ function OpexTab() {
                     <FieldError message={scenarioFieldError(s._id, "surface")} />
                   </div>
                   <NumField
-                    label="Thickness (mm)"
+                    label={labelWithUnit("Thickness", unitSystem, "thickness")}
                     value={s.thickness_mm}
                     error={scenarioFieldError(s._id, "thickness_mm")}
+                    description={
+                      unitSystem === "Imperial"
+                        ? "Enter value in millimeters (stored in SI)."
+                        : undefined
+                    }
                     onChange={(v) => update(s._id, { thickness_mm: v })}
                   />
                   <NumField
-                    label="Haul distance (km)"
+                    label={labelWithUnit("Haul distance", unitSystem, "distance")}
                     value={s.haul_distance_km}
                     error={scenarioFieldError(s._id, "haul_distance_km")}
+                    description={
+                      unitSystem === "Imperial"
+                        ? "Enter value in kilometers (stored in SI)."
+                        : undefined
+                    }
                     onChange={(v) => update(s._id, { haul_distance_km: v })}
                   />
                   <NumField

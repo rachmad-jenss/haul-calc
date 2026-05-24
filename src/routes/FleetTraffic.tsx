@@ -24,7 +24,14 @@ import { haulPave } from "@/lib/haulpave-client";
 import { cesaRequestSchema, fieldErrorsFromZod, firstError } from "@/lib/schemas";
 import { useCalcStore } from "@/lib/store";
 import type { CallError, FleetEntry, Vehicle } from "@/lib/types";
-import { convertPayload, unitLabels } from "@/lib/unit-convert";
+import {
+  convertPayload,
+  formatForceKn,
+  labelWithUnit,
+  PAYLOAD_TYPICAL_LOW_KN,
+  PAYLOAD_TYPICAL_MAX_KN,
+  unitLabels,
+} from "@/lib/unit-convert";
 import { cn, formatNumber, parseNumericInput, toSafeCsvCell } from "@/lib/utils";
 
 export default function FleetTraffic() {
@@ -282,7 +289,7 @@ export default function FleetTraffic() {
                     <th className="px-2 py-2 font-medium">Vehicle</th>
                     <th className="px-2 py-2 font-medium">Count</th>
                     <th className="px-2 py-2 font-medium">Trips/day</th>
-                    <th className="px-2 py-2 font-medium">Payload ({unitLabels[unitSystem].payload})</th>
+                    <th className="px-2 py-2 font-medium">Payload ({unitLabels.SI.payload})</th>
                     <th className="w-16" />
                   </tr>
                 </thead>
@@ -365,19 +372,22 @@ export default function FleetTraffic() {
                               })
                             }
                           />
-                          {unitSystem === 'Imperial' && (
+                          {unitSystem === "Imperial" && (
                             <span className="shrink-0 text-xs text-muted-foreground">
-                              {formatNumber(convertPayload(row.payload_kn, unitSystem), 1)} kips
+                              {formatNumber(convertPayload(row.payload_kn, unitSystem), 1)}{" "}
+                              {unitLabels.Imperial.payload}
                             </span>
                           )}
                         </div>
-                        {row.payload_kn > 5_000 && (
+                        {row.payload_kn > PAYLOAD_TYPICAL_MAX_KN && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="h-3 w-3 shrink-0" />
-                            Exceeds typical max (~5 000 kN)
+                            Exceeds typical max (~{formatForceKn(PAYLOAD_TYPICAL_MAX_KN, unitSystem)})
                           </p>
                         )}
-                        {unitSystem !== 'Imperial' && row.payload_kn > 0 && row.payload_kn < 200 && (
+                        {unitSystem === "SI" &&
+                          row.payload_kn > 0 &&
+                          row.payload_kn < PAYLOAD_TYPICAL_LOW_KN && (
                           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="h-3 w-3 shrink-0" />
                             Very low — verify units (kN)
@@ -503,14 +513,18 @@ export default function FleetTraffic() {
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-2 py-1 text-left font-medium">Axle (kN)</th>
+                      <th className="px-2 py-1 text-left font-medium">
+                        {labelWithUnit("Axle", unitSystem, "force")}
+                      </th>
                       <th className="px-2 py-1 text-right font-medium">Passes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {cesaResult.axle_load_distribution.map((a, i) => (
                       <tr key={i} className="border-t">
-                        <td className="px-2 py-1">{formatNumber(a.axle_kn, 0)}</td>
+                        <td className="px-2 py-1">
+                          {formatNumber(convertPayload(a.axle_kn, unitSystem), unitSystem === "Imperial" ? 1 : 0)}
+                        </td>
                         <td className="px-2 py-1 text-right">{formatNumber(a.passes, 0)}</td>
                       </tr>
                     ))}
