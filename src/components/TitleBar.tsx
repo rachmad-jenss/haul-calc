@@ -5,6 +5,7 @@ import {
   IconWindowExpandBottomRightOutline18,
   IconXmarkOutline18,
 } from "nucleo-ui-essential-outline-18";
+import { AppLogoMark } from "@/components/AppLogoMark";
 import { nucleoIconProps } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -81,9 +82,11 @@ export function TitleBar({ subtitle }: TitleBarProps) {
         className="flex min-w-0 flex-1 items-center gap-2 px-3"
         data-tauri-drag-region
       >
-        <span className="text-base font-semibold tracking-tight text-strong">HaulCalc</span>
+        <span className="inline-flex shrink-0" role="img" aria-label="HaulCalc">
+          <AppLogoMark className="h-5 w-5 text-strong" />
+        </span>
         {subtitle ? (
-          <span className="truncate text-2xs text-subtle" title={subtitle}>
+          <span className="min-w-0 truncate text-2xs text-subtle" title={subtitle}>
             {subtitle}
           </span>
         ) : null}
