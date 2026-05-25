@@ -6,6 +6,29 @@ mkdirSync(join("tests", "screenshots"), { recursive: true });
 
 export const SS = (name: string) => join("tests", "screenshots", `${name}.png`);
 
+export const STORE_KEY = "haul-calc-store";
+
+/** Persist v10 — app preferences only (matches production partialize). */
+export function preferencesPersistPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    version: 10,
+    state: {
+      theme: "system",
+      autoCheckUpdates: true,
+      unitSystem: "SI",
+      recentFiles: [],
+      ...overrides,
+    },
+  };
+}
+
+/** Seed in-memory project state in dev/E2E without persisting across restarts. */
+export async function seedStoreState(page: Page, partial: Record<string, unknown>) {
+  await page.evaluate((patch) => {
+    window.__haulCalcSeedStore?.(patch);
+  }, partial);
+}
+
 export async function navigate(page: Page, route: string) {
   await page.goto(`/#${route}`);
   await page.waitForTimeout(400);

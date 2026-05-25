@@ -14,6 +14,21 @@ import SensitivityAnalysis from "@/routes/SensitivityAnalysis";
 import Compare from "@/routes/Compare";
 import "@fontsource-variable/google-sans-flex/wght.css";
 import "@/styles/globals.css";
+import { useCalcStore } from "@/lib/store";
+
+declare global {
+  interface Window {
+    /** Dev/E2E only — seed in-memory project state without persisting across restarts. */
+    __haulCalcSeedStore?: (partial: Record<string, unknown>) => void;
+  }
+}
+
+if (import.meta.env.DEV) {
+  window.__haulCalcSeedStore = (partial) => {
+    useCalcStore.setState(partial);
+    useCalcStore.temporal.getState().clear();
+  };
+}
 
 const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;
 

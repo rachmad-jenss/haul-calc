@@ -59,6 +59,16 @@ interface StubMeta {
   stubMessage?: string;
 }
 
+/** Fields restored across app restarts (preferences only — not project data). */
+export const PERSISTED_PREFERENCE_KEYS = [
+  "theme",
+  "autoCheckUpdates",
+  "unitSystem",
+  "recentFiles",
+] as const;
+
+export type PersistedPreferenceKey = (typeof PERSISTED_PREFERENCE_KEYS)[number];
+
 export interface CalcStore {
   // Fleet & Traffic
   fleet: FleetEntry[];
@@ -146,6 +156,40 @@ export interface CalcStore {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setAutoCheckUpdates: (enabled: boolean) => void;
   setUnitSystem: (system: UnitSystem) => void;
+}
+
+export type PersistedPreferences = Pick<CalcStore, PersistedPreferenceKey>;
+
+function pickPersistedPreferences(state: CalcStore): PersistedPreferences {
+  return {
+    theme: state.theme,
+    autoCheckUpdates: state.autoCheckUpdates,
+    unitSystem: state.unitSystem,
+    recentFiles: state.recentFiles,
+  };
+}
+
+function mergePersistedPreferences(
+  persisted: unknown,
+  _current: CalcStore,
+): Partial<CalcStore> {
+  if (!persisted || typeof persisted !== "object") return {};
+  const p = persisted as Partial<PersistedPreferences>;
+  const patch: Partial<CalcStore> = {};
+  for (const key of PERSISTED_PREFERENCE_KEYS) {
+    if (p[key] !== undefined) {
+      (patch as Record<string, unknown>)[key] = p[key];
+    }
+  }
+  return patch;
+}
+
+function stripNonPreferencePersistedFields(s: Record<string, unknown>): void {
+  for (const key of Object.keys(s)) {
+    if (!(PERSISTED_PREFERENCE_KEYS as readonly string[]).includes(key)) {
+      delete s[key];
+    }
+  }
 }
 
 const DEFAULT_FLEET: FleetEntry[] = [
@@ -364,7 +408,7 @@ export const useCalcStore = create<CalcStore>()(
     }),
     {
       name: "haul-calc-store",
-      version: 9,
+      version: 10,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -411,45 +455,19 @@ export const useCalcStore = create<CalcStore>()(
         if (fromVersion < 9) {
           s.isProjectDirty = false;
         }
+        if (fromVersion < 10) {
+          stripNonPreferencePersistedFields(s);
+        }
         delete s.isProjectDirty;
         return s;
       },
       merge: (persisted, current) => ({
         ...current,
-        ...(persisted as object),
+        ...mergePersistedPreferences(persisted, current),
         // Never clobber edits that marked the project dirty before rehydrate finishes.
         isProjectDirty: current.isProjectDirty,
       }),
-      partialize: (state) => ({
-        fleet: state.fleet,
-        designLifeYears: state.designLifeYears,
-        workingDaysPerYear: state.workingDaysPerYear,
-        cesaResult: state.cesaResult,
-        cesaDirty: state.cesaDirty,
-        subgradeCbr: state.subgradeCbr,
-        coverages: state.coverages,
-        trhCategory: state.trhCategory,
-        cbrResult: state.cbrResult,
-        trhResult: state.trhResult,
-        pavementDirty: state.pavementDirty,
-        costScenarios: state.costScenarios,
-        costResult: state.costResult,
-        economicsDirty: state.economicsDirty,
-        lccaInputs: state.lccaInputs,
-        lccaResult: state.lccaResult,
-        customVehicles: state.customVehicles,
-        customMaterials: state.customMaterials,
-        projectName: state.projectName,
-        authorName: state.authorName,
-        reportSummary: state.reportSummary,
-        activeFileName: state.activeFileName,
-        activeFilePath: state.activeFilePath,
-        recentFiles: state.recentFiles,
-        theme: state.theme,
-        autoCheckUpdates: state.autoCheckUpdates,
-        unitSystem: state.unitSystem,
-        boqGeometry: state.boqGeometry,
-      }),
+      partialize: (state) => pickPersistedPreferences(state),
       onRehydrateStorage: () => (_state, error) => {
         const apply = () => {
           if (!error) {
