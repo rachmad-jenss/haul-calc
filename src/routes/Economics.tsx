@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -69,19 +69,22 @@ function formatChartLegend(value: string, map: Record<string, string>) {
 // ---------------------------------------------------------------------------
 
 export default function Economics() {
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Economics"
         description="Compare operating cost and life-cycle cost across pavement scenarios."
+        actions={headerActions}
       />
       <Tabs defaultValue="opex" className="flex flex-1 flex-col overflow-auto p-6">
-        <TabsList className="mb-4 w-fit">
+        <TabsList className="mb-4 w-fit gap-1">
           <TabsTrigger value="opex">Operating Cost</TabsTrigger>
           <TabsTrigger value="lcca">LCCA</TabsTrigger>
         </TabsList>
         <TabsContent value="opex" className="flex-1">
-          <OpexTab />
+          <OpexTab setHeaderActions={setHeaderActions} />
         </TabsContent>
         <TabsContent value="lcca" className="flex-1">
           <LccaTab />
@@ -95,7 +98,7 @@ export default function Economics() {
 // Operating Cost (original content, now a sub-component)
 // ---------------------------------------------------------------------------
 
-function OpexTab() {
+function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) => void }) {
   const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult, unitSystem } =
     useCalcStore();
   const money = useMoneyFormatter();
@@ -146,7 +149,7 @@ function OpexTab() {
 
   const remove = (id: string) => setCostScenarios(costScenarios.filter((s) => s._id !== id));
 
-  const compute = async () => {
+  const compute = useCallback(async () => {
     const parsed = compareRequestSchema.safeParse(costScenarios);
     if (!parsed.success) {
       setFieldErrors(fieldErrorsFromZod(parsed.error));
@@ -164,7 +167,21 @@ function OpexTab() {
     } finally {
       setRunning(false);
     }
-  };
+  }, [costScenarios, setCostResult]);
+
+  useEffect(() => {
+    setHeaderActions(
+      <Button
+        variant="default"
+        onClick={() => void compute()}
+        disabled={running || costScenarios.length < 2}
+      >
+        <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
+        {running ? "Computing..." : "Compare scenarios"}
+      </Button>,
+    );
+    return () => setHeaderActions(null);
+  }, [setHeaderActions, compute, running, costScenarios.length]);
 
   const handleExport = async () => {
     if (!chartRef.current) return;
@@ -241,17 +258,11 @@ function OpexTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-end gap-1">
-        <Button onClick={compute} disabled={running || costScenarios.length < 2}>
-          <IconGauge3Outline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
-          {running ? "Computing..." : "Compare scenarios"}
-        </Button>
-        {costScenarios.length < 2 && (
-          <p className="text-base text-subtle">
-            Add at least two scenarios to compare operating costs.
-          </p>
-        )}
-      </div>
+      {costScenarios.length < 2 && (
+        <p className="text-base text-subtle">
+          Add at least two scenarios to compare operating costs.
+        </p>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr,1fr]">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
