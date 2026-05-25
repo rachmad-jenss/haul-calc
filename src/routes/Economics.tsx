@@ -25,7 +25,7 @@ import { ChartAccessibleView } from "@/components/ChartAccessibleView";
 import { PageHeader } from "@/components/PageHeader";
 import { ResultStaleBadge } from "@/components/ResultStaleBadge";
 import { StubBanner } from "@/components/StubBanner";
-import { FieldError, NumField } from "@/components/FormFields";
+import { CurrencyNumField, FieldError, NumField } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -47,7 +47,7 @@ import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
 import { labelWithUnit } from "@/lib/unit-convert";
-import { formatCurrency, toSafeCsvCell } from "@/lib/utils";
+import { currencyUnitSuffix, useMoneyFormatter, toSafeCsvCell } from "@/lib/utils";
 
 const OPEX_STACKED_LEGEND: Record<string, string> = {
   Tires: "Tires — annual cost (USD)",
@@ -101,6 +101,8 @@ export default function Economics() {
 function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) => void }) {
   const { costScenarios, costResult, economicsDirty, setCostScenarios, setCostResult, unitSystem } =
     useCalcStore();
+  const money = useMoneyFormatter();
+  const costUnit = currencyUnitSuffix(money.currency);
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showData, setShowData] = useState(true);
@@ -202,16 +204,22 @@ function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) 
       });
       if (!path) return;
       
-      const header = ["Scenario", "Tires (USD/yr)", "Fuel (USD/yr)", "Maintenance (USD/yr)", "Total (USD/yr)"];
+      const header = [
+        "Scenario",
+        `Tires (${costUnit}/yr)`,
+        `Fuel (${costUnit}/yr)`,
+        `Maintenance (${costUnit}/yr)`,
+        `Total (${costUnit}/yr)`,
+      ];
       const lines = [header.join(",")];
       for (const s of costResult.scenarios) {
         const total = s.tire_cost_usd_per_year + s.fuel_cost_usd_per_year + s.maintenance_cost_usd_per_year;
         lines.push([
           toSafeCsvCell(s.name),
-          s.tire_cost_usd_per_year.toFixed(2),
-          s.fuel_cost_usd_per_year.toFixed(2),
-          s.maintenance_cost_usd_per_year.toFixed(2),
-          total.toFixed(2),
+          toSafeCsvCell(money.formatMoney(s.tire_cost_usd_per_year)),
+          toSafeCsvCell(money.formatMoney(s.fuel_cost_usd_per_year)),
+          toSafeCsvCell(money.formatMoney(s.maintenance_cost_usd_per_year)),
+          toSafeCsvCell(money.formatMoney(total)),
         ].join(","));
       }
       await writeTextFile(path, lines.join("\n"));
@@ -402,8 +410,20 @@ function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) 
                       <BarChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <YAxis
+                          tickFormatter={(v) => {
+                            const d = money.toDisplay(v);
+                            if (money.currency === "IDR") {
+                              return d >= 1_000_000
+                                ? `${(d / 1_000_000).toFixed(0)}M`
+                                : d >= 1_000
+                                  ? `${(d / 1_000).toFixed(0)}k`
+                                  : money.formatGrouped(d);
+                            }
+                            return `$${(d / 1000).toFixed(0)}k`;
+                          }}
+                        />
+                        <Tooltip formatter={(value: number) => money.formatMoney(value)} />
                         <Legend formatter={(value) => formatChartLegend(String(value), OPEX_STACKED_LEGEND)} />
                         <Bar dataKey="Tires" stackId="a" fill="#ef4444" name="Tires" />
                         <Bar dataKey="Fuel" stackId="a" fill="#f59e0b" name="Fuel" />
@@ -423,6 +443,7 @@ function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) 
 }
 
 function SummaryTable({ rows }: { rows: ScenarioComparison[] }) {
+  const money = useMoneyFormatter();
   if (!rows.length) return null;
   return (
     <table className="w-full text-base">
@@ -448,16 +469,16 @@ function SummaryTable({ rows }: { rows: ScenarioComparison[] }) {
             <tr key={i} className="border-t">
               <td className="px-2 py-1">{s.name}</td>
               <td className="px-2 py-1 text-right font-mono">
-                {formatCurrency(s.tire_cost_usd_per_year)}
+                {money.formatMoney(s.tire_cost_usd_per_year)}
               </td>
               <td className="px-2 py-1 text-right font-mono">
-                {formatCurrency(s.fuel_cost_usd_per_year)}
+                {money.formatMoney(s.fuel_cost_usd_per_year)}
               </td>
               <td className="px-2 py-1 text-right font-mono">
-                {formatCurrency(s.maintenance_cost_usd_per_year)}
+                {money.formatMoney(s.maintenance_cost_usd_per_year)}
               </td>
               <td className="px-2 py-1 text-right font-mono font-semibold">
-                {formatCurrency(total)}
+                {money.formatMoney(total)}
               </td>
             </tr>
           );
@@ -475,6 +496,8 @@ const SCENARIO_COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 
 function LccaTab() {
   const { costScenarios, lccaInputs, lccaResult, setLccaInputs, setLccaResult } = useCalcStore();
+  const money = useMoneyFormatter();
+  const costUnit = currencyUnitSuffix(money.currency);
   const [exporting, setExporting] = useState(false);
   const [showSummaryData, setShowSummaryData] = useState(true);
   const [showNpvData, setShowNpvData] = useState(true);
@@ -532,13 +555,13 @@ function LccaTab() {
       });
       if (!path) return;
       
-      const header = ["Scenario", "NPV (USD)", "Annual Equivalent Cost (USD/yr)"];
+      const header = ["Scenario", `NPV (${costUnit})`, `Annual Equivalent Cost (${costUnit}/yr)`];
       const lines = [header.join(",")];
       for (const s of lccaResult.scenarios) {
         lines.push([
           toSafeCsvCell(s.name),
-          s.npvUsd.toFixed(2),
-          s.annualEquivalentCostUsd.toFixed(2),
+          toSafeCsvCell(money.formatMoney(s.npvUsd)),
+          toSafeCsvCell(money.formatMoney(s.annualEquivalentCostUsd)),
         ].join(","));
       }
       await writeTextFile(path, lines.join("\n"));
@@ -620,14 +643,14 @@ function LccaTab() {
               <div key={s._id} className="rounded border p-3">
                 <p className="mb-2 text-md font-medium text-strong">{s.name}</p>
                 <div className="grid grid-cols-3 gap-2">
-                  <NumField
-                    label="Construction cost (USD)"
+                  <CurrencyNumField
+                    label={`Construction cost (${costUnit})`}
                     value={s.constructionCostUsd}
                     onChange={(v) => updateScenario(s._id, { constructionCostUsd: v })}
                     min={0}
                   />
-                  <NumField
-                    label="Resurfacing cost (USD)"
+                  <CurrencyNumField
+                    label={`Resurfacing cost (${costUnit})`}
                     value={s.resurfacingCostUsd}
                     onChange={(v) => updateScenario(s._id, { resurfacingCostUsd: v })}
                     min={0}
@@ -729,8 +752,17 @@ function LccaTab() {
                       <BarChart data={npvChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
-                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <YAxis
+                          tickFormatter={(v) => {
+                            const d = money.toDisplay(v);
+                            return d >= 1_000_000
+                              ? `${(d / 1_000_000).toFixed(1)}M`
+                              : d >= 1_000
+                                ? `${(d / 1_000).toFixed(0)}k`
+                                : money.formatGrouped(d);
+                          }}
+                        />
+                        <Tooltip formatter={(value: number) => money.formatMoney(value)} />
                         <Legend formatter={(value) => formatChartLegend(String(value), LCCA_NPV_LEGEND)} />
                         <Bar dataKey="NPV (USD)" fill="#3b82f6" name="NPV (USD)" />
                         <Bar dataKey="AEC (USD/yr)" fill="#10b981" name="AEC (USD/yr)" />
@@ -760,10 +792,19 @@ function LccaTab() {
                       <LineChart data={cumulativeData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="year" label={{ value: "Year", position: "insideBottom", offset: -5 }} />
-                        <YAxis tickFormatter={(v) => `$${(v / 1_000_000).toFixed(1)}M`} />
-                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        <YAxis
+                          tickFormatter={(v) => {
+                            const d = money.toDisplay(v);
+                            return d >= 1_000_000
+                              ? `${(d / 1_000_000).toFixed(1)}M`
+                              : d >= 1_000
+                                ? `${(d / 1_000).toFixed(0)}k`
+                                : money.formatGrouped(d);
+                          }}
+                        />
+                        <Tooltip formatter={(value: number) => money.formatMoney(value)} />
                         <Legend
-                          formatter={(value) => `${value} — cumulative PV (USD)`}
+                          formatter={(value) => `${value} — cumulative PV (${costUnit})`}
                         />
                         {lccaResult.scenarios.map((s, i) => (
                           <Line
@@ -795,6 +836,8 @@ function NpvComparisonTable({
 }: {
   rows: { name: string; "NPV (USD)": number; "AEC (USD/yr)": number }[];
 }) {
+  const money = useMoneyFormatter();
+  const costUnit = currencyUnitSuffix(money.currency);
   if (!rows.length) return null;
   return (
     <table className="w-full text-base">
@@ -802,17 +845,17 @@ function NpvComparisonTable({
       <thead className="text-2xs uppercase text-subtle">
         <tr>
           <th className="px-2 py-1 text-left font-medium">Scenario</th>
-          <th className="px-2 py-1 text-right font-medium">NPV (USD)</th>
-          <th className="px-2 py-1 text-right font-medium">AEC (USD/yr)</th>
+          <th className="px-2 py-1 text-right font-medium">NPV ({costUnit})</th>
+          <th className="px-2 py-1 text-right font-medium">AEC ({costUnit}/yr)</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row) => (
           <tr key={row.name} className="border-t">
             <td className="px-2 py-1">{row.name}</td>
-            <td className="px-2 py-1 text-right font-mono">{formatCurrency(row["NPV (USD)"])}</td>
+            <td className="px-2 py-1 text-right font-mono">{money.formatMoney(row["NPV (USD)"])}</td>
             <td className="px-2 py-1 text-right font-mono">
-              {formatCurrency(row["AEC (USD/yr)"])}
+              {money.formatMoney(row["AEC (USD/yr)"])}
             </td>
           </tr>
         ))}
@@ -822,6 +865,7 @@ function NpvComparisonTable({
 }
 
 function CumulativePvTable({ rows }: { rows: Record<string, number | string>[] }) {
+  const money = useMoneyFormatter();
   if (!rows.length) return null;
   const scenarioKeys = Object.keys(rows[0]).filter((k) => k !== "year");
   return (
@@ -845,7 +889,7 @@ function CumulativePvTable({ rows }: { rows: Record<string, number | string>[] }
             <td className="px-2 py-1 font-mono">{row.year}</td>
             {scenarioKeys.map((key) => (
               <td key={key} className="px-2 py-1 text-right font-mono">
-                {formatCurrency(Number(row[key]))}
+                {money.formatMoney(Number(row[key]))}
               </td>
             ))}
           </tr>
@@ -860,6 +904,7 @@ function LccaSummaryTable({
 }: {
   rows: { _id: string; name: string; npvUsd: number; annualEquivalentCostUsd: number }[];
 }) {
+  const money = useMoneyFormatter();
   if (!rows.length) return null;
   const best = rows.reduce((a, b) => (a.npvUsd < b.npvUsd ? a : b));
   return (
@@ -885,9 +930,9 @@ function LccaSummaryTable({
                 )}
               </span>
             </td>
-            <td className="px-2 py-1 text-right font-mono">{formatCurrency(s.npvUsd)}</td>
+            <td className="px-2 py-1 text-right font-mono">{money.formatMoney(s.npvUsd)}</td>
             <td className="px-2 py-1 text-right font-mono">
-              {formatCurrency(s.annualEquivalentCostUsd)}/yr
+              {money.formatMoney(s.annualEquivalentCostUsd)}/yr
             </td>
           </tr>
         ))}

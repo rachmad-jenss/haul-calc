@@ -1,7 +1,15 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn, parseNumericInput } from "@/lib/utils";
+import {
+  cn,
+  formatGroupedAmount,
+  parseDisplayAmountToUsd,
+  parseNumericInput,
+  toDisplayAmount,
+} from "@/lib/utils";
+import type { DisplayCurrency } from "@/lib/store";
+import { useCalcStore } from "@/lib/store";
 
 const fieldErrorClass = "text-xs text-destructive";
 
@@ -55,6 +63,93 @@ export function NumField({
         aria-describedby={describedBy}
         className={cn(error && "border-destructive focus-visible:ring-destructive")}
         onChange={(e) => onChange(parseNumericInput(e.target.value, value))}
+      />
+      {description ? (
+        <p id={descId} className="text-md text-subtle">
+          {description}
+        </p>
+      ) : null}
+      <FieldError id={errorId} message={error} />
+    </div>
+  );
+}
+
+export function CurrencyNumField({
+  id,
+  label,
+  value,
+  onChange,
+  min,
+  error,
+  description,
+  disabled,
+  currency: currencyProp,
+  rate: rateProp,
+}: {
+  id?: string;
+  label: string;
+  /** Stored value in USD (engine currency). */
+  value: number;
+  onChange: (usd: number) => void;
+  min?: number;
+  error?: string;
+  description?: string;
+  disabled?: boolean;
+  currency?: DisplayCurrency;
+  rate?: number;
+}) {
+  const storeCurrency = useCalcStore((s) => s.currency);
+  const storeRate = useCalcStore((s) => s.usdToIdrRate);
+  const currency = currencyProp ?? storeCurrency;
+  const rate = rateProp ?? storeRate;
+
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const errorId = `${inputId}-error`;
+  const descId = description ? `${inputId}-description` : undefined;
+  const describedBy = [error ? errorId : undefined, descId].filter(Boolean).join(" ") || undefined;
+
+  const [focused, setFocused] = useState(false);
+  const [text, setText] = useState(() =>
+    formatGroupedAmount(toDisplayAmount(value, currency, rate), currency),
+  );
+
+  useEffect(() => {
+    if (!focused) {
+      setText(formatGroupedAmount(toDisplayAmount(value, currency, rate), currency));
+    }
+  }, [value, currency, rate, focused]);
+
+  const commit = (raw: string) => {
+    let usd = parseDisplayAmountToUsd(raw, value, currency, rate);
+    if (min != null && Number.isFinite(min)) usd = Math.max(min, usd);
+    onChange(usd);
+    setText(formatGroupedAmount(toDisplayAmount(usd, currency, rate), currency));
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={inputId}>{label}</Label>
+      <Input
+        id={inputId}
+        type="text"
+        inputMode="numeric"
+        value={text}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        className={cn(error && "border-destructive focus-visible:ring-destructive")}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false);
+          commit(text);
+        }}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.currentTarget.blur();
+          }
+        }}
       />
       {description ? (
         <p id={descId} className="text-md text-subtle">
