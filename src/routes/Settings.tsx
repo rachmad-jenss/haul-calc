@@ -16,7 +16,7 @@ import { Row } from "@/components/FormFields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { haulPave, type SidecarStatus } from "@/lib/haulpave-client";
-import { useCalcStore } from "@/lib/store";
+import { useCalcStore, type DisplayCurrency } from "@/lib/store";
 import type { CallError } from "@/lib/types";
 import type { UnitSystem } from "@/lib/unit-convert";
 
@@ -46,7 +46,16 @@ type UpdateState =
   | { phase: "error"; message: string };
 
 export default function Settings() {
-  const { unitSystem, setUnitSystem, autoCheckUpdates, setAutoCheckUpdates } = useCalcStore();
+  const {
+    unitSystem,
+    setUnitSystem,
+    autoCheckUpdates,
+    setAutoCheckUpdates,
+    currency,
+    setCurrency,
+    usdToIdrRate,
+    setUsdToIdrRate,
+  } = useCalcStore();
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [restarting, setRestarting] = useState(false);
@@ -288,7 +297,12 @@ export default function Settings() {
               <AutoCheckToggle value={autoCheckUpdates} onChange={setAutoCheckUpdates} />
             </Row>
             <Row label="Currency">
-              <span className="text-base font-medium text-strong">USD</span>
+              <CurrencySettings
+                currency={currency}
+                usdToIdrRate={usdToIdrRate}
+                onCurrencyChange={setCurrency}
+                onRateChange={setUsdToIdrRate}
+              />
             </Row>
             <Row label="Geometric design">
               <span className="text-base text-subtle">Out of scope (v1)</span>
@@ -335,6 +349,84 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function CurrencySettings({
+  currency,
+  usdToIdrRate,
+  onCurrencyChange,
+  onRateChange,
+}: {
+  currency: DisplayCurrency;
+  usdToIdrRate: number;
+  onCurrencyChange: (currency: DisplayCurrency) => void;
+  onRateChange: (rate: number) => void;
+}) {
+  const [rateText, setRateText] = useState(String(usdToIdrRate));
+  const [rateError, setRateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRateText(String(usdToIdrRate));
+    setRateError(null);
+  }, [usdToIdrRate]);
+
+  const commitRate = () => {
+    const parsed = Number(rateText.replace(/,/g, ""));
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setRateError("Enter a positive number");
+      return;
+    }
+    setRateError(null);
+    onRateChange(parsed);
+    setRateText(String(parsed));
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        {(["USD", "IDR"] as const).map((code) => (
+          <label key={code} className="flex cursor-pointer items-center gap-1.5">
+            <input
+              type="radio"
+              name="display-currency"
+              value={code}
+              checked={currency === code}
+              onChange={() => onCurrencyChange(code)}
+              className="accent-primary"
+            />
+            <span className="text-base font-medium text-strong">{code}</span>
+          </label>
+        ))}
+      </div>
+      {currency === "IDR" && (
+        <div className="space-y-1">
+          <label className="flex flex-wrap items-center gap-2 text-base text-subtle">
+            <span>USD to IDR rate</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={rateText}
+              onChange={(e) => {
+                setRateText(e.target.value);
+                setRateError(null);
+              }}
+              onBlur={commitRate}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRate();
+              }}
+              className="w-32 rounded-md border border-border bg-background px-2 py-1 font-mono text-strong"
+              aria-invalid={rateError != null}
+            />
+          </label>
+          {rateError && (
+            <p className="text-sm text-destructive" role="alert">
+              {rateError}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

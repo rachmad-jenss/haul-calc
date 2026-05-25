@@ -59,12 +59,18 @@ interface StubMeta {
   stubMessage?: string;
 }
 
+export type DisplayCurrency = "USD" | "IDR";
+
+export const DEFAULT_USD_TO_IDR_RATE = 16_000;
+
 /** Fields restored across app restarts (preferences only — not project data). */
 export const PERSISTED_PREFERENCE_KEYS = [
   "theme",
   "autoCheckUpdates",
   "unitSystem",
   "recentFiles",
+  "currency",
+  "usdToIdrRate",
 ] as const;
 
 export type PersistedPreferenceKey = (typeof PERSISTED_PREFERENCE_KEYS)[number];
@@ -119,6 +125,10 @@ export interface CalcStore {
   // Unit system
   unitSystem: UnitSystem;
 
+  // Display currency (engine remains USD)
+  currency: DisplayCurrency;
+  usdToIdrRate: number;
+
   // BoQ road geometry
   boqGeometry: BoqGeometry;
   setBoqGeometry: (geometry: BoqGeometry) => void;
@@ -156,6 +166,8 @@ export interface CalcStore {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setAutoCheckUpdates: (enabled: boolean) => void;
   setUnitSystem: (system: UnitSystem) => void;
+  setCurrency: (currency: DisplayCurrency) => void;
+  setUsdToIdrRate: (rate: number) => void;
 }
 
 export type PersistedPreferences = Pick<CalcStore, PersistedPreferenceKey>;
@@ -166,6 +178,8 @@ function pickPersistedPreferences(state: CalcStore): PersistedPreferences {
     autoCheckUpdates: state.autoCheckUpdates,
     unitSystem: state.unitSystem,
     recentFiles: state.recentFiles,
+    currency: state.currency,
+    usdToIdrRate: state.usdToIdrRate,
   };
 }
 
@@ -271,6 +285,9 @@ export const useCalcStore = create<CalcStore>()(
       autoCheckUpdates: true,
 
       unitSystem: 'SI',
+
+      currency: 'USD',
+      usdToIdrRate: DEFAULT_USD_TO_IDR_RATE,
 
       boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
 
@@ -404,11 +421,16 @@ export const useCalcStore = create<CalcStore>()(
       setTheme: (theme) => set({ theme }),
       setAutoCheckUpdates: (autoCheckUpdates) => set({ autoCheckUpdates }),
       setUnitSystem: (unitSystem) => set({ unitSystem }),
+      setCurrency: (currency) => set({ currency }),
+      setUsdToIdrRate: (usdToIdrRate) => {
+        if (!Number.isFinite(usdToIdrRate) || usdToIdrRate <= 0) return;
+        set({ usdToIdrRate });
+      },
       setBoqGeometry: (boqGeometry) => set({ boqGeometry, isProjectDirty: true }),
     }),
     {
       name: "haul-calc-store",
-      version: 10,
+      version: 11,
       migrate: (persisted: unknown, fromVersion: number) => {
         const s = persisted as Record<string, unknown>;
         if (fromVersion < 1 && Array.isArray(s.costScenarios)) {
@@ -457,6 +479,13 @@ export const useCalcStore = create<CalcStore>()(
         }
         if (fromVersion < 10) {
           stripNonPreferencePersistedFields(s);
+        }
+        if (fromVersion < 11) {
+          if (s.currency !== "USD" && s.currency !== "IDR") s.currency = "USD";
+          const rate = s.usdToIdrRate;
+          if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0) {
+            s.usdToIdrRate = DEFAULT_USD_TO_IDR_RATE;
+          }
         }
         delete s.isProjectDirty;
         return s;
