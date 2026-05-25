@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { nucleoIconProps } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildCompareReportSnapshot } from "@/lib/compare-report";
 import { parseSnapshot, type Snapshot } from "@/lib/project-file";
 import { resolveActiveFilePath } from "@/lib/file-binding";
 import { useCalcStore } from "@/lib/store";
@@ -48,7 +49,7 @@ function bestIdx(values: (number | null)[], mode: "min" | "max"): number | null 
 export default function Compare() {
   const [projects, setProjects] = useState<LoadedProject[]>([]);
   const [loading, setLoading] = useState(false);
-  const { activeFileName, activeFilePath, recentFiles } = useCalcStore();
+  const { activeFileName, activeFilePath, recentFiles, setCompareSnapshot } = useCalcStore();
   const money = useMoneyFormatter();
   const costUnit = currencyUnitSuffix(money.currency);
   const workspacePath = resolveActiveFilePath({ activeFilePath, activeFileName, recentFiles });
@@ -98,6 +99,14 @@ export default function Compare() {
   };
 
   const hasProjects = projects.length >= 2;
+
+  useEffect(() => {
+    setCompareSnapshot(
+      buildCompareReportSnapshot(
+        projects.map((p) => ({ fileName: p.fileName, snapshot: p.snapshot })),
+      ),
+    );
+  }, [projects, setCompareSnapshot]);
 
   return (
     <div className="flex flex-col">

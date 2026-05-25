@@ -2,6 +2,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CesaResult, PavementResult, CostComparison, PavementLayer } from "@/lib/types";
 import { computeBoq } from "@/lib/boq";
+import {
+  compareTableSections,
+  type CompareReportSnapshot,
+} from "@/lib/compare-report";
 import type { SensitivityReportSnapshot } from "@/lib/sensitivity-report";
 import {
   formatSensitivityX,
@@ -24,6 +28,7 @@ export interface IncludeSections {
   chartLccaCumulative: boolean;
   sensitivity: boolean;
   chartSensitivity: boolean;
+  compare: boolean;
 }
 
 export const DEFAULT_SECTIONS: IncludeSections = {
@@ -36,6 +41,7 @@ export const DEFAULT_SECTIONS: IncludeSections = {
   chartLccaCumulative: true,
   sensitivity: true,
   chartSensitivity: true,
+  compare: true,
 };
 
 export interface PdfChartImages {
@@ -59,6 +65,7 @@ export interface PdfData {
   usdToIdrRate?: number;
   chartImages?: PdfChartImages;
   sensitivitySnapshot?: SensitivityReportSnapshot | null;
+  compareSnapshot?: CompareReportSnapshot | null;
   unitSystem?: UnitSystem;
 }
 
@@ -343,6 +350,38 @@ export function generatePdf(data: PdfData): Blob {
       data.chartImages.sensitivity,
       y,
     );
+  }
+
+  if (data.compareSnapshot && inc.compare && data.compareSnapshot.projects.length >= 2) {
+    const currency = data.currency ?? "USD";
+    const rate = data.usdToIdrRate ?? 1;
+    const names = data.compareSnapshot.projects.map((p) => p.projectName);
+    const tableSections = compareTableSections(data.compareSnapshot, currency, rate);
+
+    y = ensureSpace(doc, y, 30);
+    y = sectionTitle(doc, "Compare Projects", y);
+    y = keyValue(doc, "Projects", names.join(" · "), y);
+    y += 4;
+
+    for (const section of tableSections) {
+      y = ensureSpace(doc, y, 24);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.primary);
+      doc.text(section.title, 14, y);
+      y += 6;
+
+      if (section.rows.length === 0) continue;
+      autoTable(doc, {
+        startY: y,
+        head: [["Metric", ...names]],
+        body: section.rows.map((row) => [row.label, ...row.cells]),
+        headStyles: { fillColor: COLORS.headerBg, textColor: COLORS.primary, fontStyle: "bold" },
+        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: 14, right: 14 },
+      });
+      y = currentY(doc) + 8;
+    }
   }
 
   // Material BoQ
