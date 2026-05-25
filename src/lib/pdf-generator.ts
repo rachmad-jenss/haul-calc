@@ -11,6 +11,8 @@ export interface IncludeSections {
   trh14: boolean;
   cost: boolean;
   boq: boolean;
+  chartOpex: boolean;
+  chartLccaCumulative: boolean;
 }
 
 export const DEFAULT_SECTIONS: IncludeSections = {
@@ -19,7 +21,14 @@ export const DEFAULT_SECTIONS: IncludeSections = {
   trh14: true,
   cost: true,
   boq: true,
+  chartOpex: true,
+  chartLccaCumulative: true,
 };
+
+export interface PdfChartImages {
+  opex?: string;
+  lccaCumulative?: string;
+}
 
 export interface PdfData {
   projectName: string;
@@ -34,6 +43,7 @@ export interface PdfData {
   includeSections?: IncludeSections;
   currency?: DisplayCurrency;
   usdToIdrRate?: number;
+  chartImages?: PdfChartImages;
 }
 
 const COLORS = {
@@ -81,6 +91,31 @@ function keyValue(doc: jsPDF, label: string, value: string, y: number): number {
 
 function currentY(doc: jsPDF): number {
   return (doc as unknown as { lastAutoTable: { finalY?: number } }).lastAutoTable?.finalY ?? 0;
+}
+
+function ensureSpace(doc: jsPDF, y: number, neededMm: number): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  if (y + neededMm > pageH - 16) {
+    doc.addPage();
+    return 20;
+  }
+  return y;
+}
+
+function embedChartImage(
+  doc: jsPDF,
+  title: string,
+  dataUrl: string,
+  y: number,
+): number {
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const imgW = pageW - 2 * margin;
+  const imgH = imgW * 0.42;
+  y = ensureSpace(doc, y, imgH + 14);
+  y = sectionTitle(doc, title, y);
+  doc.addImage(dataUrl, "JPEG", margin, y, imgW, imgH);
+  return y + imgH + 8;
 }
 
 export function generatePdf(data: PdfData): Blob {
@@ -207,6 +242,15 @@ export function generatePdf(data: PdfData): Blob {
       styles: { fontSize: 8, cellPadding: 2 },
       margin: { left: 14, right: 14 },
     });
+    y = currentY(doc) + 10;
+  }
+
+  if (data.chartImages?.opex && inc.chartOpex) {
+    y = embedChartImage(doc, "Operating Cost Comparison Chart", data.chartImages.opex, y);
+  }
+
+  if (data.chartImages?.lccaCumulative && inc.chartLccaCumulative) {
+    embedChartImage(doc, "LCCA Cumulative Present Value", data.chartImages.lccaCumulative, y);
   }
 
   // Material BoQ

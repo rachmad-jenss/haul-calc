@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   IconDesktopArrowDownOutline18,
   IconFileContentOutline18,
@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { generatePdf, DEFAULT_SECTIONS, type IncludeSections } from "@/lib/pdf-generator";
 import { computeBoq, type BoqRow } from "@/lib/boq";
 import { PageHeader } from "@/components/PageHeader";
+import {
+  PdfReportChartHost,
+  type PdfReportChartHostHandle,
+} from "@/components/PdfReportChartHost";
 import { ReportSummaryPreview } from "@/components/ReportSummaryPreview";
 import { StubBanner } from "@/components/StubBanner";
 import { NumField } from "@/components/FormFields";
@@ -30,6 +34,7 @@ export default function Reports() {
     cbrResult,
     trhResult,
     costResult,
+    lccaResult,
     projectName,
     authorName,
     reportSummary,
@@ -43,7 +48,9 @@ export default function Reports() {
   } = useCalcStore();
 
   const [running, setRunning] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [sections, setSections] = useState<IncludeSections>({ ...DEFAULT_SECTIONS });
+  const chartHostRef = useRef<PdfReportChartHostHandle>(null);
 
   const hasData = !!(cesaResult || cbrResult || trhResult || costResult);
 
@@ -108,7 +115,12 @@ export default function Reports() {
 
   const exportPdf = async () => {
     if (!reportSummary) return;
+    setExportingPdf(true);
     try {
+      const chartImages = await chartHostRef.current?.capture({
+        chartOpex: sections.chartOpex,
+        chartLccaCumulative: sections.chartLccaCumulative,
+      });
       const boqLayers = (cbrResult ?? trhResult)?.layers ?? [];
       const blob = generatePdf({
         projectName,
@@ -123,6 +135,7 @@ export default function Reports() {
         includeSections: sections,
         currency,
         usdToIdrRate,
+        chartImages,
       });
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,
@@ -134,6 +147,8 @@ export default function Reports() {
       toast.success(`Saved to ${path}`);
     } catch (err) {
       toast.error(`PDF export failed: ${(err as Error).message}`);
+    } finally {
+      setExportingPdf(false);
     }
   };
 
@@ -148,9 +163,9 @@ export default function Reports() {
               <IconFileContentOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
               {running ? "Generating..." : "Generate summary"}
             </Button>
-            <Button variant="outline" onClick={exportPdf} disabled={!reportSummary}>
+            <Button variant="outline" onClick={exportPdf} disabled={!reportSummary || exportingPdf}>
               <IconSquareDottedArrowBottomRightOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
-              Export PDF
+              {exportingPdf ? "Exporting PDF…" : "Export PDF"}
             </Button>
             <Button onClick={exportJson} disabled={!reportSummary}>
               <IconDesktopArrowDownOutline18 {...nucleoIconProps({ size: 16 })} aria-hidden />
@@ -190,6 +205,7 @@ export default function Reports() {
               <DataBadge label="CBR thickness" active={!!cbrResult} />
               <DataBadge label="TRH 14 thickness" active={!!trhResult} />
               <DataBadge label="Cost comparison" active={!!costResult} />
+              <DataBadge label="LCCA results" active={!!lccaResult} />
               {!hasData && (
                 <p className="pt-1 text-2xs text-amber-600 dark:text-amber-400">
                   Run calculations on other tabs first for a complete report.
@@ -235,6 +251,20 @@ export default function Reports() {
                   disabled={!(cbrResult || trhResult)}
                   onToggle={() => toggleSection("boq")}
                 />
+                <SectionToggle
+                  id="sec-chart-opex"
+                  label="Opex chart image"
+                  checked={sections.chartOpex}
+                  disabled={!costResult}
+                  onToggle={() => toggleSection("chartOpex")}
+                />
+                <SectionToggle
+                  id="sec-chart-lcca"
+                  label="LCCA cumulative chart"
+                  checked={sections.chartLccaCumulative}
+                  disabled={!lccaResult}
+                  onToggle={() => toggleSection("chartLccaCumulative")}
+                />
               </div>
             </div>
           </CardContent>
@@ -268,6 +298,7 @@ export default function Reports() {
           />
         )}
       </div>
+      <PdfReportChartHost ref={chartHostRef} />
     </div>
   );
 }
