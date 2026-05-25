@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseSnapshot, type Snapshot } from "@/lib/project-file";
 import { resolveActiveFilePath } from "@/lib/file-binding";
 import { useCalcStore } from "@/lib/store";
+import { currencyUnitSuffix, useMoneyFormatter } from "@/lib/utils";
 
 interface LoadedProject {
   filePath: string;
@@ -22,7 +23,7 @@ interface LoadedProject {
   snapshot: Snapshot;
 }
 
-function fmt(n: number | undefined | null, decimals = 0): string {
+function fmtPlain(n: number | undefined | null, decimals = 0): string {
   if (n == null) return "—";
   return n.toLocaleString(undefined, {
     minimumFractionDigits: decimals,
@@ -48,6 +49,8 @@ export default function Compare() {
   const [projects, setProjects] = useState<LoadedProject[]>([]);
   const [loading, setLoading] = useState(false);
   const { activeFileName, activeFilePath, recentFiles } = useCalcStore();
+  const money = useMoneyFormatter();
+  const costUnit = currencyUnitSuffix(money.currency);
   const workspacePath = resolveActiveFilePath({ activeFilePath, activeFileName, recentFiles });
   const workspaceLabel = activeFileName ?? (workspacePath ? workspacePath.replace(/^.*[/\\]/, "") : null);
 
@@ -221,7 +224,7 @@ export default function Compare() {
               />
             </ComparisonSection>
 
-            <ComparisonSection title="Operating Costs (USD/yr)" projects={projects}>
+            <ComparisonSection title={`Operating Costs (${costUnit}/yr)`} projects={projects}>
               {(() => {
                 const maxScenarios = Math.max(
                   ...projects.map((p) => p.snapshot.costResult?.scenarios?.length ?? 0),
@@ -265,10 +268,10 @@ export default function Compare() {
                         {label}
                       </td>
                     </tr>,
-                    <Row key={`tire-${i}`} label="Tire" values={tire} decimals={0} mode="min" />,
-                    <Row key={`fuel-${i}`} label="Fuel" values={fuel} decimals={0} mode="min" />,
-                    <Row key={`maint-${i}`} label="Maintenance" values={maint} decimals={0} mode="min" />,
-                    <Row key={`total-${i}`} label="Total" values={total} decimals={0} mode="min" bold />,
+                    <Row key={`tire-${i}`} label="Tire" values={tire} decimals={0} mode="min" formatUsd={money.formatMoney} />,
+                    <Row key={`fuel-${i}`} label="Fuel" values={fuel} decimals={0} mode="min" formatUsd={money.formatMoney} />,
+                    <Row key={`maint-${i}`} label="Maintenance" values={maint} decimals={0} mode="min" formatUsd={money.formatMoney} />,
+                    <Row key={`total-${i}`} label="Total" values={total} decimals={0} mode="min" bold formatUsd={money.formatMoney} />,
                   );
                 }
                 return rows;
@@ -325,6 +328,7 @@ function Row({
   decimals = 0,
   mode,
   bold,
+  formatUsd,
 }: {
   label: string;
   values?: (number | null)[];
@@ -332,6 +336,8 @@ function Row({
   decimals?: number;
   mode?: "min" | "max";
   bold?: boolean;
+  /** When set, values are USD engine amounts formatted for display currency. */
+  formatUsd?: (usd: number) => string;
 }) {
   const best = values && mode ? bestIdx(values, mode) : null;
 
@@ -356,7 +362,7 @@ function Row({
               }`}
             >
               <span className="inline-flex items-center gap-1">
-                {fmt(v, decimals)}
+                {v == null ? "—" : formatUsd ? formatUsd(v) : fmtPlain(v, decimals)}
                 {best === i && (
                   <IconAwardOutline18 {...nucleoIconProps({ size: 14, className: "inline" })} aria-hidden />
                 )}

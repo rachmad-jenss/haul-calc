@@ -2,7 +2,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CesaResult, PavementResult, CostComparison, PavementLayer } from "@/lib/types";
 import { computeBoq } from "@/lib/boq";
-import type { BoqGeometry } from "@/lib/store";
+import type { BoqGeometry, DisplayCurrency } from "@/lib/store";
+import { formatMoneyFromUsd } from "@/lib/utils";
 
 export interface IncludeSections {
   cesa: boolean;
@@ -31,6 +32,8 @@ export interface PdfData {
   boqGeometry?: BoqGeometry;
   boqLayers?: PavementLayer[];
   includeSections?: IncludeSections;
+  currency?: DisplayCurrency;
+  usdToIdrRate?: number;
 }
 
 const COLORS = {
@@ -183,8 +186,9 @@ export function generatePdf(data: PdfData): Blob {
   if (data.costResult && inc.cost) {
     y = sectionTitle(doc, "Operating Cost Comparison", y);
 
-    const fmt = (v: number) =>
-      v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    const currency = data.currency ?? "USD";
+    const rate = data.usdToIdrRate ?? 1;
+    const fmt = (v: number) => formatMoneyFromUsd(v, currency, rate);
 
     autoTable(doc, {
       startY: y,

@@ -38,6 +38,8 @@ export default function Reports() {
     setAuthorName,
     setReportSummary,
     setBoqGeometry,
+    currency,
+    usdToIdrRate,
   } = useCalcStore();
 
   const [running, setRunning] = useState(false);
@@ -119,6 +121,8 @@ export default function Reports() {
         boqGeometry,
         boqLayers,
         includeSections: sections,
+        currency,
+        usdToIdrRate,
       });
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,

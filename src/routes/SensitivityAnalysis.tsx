@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/select";
 import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
-import { useCalcStore } from "@/lib/store";
+import { useCalcStore, type DisplayCurrency } from "@/lib/store";
+import { useMoneyFormatter } from "@/lib/utils";
 import type { SensitivityRequest } from "@/lib/types";
 import {
   convertThickness,
@@ -62,8 +63,12 @@ const PARAM_CONFIG: Record<SensParam, ParamConfig> = {
   trips_per_day: { label: "Trips/day (multiplier)", defaultMin: 0.5, defaultMax: 2.0, unit: "×" },
 };
 
-function getMetricConfig(system: UnitSystem): Record<SensMetric, MetricConfig> {
+function getMetricConfig(
+  system: UnitSystem,
+  currency: DisplayCurrency,
+): Record<SensMetric, MetricConfig> {
   const thickUnit = unitLabels[system].thickness;
+  const costUnit = `${currency}/yr`;
   return {
     total_thickness_mm: {
       label: "Pavement thickness",
@@ -73,9 +78,9 @@ function getMetricConfig(system: UnitSystem): Record<SensMetric, MetricConfig> {
     },
     cesa: { label: "CESA", yAxisLabel: "CESA", unit: "", decimals: 0 },
     cost_total: {
-      label: "Annual cost (USD/yr)",
-      yAxisLabel: "Cost (USD/yr)",
-      unit: "USD/yr",
+      label: `Annual cost (${costUnit})`,
+      yAxisLabel: `Cost (${costUnit})`,
+      unit: costUnit,
       decimals: 0,
     },
   };
@@ -106,7 +111,9 @@ export default function SensitivityAnalysis() {
     fleet,
     costScenarios,
     unitSystem,
+    currency,
   } = useCalcStore();
+  const money = useMoneyFormatter();
   const runIdRef = useRef(0);
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -216,7 +223,7 @@ export default function SensitivityAnalysis() {
   };
 
   const paramCfg = PARAM_CONFIG[param];
-  const metricCfg = getMetricConfig(unitSystem)[metric];
+  const metricCfg = getMetricConfig(unitSystem, currency)[metric];
   const displayChartData = useMemo(
     () =>
       chartData.map((p) =>
@@ -271,7 +278,7 @@ export default function SensitivityAnalysis() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(getMetricConfig(unitSystem)) as [SensMetric, MetricConfig][]).map(
+                  {(Object.entries(getMetricConfig(unitSystem, currency)) as [SensMetric, MetricConfig][]).map(
                     ([key, c]) => (
                     <SelectItem key={key} value={key}>
                       {c.label}
@@ -400,13 +407,21 @@ export default function SensitivityAnalysis() {
                           <YAxis
                             dataKey="y"
                             tickCount={6}
-                            tickFormatter={(v: number) =>
-                              v >= 1_000_000
+                            tickFormatter={(v: number) => {
+                              if (metric === "cost_total") {
+                                const d = money.toDisplay(v);
+                                return d >= 1_000_000
+                                  ? `${(d / 1_000_000).toFixed(1)}M`
+                                  : d >= 1_000
+                                    ? `${(d / 1_000).toFixed(0)}k`
+                                    : money.formatGrouped(d);
+                              }
+                              return v >= 1_000_000
                                 ? `${(v / 1_000_000).toFixed(1)}M`
                                 : v >= 1_000
                                   ? `${(v / 1_000).toFixed(0)}k`
-                                  : v.toFixed(metricCfg.decimals)
-                            }
+                                  : v.toFixed(metricCfg.decimals);
+                            }}
                             label={{
                               value: metricCfg.yAxisLabel,
                               angle: -90,
@@ -418,11 +433,13 @@ export default function SensitivityAnalysis() {
                           />
                           <Tooltip
                             formatter={(value: number) => [
-                              metricCfg.unit
-                                ? `${value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })} ${metricCfg.unit}`
-                                : value.toLocaleString(undefined, {
-                                    maximumFractionDigits: metricCfg.decimals,
-                                  }),
+                              metric === "cost_total"
+                                ? money.formatMoney(value)
+                                : metricCfg.unit
+                                  ? `${value.toLocaleString(undefined, { maximumFractionDigits: metricCfg.decimals })} ${metricCfg.unit}`
+                                  : value.toLocaleString(undefined, {
+                                      maximumFractionDigits: metricCfg.decimals,
+                                    }),
                               metricCfg.label,
                             ]}
                             labelFormatter={(label: number) =>
@@ -475,9 +492,11 @@ export default function SensitivityAnalysis() {
                             </td>
                             <td className="px-2 py-1 text-right font-mono">
                               {p.y !== null
-                                ? p.y.toLocaleString(undefined, {
-                                    maximumFractionDigits: metricCfg.decimals,
-                                  })
+                                ? metric === "cost_total"
+                                  ? money.formatMoney(p.y)
+                                  : p.y.toLocaleString(undefined, {
+                                      maximumFractionDigits: metricCfg.decimals,
+                                    })
                                 : "—"}
                             </td>
                           </tr>
