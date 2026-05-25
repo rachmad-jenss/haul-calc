@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { temporal } from "zundo";
 import { normalizePersistedFileBinding } from "@/lib/file-binding";
+import type { CompareReportSnapshot } from "@/lib/compare-report";
 import type { SensitivityReportSnapshot } from "@/lib/sensitivity-report";
 import type {
   CesaResult,
@@ -106,6 +107,8 @@ export interface CalcStore {
   authorName: string;
   reportSummary: (DesignSummary & StubMeta) | null;
   sensitivitySnapshot: SensitivityReportSnapshot | null;
+  /** Session compare workspace (Compare tab); not saved in .hcalc. */
+  compareSnapshot: CompareReportSnapshot | null;
 
   // Custom vehicles
   customVehicles: CustomVehicle[];
@@ -162,6 +165,7 @@ export interface CalcStore {
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
   setSensitivitySnapshot: (snapshot: SensitivityReportSnapshot | null) => void;
+  setCompareSnapshot: (snapshot: CompareReportSnapshot | null) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
   setActiveFileName: (name: string | null) => void;
   setActiveFilePath: (path: string | null) => void;
@@ -279,6 +283,7 @@ export const useCalcStore = create<CalcStore>()(
       authorName: "",
       reportSummary: null,
       sensitivitySnapshot: null,
+      compareSnapshot: null,
 
       activeFileName: null,
       activeFilePath: null,
@@ -322,6 +327,7 @@ export const useCalcStore = create<CalcStore>()(
             authorName: "",
             reportSummary: null,
             sensitivitySnapshot: null,
+            compareSnapshot: null,
             activeFileName: null,
             activeFilePath: null,
             boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
@@ -415,9 +421,18 @@ export const useCalcStore = create<CalcStore>()(
         ),
       setSensitivitySnapshot: (sensitivitySnapshot) =>
         withoutProjectDirtyTracking(() => set({ sensitivitySnapshot, isProjectDirty: true })),
+      setCompareSnapshot: (compareSnapshot) =>
+        withoutProjectDirtyTracking(() => set({ compareSnapshot })),
       loadFromSnapshot: (data) =>
         withoutProjectDirtyTracking(() =>
-          set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+          set({
+            ...data,
+            compareSnapshot: null,
+            cesaDirty: false,
+            pavementDirty: false,
+            economicsDirty: false,
+            isProjectDirty: false,
+          }),
         ),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       setActiveFilePath: (activeFilePath) => set({ activeFilePath }),

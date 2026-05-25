@@ -8,6 +8,7 @@ import { nucleoIconProps } from "@/lib/icons";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
+import { compareProjectsToJson } from "@/lib/compare-report";
 import { generatePdf, DEFAULT_SECTIONS, type IncludeSections } from "@/lib/pdf-generator";
 import { computeBoq, type BoqRow } from "@/lib/boq";
 import { PageHeader } from "@/components/PageHeader";
@@ -36,6 +37,7 @@ export default function Reports() {
     costResult,
     lccaResult,
     sensitivitySnapshot,
+    compareSnapshot,
     unitSystem,
     projectName,
     authorName,
@@ -109,6 +111,9 @@ export default function Reports() {
       if (!path) return;
       const { stub: _s, stubMessage: _sm, ...data } = reportSummary;
       const payload: Record<string, unknown> = { ...data };
+      if (sections.compare && compareSnapshot && compareSnapshot.projects.length >= 2) {
+        payload.compare_projects = compareProjectsToJson(compareSnapshot);
+      }
       if (sections.sensitivity && sensitivitySnapshot) {
         payload.sensitivity_analysis = {
           parameter: sensitivitySnapshot.variable,
@@ -154,6 +159,10 @@ export default function Reports() {
         usdToIdrRate,
         chartImages,
         sensitivitySnapshot: sections.sensitivity ? sensitivitySnapshot : null,
+        compareSnapshot:
+          sections.compare && compareSnapshot && compareSnapshot.projects.length >= 2
+            ? compareSnapshot
+            : null,
         unitSystem,
       });
       const path = await save({
@@ -226,6 +235,10 @@ export default function Reports() {
               <DataBadge label="Cost comparison" active={!!costResult} />
               <DataBadge label="LCCA results" active={!!lccaResult} />
               <DataBadge label="Sensitivity run" active={!!sensitivitySnapshot} />
+              <DataBadge
+                label="Compare (2+ projects)"
+                active={(compareSnapshot?.projects.length ?? 0) >= 2}
+              />
               {!hasData && (
                 <p className="pt-1 text-2xs text-amber-600 dark:text-amber-400">
                   Run calculations on other tabs first for a complete report.
@@ -298,6 +311,13 @@ export default function Reports() {
                   checked={sections.chartSensitivity}
                   disabled={!sensitivitySnapshot}
                   onToggle={() => toggleSection("chartSensitivity")}
+                />
+                <SectionToggle
+                  id="sec-compare"
+                  label="Compare Projects"
+                  checked={sections.compare}
+                  disabled={(compareSnapshot?.projects.length ?? 0) < 2}
+                  onToggle={() => toggleSection("compare")}
                 />
               </div>
             </div>
