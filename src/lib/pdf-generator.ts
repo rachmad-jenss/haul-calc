@@ -2,7 +2,16 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CesaResult, PavementResult, CostComparison, PavementLayer } from "@/lib/types";
 import { computeBoq } from "@/lib/boq";
+import type { SensitivityReportSnapshot } from "@/lib/sensitivity-report";
+import {
+  formatSensitivityX,
+  perturbationRowsForPdf,
+  sensitivityMetricLabel,
+  sensitivityParamLabel,
+  sensitivityTableHeaders,
+} from "@/lib/sensitivity-report";
 import type { BoqGeometry, DisplayCurrency } from "@/lib/store";
+import type { UnitSystem } from "@/lib/unit-convert";
 import { formatMoneyFromUsd } from "@/lib/utils";
 
 export interface IncludeSections {
@@ -13,6 +22,8 @@ export interface IncludeSections {
   boq: boolean;
   chartOpex: boolean;
   chartLccaCumulative: boolean;
+  sensitivity: boolean;
+  chartSensitivity: boolean;
 }
 
 export const DEFAULT_SECTIONS: IncludeSections = {
@@ -23,11 +34,14 @@ export const DEFAULT_SECTIONS: IncludeSections = {
   boq: true,
   chartOpex: true,
   chartLccaCumulative: true,
+  sensitivity: true,
+  chartSensitivity: true,
 };
 
 export interface PdfChartImages {
   opex?: string;
   lccaCumulative?: string;
+  sensitivity?: string;
 }
 
 export interface PdfData {
@@ -44,6 +58,8 @@ export interface PdfData {
   currency?: DisplayCurrency;
   usdToIdrRate?: number;
   chartImages?: PdfChartImages;
+  sensitivitySnapshot?: SensitivityReportSnapshot | null;
+  unitSystem?: UnitSystem;
 }
 
 const COLORS = {
@@ -251,6 +267,76 @@ export function generatePdf(data: PdfData): Blob {
 
   if (data.chartImages?.lccaCumulative && inc.chartLccaCumulative) {
     embedChartImage(doc, "LCCA Cumulative Present Value", data.chartImages.lccaCumulative, y);
+  }
+
+  if (data.sensitivitySnapshot && inc.sensitivity) {
+    const snap = data.sensitivitySnapshot;
+    const unitSystem = data.unitSystem ?? "SI";
+    const currency = data.currency ?? "USD";
+    const rate = data.usdToIdrRate ?? 1;
+    y = ensureSpace(doc, y, 40);
+    y = sectionTitle(doc, "Sensitivity Analysis", y);
+    y = keyValue(doc, "Parameter", sensitivityParamLabel(snap.variable), y);
+    y = keyValue(doc, "Metric", sensitivityMetricLabel(snap.metric), y);
+    y = keyValue(
+      doc,
+      "Range",
+      `${formatSensitivityX(snap.minValue, snap.variable, unitSystem)} – ${formatSensitivityX(snap.maxValue, snap.variable, unitSystem)}`,
+      y,
+    );
+    y = keyValue(doc, "Steps", String(snap.steps), y);
+    if (snap.confidence) {
+      y = keyValue(doc, "Confidence", snap.confidence, y);
+    }
+    if (snap.stub) {
+      y = keyValue(
+        doc,
+        "Note",
+        snap.stubMessage ?? "Sensitivity data from stub engine (not live haul-pave).",
+        y,
+      );
+    }
+    y += 2;
+
+    const [headX, headY] = sensitivityTableHeaders(
+      snap.variable,
+      snap.metric,
+      unitSystem,
+      currency,
+    );
+    const body = perturbationRowsForPdf(
+      snap.perturbations,
+      snap.variable,
+      snap.metric,
+      unitSystem,
+      currency,
+      rate,
+    );
+    if (body.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        head: [[headX, headY]],
+        body,
+        headStyles: { fillColor: COLORS.headerBg, textColor: COLORS.primary, fontStyle: "bold" },
+        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: 14, right: 14 },
+      });
+      y = currentY(doc) + 10;
+    } else {
+      doc.setFontSize(9);
+      doc.setTextColor(...COLORS.muted);
+      doc.text("No sensitivity data points available.", 14, y);
+      y += 8;
+    }
+  }
+
+  if (data.chartImages?.sensitivity && inc.chartSensitivity) {
+    embedChartImage(
+      doc,
+      "Sensitivity Analysis Chart",
+      data.chartImages.sensitivity,
+      y,
+    );
   }
 
   // Material BoQ

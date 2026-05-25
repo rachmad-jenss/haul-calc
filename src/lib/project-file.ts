@@ -6,7 +6,7 @@ import { firstError, snapshotSchema } from "@/lib/schemas";
 import type { CalcStore } from "@/lib/store";
 import { useCalcStore } from "@/lib/store";
 
-export const SNAPSHOT_VERSION = 3;
+export const SNAPSHOT_VERSION = 4;
 
 export type Snapshot = {
   version: number;
@@ -34,6 +34,7 @@ export type Snapshot = {
   projectName: CalcStore["projectName"];
   authorName: CalcStore["authorName"];
   reportSummary: CalcStore["reportSummary"];
+  sensitivitySnapshot?: CalcStore["sensitivitySnapshot"];
 };
 
 type OpenStore = Pick<CalcStore, "loadFromSnapshot" | "pushRecentFile" | "setActiveFilePath">;
@@ -65,6 +66,7 @@ export function snapshotFromStore(store: CalcStore): Snapshot {
     projectName: store.projectName,
     authorName: store.authorName,
     reportSummary: store.reportSummary,
+    sensitivitySnapshot: store.sensitivitySnapshot,
   };
 }
 
@@ -86,7 +88,7 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
     reportSummary: snap.reportSummary ?? null,
   };
   if (version >= 3) {
-    return {
+    const patch: Partial<CalcStore> = {
       ...base,
       workingDaysPerYear: snap.workingDaysPerYear ?? 250,
       customVehicles: snap.customVehicles ?? [],
@@ -107,6 +109,12 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
       pavementDirty: snap.pavementDirty ?? false,
       economicsDirty: snap.economicsDirty ?? false,
     };
+    if (version >= 4) {
+      patch.sensitivitySnapshot = snap.sensitivitySnapshot ?? null;
+    } else {
+      patch.sensitivitySnapshot = null;
+    }
+    return patch;
   }
   if (version >= 2) {
     return {
@@ -129,6 +137,7 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
       cesaDirty: snap.cesaDirty ?? false,
       pavementDirty: snap.pavementDirty ?? false,
       economicsDirty: snap.economicsDirty ?? false,
+      sensitivitySnapshot: null,
     };
   }
   return {
@@ -143,6 +152,7 @@ export function storePatchFromSnapshot(snap: Snapshot): Partial<CalcStore> {
     cesaDirty: false,
     pavementDirty: false,
     economicsDirty: false,
+    sensitivitySnapshot: null,
   };
 }
 

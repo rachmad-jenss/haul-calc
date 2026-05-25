@@ -160,4 +160,23 @@ export const snapshotSchema = z.object({
   projectName: z.string().optional(),
   authorName: z.string().optional(),
   reportSummary: z.unknown().nullable().optional(),
+  sensitivitySnapshot: z
+    .object({
+      variable: z.string(),
+      metric: z.string(),
+      minValue: z.number().finite(),
+      maxValue: z.number().finite(),
+      steps: z.number().finite(),
+      perturbations: z.array(
+        z.object({
+          x: z.number().finite(),
+          y: z.number().finite().nullable(),
+        }),
+      ),
+      stub: z.boolean(),
+      stubMessage: z.string().optional(),
+      confidence: z.enum(["high", "medium", "low"]).optional(),
+    })
+    .nullable()
+    .optional(),
 });

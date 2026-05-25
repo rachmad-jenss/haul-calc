@@ -30,14 +30,14 @@ import {
 } from "@/components/ui/select";
 import { exportChartToPng } from "@/lib/chart-export";
 import { haulPave } from "@/lib/haulpave-client";
+import {
+  displaySensitivityMetricY,
+  type SensitivityReportSnapshot,
+} from "@/lib/sensitivity-report";
 import { useCalcStore, type DisplayCurrency } from "@/lib/store";
 import { useMoneyFormatter } from "@/lib/utils";
 import type { SensitivityRequest } from "@/lib/types";
-import {
-  convertThickness,
-  type UnitSystem,
-  unitLabels,
-} from "@/lib/unit-convert";
+import { type UnitSystem, unitLabels } from "@/lib/unit-convert";
 
 type SensParam = "subgrade_cbr" | "design_coverages" | "design_life_years" | "trips_per_day";
 type SensMetric = "total_thickness_mm" | "cesa" | "cost_total";
@@ -86,17 +86,6 @@ function getMetricConfig(
   };
 }
 
-function displayMetricY(
-  y: number,
-  metric: SensMetric,
-  system: UnitSystem,
-): number {
-  if (metric === "total_thickness_mm" && system === "Imperial") {
-    return convertThickness(y, system);
-  }
-  return y;
-}
-
 interface ChartPoint {
   x: number;
   y: number | null;
@@ -112,6 +101,7 @@ export default function SensitivityAnalysis() {
     costScenarios,
     unitSystem,
     currency,
+    setSensitivitySnapshot,
   } = useCalcStore();
   const money = useMoneyFormatter();
   const runIdRef = useRef(0);
@@ -133,11 +123,13 @@ export default function SensitivityAnalysis() {
     setMinVal(PARAM_CONFIG[newParam].defaultMin);
     setMaxVal(PARAM_CONFIG[newParam].defaultMax);
     setChartData([]);
+    setSensitivitySnapshot(null);
   };
 
   const handleMetricChange = (newMetric: SensMetric) => {
     setMetric(newMetric);
     setChartData([]);
+    setSensitivitySnapshot(null);
   };
 
   const runAnalysis = async () => {
@@ -171,6 +163,7 @@ export default function SensitivityAnalysis() {
 
     setRunning(true);
     setChartData([]);
+    setSensitivitySnapshot(null);
     setStubInfo({ stub: false });
 
     try {
@@ -197,9 +190,24 @@ export default function SensitivityAnalysis() {
       if (runId === runIdRef.current) {
         setChartData(results);
         setStubInfo({ stub: res.stub, message: res.stubMessage });
+        const snapshot: SensitivityReportSnapshot = {
+          variable: param,
+          metric,
+          minValue: minVal,
+          maxValue: maxVal,
+          steps: clampedSteps,
+          perturbations: res.data.perturbations,
+          stub: res.stub,
+          stubMessage: res.stubMessage,
+          confidence: res.data.confidence,
+        };
+        setSensitivitySnapshot(snapshot);
       }
     } catch (err) {
       toast.error(`Analysis failed: ${String(err)}`);
+      if (runId === runIdRef.current) {
+        setSensitivitySnapshot(null);
+      }
     } finally {
       if (runId === runIdRef.current) {
         setRunning(false);
@@ -229,7 +237,7 @@ export default function SensitivityAnalysis() {
       chartData.map((p) =>
         p.y === null
           ? p
-          : { ...p, y: displayMetricY(p.y, metric, unitSystem) },
+          : { ...p, y: displaySensitivityMetricY(p.y, metric, unitSystem) },
       ),
     [chartData, metric, unitSystem],
   );
@@ -297,7 +305,11 @@ export default function SensitivityAnalysis() {
                 type="number"
                 value={minVal}
                 disabled={running}
-                onChange={(e) => setMinVal(Number(e.target.value))}
+                onChange={(e) => {
+                  setMinVal(Number(e.target.value));
+                  setChartData([]);
+                  setSensitivitySnapshot(null);
+                }}
               />
             </div>
 
@@ -310,7 +322,11 @@ export default function SensitivityAnalysis() {
                 type="number"
                 value={maxVal}
                 disabled={running}
-                onChange={(e) => setMaxVal(Number(e.target.value))}
+                onChange={(e) => {
+                  setMaxVal(Number(e.target.value));
+                  setChartData([]);
+                  setSensitivitySnapshot(null);
+                }}
               />
             </div>
 
@@ -323,7 +339,11 @@ export default function SensitivityAnalysis() {
                 max={20}
                 value={steps}
                 disabled={running}
-                onChange={(e) => setSteps(Math.max(3, Math.min(20, Number(e.target.value))))}
+                onChange={(e) => {
+                  setSteps(Math.max(3, Math.min(20, Number(e.target.value))));
+                  setChartData([]);
+                  setSensitivitySnapshot(null);
+                }}
               />
             </div>
 

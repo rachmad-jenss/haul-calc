@@ -16,7 +16,13 @@ import {
   renderChartToCanvas,
   waitForChartLayout,
 } from "@/lib/chart-export";
+import {
+  displaySensitivityMetricY,
+  sensitivityMetricLabel,
+  type SensMetric,
+} from "@/lib/sensitivity-report";
 import { useCalcStore } from "@/lib/store";
+import { unitLabels } from "@/lib/unit-convert";
 import { useMoneyFormatter } from "@/lib/utils";
 
 const SCENARIO_COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
@@ -27,11 +33,13 @@ const OFFSCREEN =
 export interface PdfChartImages {
   opex?: string;
   lccaCumulative?: string;
+  sensitivity?: string;
 }
 
 export interface PdfChartCaptureOptions {
   chartOpex: boolean;
   chartLccaCumulative: boolean;
+  chartSensitivity: boolean;
 }
 
 export interface PdfReportChartHostHandle {
@@ -40,10 +48,17 @@ export interface PdfReportChartHostHandle {
 
 export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
   function PdfReportChartHost(_, ref) {
-    const { costResult, lccaResult, lccaInputs } = useCalcStore();
+    const {
+      costResult,
+      lccaResult,
+      lccaInputs,
+      sensitivitySnapshot,
+      unitSystem,
+    } = useCalcStore();
     const money = useMoneyFormatter();
     const opexRef = useRef<HTMLDivElement>(null);
     const cumulativeRef = useRef<HTMLDivElement>(null);
+    const sensitivityRef = useRef<HTMLDivElement>(null);
 
     const opexChartData = useMemo(
       () =>
@@ -74,6 +89,46 @@ export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
       return points;
     }, [lccaResult, lccaInputs.analysisPeriodYears]);
 
+    const sensitivityChartData = useMemo(() => {
+      if (!sensitivitySnapshot) return [];
+      const { metric, perturbations } = sensitivitySnapshot;
+      return perturbations
+        .filter((p) => p.y != null)
+        .map((p) => ({
+          x: p.x,
+          y: displaySensitivityMetricY(p.y as number, metric, unitSystem),
+        }));
+    }, [sensitivitySnapshot, unitSystem]);
+
+    const formatSensChartValue = (value: number, metric: string) => {
+      const m = metric as SensMetric;
+      if (m === "cost_total") return money.formatMoney(value);
+      const thickUnit = unitLabels[unitSystem].thickness;
+      if (m === "total_thickness_mm") {
+        const decimals = unitSystem === "Imperial" ? 1 : 0;
+        return `${value.toLocaleString("en-US", { maximumFractionDigits: decimals })} ${thickUnit}`;
+      }
+      return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+    };
+
+    const sensYTick = (v: number, metric: string) => {
+      const m = metric as SensMetric;
+      if (m === "cost_total") {
+        const d = money.toDisplay(v);
+        return d >= 1_000_000
+          ? `${(d / 1_000_000).toFixed(0)}M`
+          : d >= 1_000
+            ? `${(d / 1_000).toFixed(0)}k`
+            : money.formatGrouped(d);
+      }
+      const decimals = m === "total_thickness_mm" && unitSystem === "Imperial" ? 1 : 0;
+      return v >= 1_000_000
+        ? `${(v / 1_000_000).toFixed(1)}M`
+        : v >= 1_000
+          ? `${(v / 1_000).toFixed(0)}k`
+          : v.toFixed(decimals);
+    };
+
     useImperativeHandle(ref, () => ({
       async capture(options: PdfChartCaptureOptions): Promise<PdfChartImages> {
         await waitForChartLayout();
@@ -90,6 +145,18 @@ export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
           try {
             const canvas = await renderChartToCanvas(cumulativeRef.current);
             images.lccaCumulative = chartCanvasToJpegDataUrl(canvas);
+          } catch {
+            /* graceful skip */
+          }
+        }
+        if (
+          options.chartSensitivity &&
+          sensitivityRef.current &&
+          sensitivityChartData.length > 0
+        ) {
+          try {
+            const canvas = await renderChartToCanvas(sensitivityRef.current);
+            images.sensitivity = chartCanvasToJpegDataUrl(canvas);
           } catch {
             /* graceful skip */
           }
@@ -148,6 +215,39 @@ export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
                     strokeWidth={2}
                   />
                 ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : null}
+        {sensitivitySnapshot && sensitivityChartData.length > 0 ? (
+          <div ref={sensitivityRef} className={`${OFFSCREEN} h-[320px] w-[680px]`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sensitivityChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="x"
+                  type="number"
+                  domain={["dataMin", "dataMax"]}
+                  tick={{ fontSize: 10 }}
+                />
+                <YAxis
+                  tickFormatter={(v: number) => sensYTick(v, sensitivitySnapshot.metric)}
+                  tick={{ fontSize: 10 }}
+                />
+                <Tooltip
+                  formatter={(value: number) =>
+                    formatSensChartValue(value, sensitivitySnapshot.metric)
+                  }
+                />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Line
+                  type="monotone"
+                  dataKey="y"
+                  name={sensitivityMetricLabel(sensitivitySnapshot.metric)}
+                  stroke="hsl(222 47% 11%)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>

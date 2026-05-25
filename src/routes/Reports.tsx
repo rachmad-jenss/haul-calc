@@ -35,6 +35,8 @@ export default function Reports() {
     trhResult,
     costResult,
     lccaResult,
+    sensitivitySnapshot,
+    unitSystem,
     projectName,
     authorName,
     reportSummary,
@@ -106,7 +108,21 @@ export default function Reports() {
       });
       if (!path) return;
       const { stub: _s, stubMessage: _sm, ...data } = reportSummary;
-      await writeTextFile(path, JSON.stringify(data, null, 2));
+      const payload: Record<string, unknown> = { ...data };
+      if (sections.sensitivity && sensitivitySnapshot) {
+        payload.sensitivity_analysis = {
+          parameter: sensitivitySnapshot.variable,
+          metric: sensitivitySnapshot.metric,
+          min_value: sensitivitySnapshot.minValue,
+          max_value: sensitivitySnapshot.maxValue,
+          steps: sensitivitySnapshot.steps,
+          confidence: sensitivitySnapshot.confidence,
+          perturbations: sensitivitySnapshot.perturbations,
+          stub: sensitivitySnapshot.stub,
+          stub_message: sensitivitySnapshot.stubMessage,
+        };
+      }
+      await writeTextFile(path, JSON.stringify(payload, null, 2));
       toast.success(`Saved to ${path}`);
     } catch (err) {
       toast.error(`Export failed: ${(err as Error).message}`);
@@ -120,6 +136,7 @@ export default function Reports() {
       const chartImages = await chartHostRef.current?.capture({
         chartOpex: sections.chartOpex,
         chartLccaCumulative: sections.chartLccaCumulative,
+        chartSensitivity: sections.chartSensitivity,
       });
       const boqLayers = (cbrResult ?? trhResult)?.layers ?? [];
       const blob = generatePdf({
@@ -136,6 +153,8 @@ export default function Reports() {
         currency,
         usdToIdrRate,
         chartImages,
+        sensitivitySnapshot: sections.sensitivity ? sensitivitySnapshot : null,
+        unitSystem,
       });
       const path = await save({
         defaultPath: `${projectName.replace(/\s+/g, "_")}.pdf`,
@@ -206,6 +225,7 @@ export default function Reports() {
               <DataBadge label="TRH 14 thickness" active={!!trhResult} />
               <DataBadge label="Cost comparison" active={!!costResult} />
               <DataBadge label="LCCA results" active={!!lccaResult} />
+              <DataBadge label="Sensitivity run" active={!!sensitivitySnapshot} />
               {!hasData && (
                 <p className="pt-1 text-2xs text-amber-600 dark:text-amber-400">
                   Run calculations on other tabs first for a complete report.
@@ -264,6 +284,20 @@ export default function Reports() {
                   checked={sections.chartLccaCumulative}
                   disabled={!lccaResult}
                   onToggle={() => toggleSection("chartLccaCumulative")}
+                />
+                <SectionToggle
+                  id="sec-sensitivity"
+                  label="Sensitivity Analysis"
+                  checked={sections.sensitivity}
+                  disabled={!sensitivitySnapshot}
+                  onToggle={() => toggleSection("sensitivity")}
+                />
+                <SectionToggle
+                  id="sec-chart-sensitivity"
+                  label="Sensitivity chart image"
+                  checked={sections.chartSensitivity}
+                  disabled={!sensitivitySnapshot}
+                  onToggle={() => toggleSection("chartSensitivity")}
                 />
               </div>
             </div>
