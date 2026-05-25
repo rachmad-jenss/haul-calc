@@ -5,7 +5,7 @@ function isTauriContext(): boolean {
   return typeof (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined";
 }
 
-async function renderChartToCanvas(containerEl: HTMLElement): Promise<HTMLCanvasElement> {
+export async function renderChartToCanvas(containerEl: HTMLElement): Promise<HTMLCanvasElement> {
   const svg = containerEl.querySelector("svg");
   if (!svg) throw new Error("No chart SVG found");
 
@@ -62,6 +62,17 @@ async function renderChartToCanvas(containerEl: HTMLElement): Promise<HTMLCanvas
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+export function chartCanvasToJpegDataUrl(canvas: HTMLCanvasElement, quality = 0.92): string {
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+/** Wait for Recharts layout in off-screen capture hosts. */
+export function waitForChartLayout(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 }
 
 export async function exportChartToPng(
