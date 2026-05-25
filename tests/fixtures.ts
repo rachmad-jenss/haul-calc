@@ -8,15 +8,17 @@ export const SS = (name: string) => join("tests", "screenshots", `${name}.png`);
 
 export const STORE_KEY = "haul-calc-store";
 
-/** Persist v10 — app preferences only (matches production partialize). */
+/** Persist v11 — app preferences only (matches production partialize). */
 export function preferencesPersistPayload(overrides: Record<string, unknown> = {}) {
   return {
-    version: 10,
+    version: 11,
     state: {
       theme: "system",
       autoCheckUpdates: true,
       unitSystem: "SI",
       recentFiles: [],
+      currency: "USD",
+      usdToIdrRate: 16000,
       ...overrides,
     },
   };
