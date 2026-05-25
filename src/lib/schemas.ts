@@ -166,7 +166,7 @@ export const snapshotSchema = z.object({
       metric: z.string(),
       minValue: z.number().finite(),
       maxValue: z.number().finite(),
-      steps: z.number().finite(),
+      steps: z.number().int().min(3).max(20),
       perturbations: z.array(
         z.object({
           x: z.number().finite(),
@@ -176,6 +176,9 @@ export const snapshotSchema = z.object({
       stub: z.boolean(),
       stubMessage: z.string().optional(),
       confidence: z.enum(["high", "medium", "low"]).optional(),
+    })
+    .refine((s) => s.minValue < s.maxValue, {
+      message: "sensitivity minValue must be less than maxValue",
     })
     .nullable()
     .optional(),

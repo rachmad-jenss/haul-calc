@@ -274,7 +274,20 @@ export function generatePdf(data: PdfData): Blob {
     const unitSystem = data.unitSystem ?? "SI";
     const currency = data.currency ?? "USD";
     const rate = data.usdToIdrRate ?? 1;
-    y = ensureSpace(doc, y, 40);
+    let metaRows = 4;
+    if (snap.confidence) metaRows += 1;
+    if (snap.stub) metaRows += 1;
+    const tableBody = perturbationRowsForPdf(
+      snap.perturbations,
+      snap.variable,
+      snap.metric,
+      unitSystem,
+      currency,
+      rate,
+    );
+    const tableMm = tableBody.length > 0 ? 12 + tableBody.length * 5 : 12;
+    const neededMm = 8 + metaRows * 6 + 2 + tableMm;
+    y = ensureSpace(doc, y, neededMm);
     y = sectionTitle(doc, "Sensitivity Analysis", y);
     y = keyValue(doc, "Parameter", sensitivityParamLabel(snap.variable), y);
     y = keyValue(doc, "Metric", sensitivityMetricLabel(snap.metric), y);
@@ -304,14 +317,7 @@ export function generatePdf(data: PdfData): Blob {
       unitSystem,
       currency,
     );
-    const body = perturbationRowsForPdf(
-      snap.perturbations,
-      snap.variable,
-      snap.metric,
-      unitSystem,
-      currency,
-      rate,
-    );
+    const body = tableBody;
     if (body.length > 0) {
       autoTable(doc, {
         startY: y,
@@ -330,7 +336,7 @@ export function generatePdf(data: PdfData): Blob {
     }
   }
 
-  if (data.chartImages?.sensitivity && inc.chartSensitivity) {
+  if (data.chartImages?.sensitivity && inc.sensitivity && inc.chartSensitivity) {
     embedChartImage(
       doc,
       "Sensitivity Analysis Chart",

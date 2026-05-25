@@ -136,7 +136,7 @@ export default function Reports() {
       const chartImages = await chartHostRef.current?.capture({
         chartOpex: sections.chartOpex,
         chartLccaCumulative: sections.chartLccaCumulative,
-        chartSensitivity: sections.chartSensitivity,
+        chartSensitivity: sections.sensitivity && sections.chartSensitivity,
       });
       const boqLayers = (cbrResult ?? trhResult)?.layers ?? [];
       const blob = generatePdf({

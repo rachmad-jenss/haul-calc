@@ -547,6 +547,7 @@ export const useCalcStore = create<CalcStore>()(
         economicsDirty: state.economicsDirty,
         reportSummary: state.reportSummary,
         boqGeometry: state.boqGeometry,
+        sensitivitySnapshot: state.sensitivitySnapshot,
         isProjectDirty: state.isProjectDirty,
       }),
     },
