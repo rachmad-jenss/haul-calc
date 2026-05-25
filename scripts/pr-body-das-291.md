@@ -1,6 +1,6 @@
 ## Summary
 
-- Persist Compare tab workspace as `compareSnapshot` in store when 2–4 `.hcalc` files are loaded.
+- Sync Compare tab workspace to in-memory `compareSnapshot` (session store, not saved in `.hcalc`) when 2–4 files are loaded.
 - Add optional **Compare Projects** section toggle on Reports; embed side-by-side metric tables in PDF.
 - Append structured `compare_projects` block to JSON export when toggled on.
 

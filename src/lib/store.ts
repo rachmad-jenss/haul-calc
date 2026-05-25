@@ -425,7 +425,14 @@ export const useCalcStore = create<CalcStore>()(
         withoutProjectDirtyTracking(() => set({ compareSnapshot })),
       loadFromSnapshot: (data) =>
         withoutProjectDirtyTracking(() =>
-          set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
+          set({
+            ...data,
+            compareSnapshot: null,
+            cesaDirty: false,
+            pavementDirty: false,
+            economicsDirty: false,
+            isProjectDirty: false,
+          }),
         ),
       setActiveFileName: (activeFileName) => set({ activeFileName }),
       setActiveFilePath: (activeFilePath) => set({ activeFilePath }),
