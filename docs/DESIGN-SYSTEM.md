@@ -81,6 +81,41 @@ Same token names; values invert for readable contrast on `~8%` background. Card 
 - **Block warnings:** `WarningBanner` / `StubBanner` use semantic `warning` tokens.
 - **Inline field warnings:** `text-amber-600 dark:text-amber-400` on the field hint line.
 
+## Logo (app icon)
+
+Source artwork: `src-tauri/icons/base.svg`. Regenerate bundle assets from repo root:
+
+```bash
+pnpm tauri icon src-tauri/icons/base.svg
+```
+
+### Colors
+
+| Element | Value | HC-VI token |
+|---------|-------|-------------|
+| Background | `#292929` (HSL `0 0% 16%`) | Dark `--bg-selected` / strong neutral surface |
+| Road fill | `#f5f5f5` | Light neutral (not legacy blue primary) |
+| Road edges | `#ffffff` | High-contrast stroke on dark ground |
+| Inner lane guide | `#d4d4d4` | Subtle secondary stroke |
+
+Do not use legacy brand blue (`#1d4ed8`) or decorative clipart (e.g. sun motifs) in icon assets.
+
+### Mark
+
+Minimal perspective haul-road / pavement surface: converging lane edges, shoulder baseline, and center line. Readable as a single silhouette at **16px** (taskbar, title bar) through **512px** (installer, store tiles).
+
+### Sizing and clear space
+
+| Context | Minimum size | Notes |
+|---------|--------------|-------|
+| Taskbar / favicon | 16px | Use generated `32x32.png` or ICO smallest size |
+| Sidebar / in-app | 24px+ | Prefer bundled PNG; do not scale below 16px |
+| Installer / marketing | 128px+ | `128x128.png`, `icon.icns`, `icon.ico` |
+
+**Clear space:** keep at least **12.5%** of the icon width as padding around the mark (matches `rx="96"` on the 512px artboard). Do not crop the rounded square or place text inside the safe zone.
+
+Tauri bundle paths are listed in `src-tauri/tauri.conf.json` (`icon`, `bundle.windows.installerIcon`).
+
 ## Icons (Nucleo Essential)
 
 Package: `nucleo-ui-essential-outline-18`.
@@ -234,3 +269,4 @@ Use when adding or refactoring a route under `src/routes/`:
 | DAS-257–264 | Per-route page UI passes |
 | DAS-265 | E2E smoke — UI fidelity wave |
 | DAS-266 | Design system docs (this file, Wave 4 surfaces) |
+| DAS-287 | App logo — HC-VI neutrals, Tauri bundle icons |
