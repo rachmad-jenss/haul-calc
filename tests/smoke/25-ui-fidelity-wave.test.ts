@@ -17,8 +17,9 @@ test.describe("UI fidelity wave smoke (DAS-265)", () => {
   test("custom title bar visible with window chrome controls", async ({ page }) => {
     const bar = page.getByTestId("app-titlebar");
     await expect(bar).toBeVisible();
-    await expect(bar.getByRole("img", { name: "HaulCalc" })).toBeVisible();
-    await expect(bar.locator("svg")).toBeVisible();
+    const logo = bar.getByRole("img", { name: "HaulCalc" });
+    await expect(logo).toBeVisible();
+    await expect(logo.locator("svg")).toBeVisible();
     await expect(bar.getByRole("button", { name: "Minimize" })).toBeVisible();
     await expect(bar.getByRole("button", { name: /maximize|restore/i })).toBeVisible();
     await expect(bar.getByRole("button", { name: "Close" })).toBeVisible();
