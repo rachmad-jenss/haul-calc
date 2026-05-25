@@ -56,17 +56,17 @@ test.describe("Save file binding (DAS-127, DAS-288)", () => {
     await page.reload();
     await page.waitForTimeout(1500);
 
-    await expect(page.locator("aside")).not.toContainText("ghost.hcalc");
+    await expect(page.getByTestId("app-titlebar")).not.toContainText("ghost.hcalc");
   });
 
-  test("in-session file binding shows filename in sidebar", async ({ page }) => {
+  test("in-session file binding shows filename in title bar", async ({ page }) => {
     await seedStoreState(page, {
       activeFileName: "real-project.hcalc",
       activeFilePath: "C:/Users/test/real-project.hcalc",
       isProjectDirty: true,
     });
 
-    await expect(page.locator("aside")).toContainText("real-project");
+    await expect(page.getByTestId("app-titlebar")).toContainText("real-project");
   });
 
   test("in-session binding heals path from recentFiles when name matches", async ({ page }) => {
@@ -76,6 +76,8 @@ test.describe("Save file binding (DAS-127, DAS-288)", () => {
       recentFiles: ["C:/Users/test/real-project.hcalc"],
     });
 
-    await expect(page.locator("aside")).toContainText("real-project", { timeout: 10_000 });
+    await expect(page.getByTestId("app-titlebar")).toContainText("real-project", {
+      timeout: 10_000,
+    });
   });
 });
