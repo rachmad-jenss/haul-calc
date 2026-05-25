@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { temporal } from "zundo";
 import { normalizePersistedFileBinding } from "@/lib/file-binding";
+import type { SensitivityReportSnapshot } from "@/lib/sensitivity-report";
 import type {
   CesaResult,
   CostComparison,
@@ -104,6 +105,7 @@ export interface CalcStore {
   projectName: string;
   authorName: string;
   reportSummary: (DesignSummary & StubMeta) | null;
+  sensitivitySnapshot: SensitivityReportSnapshot | null;
 
   // Custom vehicles
   customVehicles: CustomVehicle[];
@@ -159,6 +161,7 @@ export interface CalcStore {
   setProjectName: (name: string) => void;
   setAuthorName: (name: string) => void;
   setReportSummary: (result: DesignSummary, stub: boolean, stubMessage?: string) => void;
+  setSensitivitySnapshot: (snapshot: SensitivityReportSnapshot | null) => void;
   loadFromSnapshot: (data: Partial<CalcStore>) => void;
   setActiveFileName: (name: string | null) => void;
   setActiveFilePath: (path: string | null) => void;
@@ -275,6 +278,7 @@ export const useCalcStore = create<CalcStore>()(
       projectName: "Pit South — Main Haul",
       authorName: "",
       reportSummary: null,
+      sensitivitySnapshot: null,
 
       activeFileName: null,
       activeFilePath: null,
@@ -317,6 +321,7 @@ export const useCalcStore = create<CalcStore>()(
             projectName: "Pit South — Main Haul",
             authorName: "",
             reportSummary: null,
+            sensitivitySnapshot: null,
             activeFileName: null,
             activeFilePath: null,
             boqGeometry: { roadLengthKm: 1.0, roadWidthM: 8.0, shoulderWidthM: 1.5 },
@@ -408,6 +413,8 @@ export const useCalcStore = create<CalcStore>()(
         withoutProjectDirtyTracking(() =>
           set({ reportSummary: { ...result, stub, stubMessage } }),
         ),
+      setSensitivitySnapshot: (sensitivitySnapshot) =>
+        withoutProjectDirtyTracking(() => set({ sensitivitySnapshot, isProjectDirty: true })),
       loadFromSnapshot: (data) =>
         withoutProjectDirtyTracking(() =>
           set({ ...data, cesaDirty: false, pavementDirty: false, economicsDirty: false, isProjectDirty: false }),
@@ -540,6 +547,7 @@ export const useCalcStore = create<CalcStore>()(
         economicsDirty: state.economicsDirty,
         reportSummary: state.reportSummary,
         boqGeometry: state.boqGeometry,
+        sensitivitySnapshot: state.sensitivitySnapshot,
         isProjectDirty: state.isProjectDirty,
       }),
     },

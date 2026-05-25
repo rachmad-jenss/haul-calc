@@ -6,4 +6,7 @@ interface Window {
   __HAULCALC_E2E_SHOULD_THROW__?: boolean;
   __HAULCALC_SIDECAR_STATUS__?: string;
   __HAULCALC_OPEN_JSON__?: string;
+  __LAST_WRITE_TEXT__?: string;
+  __LAST_WRITE_FILE__?: boolean;
+  __haulCalcGetStore?: () => import("@/lib/store").CalcStore;
 }

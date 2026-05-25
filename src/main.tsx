@@ -20,6 +20,8 @@ declare global {
   interface Window {
     /** Dev/E2E only — seed in-memory project state without persisting across restarts. */
     __haulCalcSeedStore?: (partial: Record<string, unknown>) => void;
+    /** Dev/E2E — read in-memory store for export assertions. */
+    __haulCalcGetStore?: () => ReturnType<typeof useCalcStore.getState>;
   }
 }
 
@@ -28,6 +30,7 @@ if (import.meta.env.DEV) {
     useCalcStore.setState(partial);
     useCalcStore.temporal.getState().clear();
   };
+  window.__haulCalcGetStore = () => useCalcStore.getState();
 }
 
 const wrap = (el: React.ReactElement) => <ErrorBoundary>{el}</ErrorBoundary>;

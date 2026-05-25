@@ -265,7 +265,17 @@ const TAURI_MOCK = `(function () {
             }
             return resolve(null);
           }
-          if (cmd === "plugin:fs|write_text_file") { return resolve(undefined); }
+          if (cmd === "plugin:fs|write_text_file") {
+            var textPayload = args && (args.contents ?? args.data ?? args.text);
+            if (typeof textPayload === "string") {
+              window.__LAST_WRITE_TEXT__ = textPayload;
+            }
+            return resolve(undefined);
+          }
+          if (cmd === "plugin:fs|write_file") {
+            window.__LAST_WRITE_FILE__ = true;
+            return resolve(undefined);
+          }
           if (cmd === "plugin:fs|read_text_file") {
             if (window.__HAULCALC_OPEN_JSON__) {
               try {
