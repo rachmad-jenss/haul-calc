@@ -12,6 +12,8 @@ Grab the latest installer from the [Releases](https://github.com/rachmad-jenss/h
 
 The app auto-updates — once installed, use **Settings → Updates → Check for Updates** to get new versions.
 
+Updates run the NSIS installer **in place** over your existing install (not uninstall-then-reinstall). See [docs/updater.md](docs/updater.md) for the full flow, Add/Remove Programs behavior, and sidecar handling during upgrades.
+
 ## Stack
 
 - **Tauri 2** — native desktop shell (Rust)
