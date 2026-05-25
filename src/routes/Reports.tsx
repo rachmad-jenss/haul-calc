@@ -117,7 +117,10 @@ export default function Reports() {
     if (!reportSummary) return;
     setExportingPdf(true);
     try {
-      const chartImages = await chartHostRef.current?.capture();
+      const chartImages = await chartHostRef.current?.capture({
+        chartOpex: sections.chartOpex,
+        chartLccaCumulative: sections.chartLccaCumulative,
+      });
       const boqLayers = (cbrResult ?? trhResult)?.layers ?? [];
       const blob = generatePdf({
         projectName,

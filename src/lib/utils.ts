@@ -109,6 +109,33 @@ export function currencyUnitSuffix(currency: DisplayCurrency): string {
   return currency === "IDR" ? "IDR" : "USD";
 }
 
+export function lccaNpvChartKeys(currency: DisplayCurrency): { npv: string; aec: string } {
+  const unit = currencyUnitSuffix(currency);
+  return { npv: `NPV (${unit})`, aec: `AEC (${unit}/yr)` };
+}
+
+export function buildOpexStackedLegend(currency: DisplayCurrency): Record<string, string> {
+  const unit = currencyUnitSuffix(currency);
+  return {
+    Tires: `Tires — annual cost (${unit})`,
+    Fuel: `Fuel — annual cost (${unit})`,
+    Maintenance: `Maintenance — annual cost (${unit})`,
+  };
+}
+
+export function buildLccaNpvLegend(currency: DisplayCurrency): Record<string, string> {
+  const { npv, aec } = lccaNpvChartKeys(currency);
+  const unit = currencyUnitSuffix(currency);
+  return {
+    [npv]: `Net present value (${unit})`,
+    [aec]: `Annual equivalent cost (${unit}/yr)`,
+  };
+}
+
+export function formatChartLegend(value: string, map: Record<string, string>): string {
+  return map[value] ?? value;
+}
+
 export function toSafeCsvCell(value: string | number): string {
   const raw = String(value).replace(/"/g, '""').replace(/\r?\n/g, " ");
   const neutralized = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;

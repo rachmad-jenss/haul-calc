@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -47,22 +47,15 @@ import { useCalcStore } from "@/lib/store";
 import type { LccaScenarioInput } from "@/lib/store";
 import type { CallError, CostScenario, ScenarioComparison } from "@/lib/types";
 import { labelWithUnit } from "@/lib/unit-convert";
-import { currencyUnitSuffix, useMoneyFormatter, toSafeCsvCell } from "@/lib/utils";
-
-const OPEX_STACKED_LEGEND: Record<string, string> = {
-  Tires: "Tires — annual cost (USD)",
-  Fuel: "Fuel — annual cost (USD)",
-  Maintenance: "Maintenance — annual cost (USD)",
-};
-
-const LCCA_NPV_LEGEND: Record<string, string> = {
-  "NPV (USD)": "Net present value (USD)",
-  "AEC (USD/yr)": "Annual equivalent cost (USD/yr)",
-};
-
-function formatChartLegend(value: string, map: Record<string, string>) {
-  return map[value] ?? value;
-}
+import {
+  buildLccaNpvLegend,
+  buildOpexStackedLegend,
+  currencyUnitSuffix,
+  formatChartLegend,
+  lccaNpvChartKeys,
+  useMoneyFormatter,
+  toSafeCsvCell,
+} from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Economics page — two tabs: Operating Cost and LCCA
@@ -103,6 +96,10 @@ function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) 
     useCalcStore();
   const money = useMoneyFormatter();
   const costUnit = currencyUnitSuffix(money.currency);
+  const opexLegend = useMemo(
+    () => buildOpexStackedLegend(money.currency),
+    [money.currency],
+  );
   const [running, setRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showData, setShowData] = useState(true);
@@ -424,7 +421,7 @@ function OpexTab({ setHeaderActions }: { setHeaderActions: (actions: ReactNode) 
                           }}
                         />
                         <Tooltip formatter={(value: number) => money.formatMoney(value)} />
-                        <Legend formatter={(value) => formatChartLegend(String(value), OPEX_STACKED_LEGEND)} />
+                        <Legend formatter={(value) => formatChartLegend(String(value), opexLegend)} />
                         <Bar dataKey="Tires" stackId="a" fill="#ef4444" name="Tires" />
                         <Bar dataKey="Fuel" stackId="a" fill="#f59e0b" name="Fuel" />
                         <Bar dataKey="Maintenance" stackId="a" fill="#3b82f6" name="Maintenance" />
@@ -498,6 +495,8 @@ function LccaTab() {
   const { costScenarios, lccaInputs, lccaResult, setLccaInputs, setLccaResult } = useCalcStore();
   const money = useMoneyFormatter();
   const costUnit = currencyUnitSuffix(money.currency);
+  const npvKeys = useMemo(() => lccaNpvChartKeys(money.currency), [money.currency]);
+  const npvLegend = useMemo(() => buildLccaNpvLegend(money.currency), [money.currency]);
   const [exporting, setExporting] = useState(false);
   const [showSummaryData, setShowSummaryData] = useState(true);
   const [showNpvData, setShowNpvData] = useState(true);
@@ -572,11 +571,12 @@ function LccaTab() {
   };
 
   // Build NPV bar chart data
-  const npvChartData = lccaResult?.scenarios.map((s) => ({
-    name: s.name,
-    "NPV (USD)": Math.round(s.npvUsd),
-    "AEC (USD/yr)": Math.round(s.annualEquivalentCostUsd),
-  })) ?? [];
+  const npvChartData =
+    lccaResult?.scenarios.map((s) => ({
+      name: s.name,
+      [npvKeys.npv]: Math.round(s.npvUsd),
+      [npvKeys.aec]: Math.round(s.annualEquivalentCostUsd),
+    })) ?? [];
 
   // Build cumulative PV line chart data (all scenarios by year)
   const cumulativeData: Record<string, number | string>[] = [];
@@ -763,14 +763,14 @@ function LccaTab() {
                           }}
                         />
                         <Tooltip formatter={(value: number) => money.formatMoney(value)} />
-                        <Legend formatter={(value) => formatChartLegend(String(value), LCCA_NPV_LEGEND)} />
-                        <Bar dataKey="NPV (USD)" fill="#3b82f6" name="NPV (USD)" />
-                        <Bar dataKey="AEC (USD/yr)" fill="#10b981" name="AEC (USD/yr)" />
+                        <Legend formatter={(value) => formatChartLegend(String(value), npvLegend)} />
+                        <Bar dataKey={npvKeys.npv} fill="#3b82f6" name={npvKeys.npv} />
+                        <Bar dataKey={npvKeys.aec} fill="#10b981" name={npvKeys.aec} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 }
-                table={<NpvComparisonTable rows={npvChartData} />}
+                table={<NpvComparisonTable rows={npvChartData} npvKey={npvKeys.npv} aecKey={npvKeys.aec} />}
               />
             </CardContent>
           </Card>
@@ -833,8 +833,12 @@ function LccaTab() {
 
 function NpvComparisonTable({
   rows,
+  npvKey,
+  aecKey,
 }: {
-  rows: { name: string; "NPV (USD)": number; "AEC (USD/yr)": number }[];
+  rows: Record<string, string | number>[];
+  npvKey: string;
+  aecKey: string;
 }) {
   const money = useMoneyFormatter();
   const costUnit = currencyUnitSuffix(money.currency);
@@ -851,11 +855,13 @@ function NpvComparisonTable({
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.name} className="border-t">
+          <tr key={String(row.name)} className="border-t">
             <td className="px-2 py-1">{row.name}</td>
-            <td className="px-2 py-1 text-right font-mono">{money.formatMoney(row["NPV (USD)"])}</td>
             <td className="px-2 py-1 text-right font-mono">
-              {money.formatMoney(row["AEC (USD/yr)"])}
+              {money.formatMoney(Number(row[npvKey]))}
+            </td>
+            <td className="px-2 py-1 text-right font-mono">
+              {money.formatMoney(Number(row[aecKey]))}
             </td>
           </tr>
         ))}

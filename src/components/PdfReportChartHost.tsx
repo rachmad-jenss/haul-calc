@@ -29,8 +29,13 @@ export interface PdfChartImages {
   lccaCumulative?: string;
 }
 
+export interface PdfChartCaptureOptions {
+  chartOpex: boolean;
+  chartLccaCumulative: boolean;
+}
+
 export interface PdfReportChartHostHandle {
-  capture: () => Promise<PdfChartImages>;
+  capture: (options: PdfChartCaptureOptions) => Promise<PdfChartImages>;
 }
 
 export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
@@ -70,10 +75,10 @@ export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
     }, [lccaResult, lccaInputs.analysisPeriodYears]);
 
     useImperativeHandle(ref, () => ({
-      async capture(): Promise<PdfChartImages> {
+      async capture(options: PdfChartCaptureOptions): Promise<PdfChartImages> {
         await waitForChartLayout();
         const images: PdfChartImages = {};
-        if (opexRef.current && opexChartData.length > 0) {
+        if (options.chartOpex && opexRef.current && opexChartData.length > 0) {
           try {
             const canvas = await renderChartToCanvas(opexRef.current);
             images.opex = chartCanvasToJpegDataUrl(canvas);
@@ -81,7 +86,7 @@ export const PdfReportChartHost = forwardRef<PdfReportChartHostHandle>(
             /* graceful skip */
           }
         }
-        if (cumulativeRef.current && cumulativeData.length > 0) {
+        if (options.chartLccaCumulative && cumulativeRef.current && cumulativeData.length > 0) {
           try {
             const canvas = await renderChartToCanvas(cumulativeRef.current);
             images.lccaCumulative = chartCanvasToJpegDataUrl(canvas);
