@@ -6,6 +6,7 @@ import {
   formatGroupedAmount,
   formatMoneyFromUsd,
   parseDisplayAmountToUsd,
+  parseGroupedIntegerInput,
   parseNumericInput,
   toDisplayAmount,
 } from "../../src/lib/utils.ts";
@@ -45,19 +46,26 @@ describe("formatMoneyFromUsd", () => {
 });
 
 describe("parseNumericInput", () => {
+  it("preserves decimal values for NumField", () => {
+    assert.equal(parseNumericInput("7.5", 0), 7.5);
+    assert.equal(parseNumericInput("12.5", 0), 12.5);
+  });
+});
+
+describe("parseGroupedIntegerInput", () => {
   it("strips en-US thousand commas", () => {
-    assert.equal(parseNumericInput("1,234,567", 0), 1_234_567);
+    assert.equal(parseGroupedIntegerInput("1,234,567", 0), 1_234_567);
   });
 
   it("strips id-ID thousand dots", () => {
-    assert.equal(parseNumericInput("16.000.000", 0), 16_000_000);
+    assert.equal(parseGroupedIntegerInput("16.000.000", 0), 16_000_000);
   });
 });
 
 describe("parse/format round-trip", () => {
   it("USD grouped input round-trips", () => {
     const grouped = formatGroupedAmount(250_000, "USD");
-    const parsed = parseNumericInput(grouped, -1);
+    const parsed = parseGroupedIntegerInput(grouped, -1);
     assert.equal(parsed, 250_000);
     assert.equal(parseDisplayAmountToUsd(grouped, -1, "USD", 16_000), 250_000);
   });

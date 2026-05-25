@@ -57,6 +57,13 @@ export function formatMoneyFromUsd(
 
 export function parseNumericInput(raw: string, fallback: number): number {
   if (raw.trim() === "") return fallback;
+  const n = Number(raw.trim());
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** Parses grouped integer money strings (e.g. 1,234,567 or 16.000.000). */
+export function parseGroupedIntegerInput(raw: string, fallback: number): number {
+  if (raw.trim() === "") return fallback;
   let s = raw.trim().replace(/\s/g, "");
   s = s.replace(/,/g, "");
   s = s.replace(/\./g, "");
@@ -70,7 +77,7 @@ export function parseDisplayAmountToUsd(
   currency: DisplayCurrency,
   rate: number,
 ): number {
-  const display = parseNumericInput(raw, Number.NaN);
+  const display = parseGroupedIntegerInput(raw, Number.NaN);
   if (!Number.isFinite(display)) return fallbackUsd;
   if (currency === "IDR") {
     if (!Number.isFinite(rate) || rate <= 0) return fallbackUsd;
