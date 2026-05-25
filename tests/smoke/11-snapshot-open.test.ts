@@ -1,64 +1,25 @@
-import { test, expect, navigate } from "../fixtures";
+import { test, expect, navigate, seedStoreState } from "../fixtures";
 import {
   parseSnapshot,
   storePatchFromSnapshot,
   type Snapshot,
 } from "../../src/lib/project-file";
-import type { CalcStore } from "../../src/lib/store";
 
-const STORE_KEY = "haul-calc-store";
-
-/** Zustand persist blob (v9) — same pattern as 08-save-binding.test.ts */
-function persistPayloadFromPatch(
-  patch: Partial<CalcStore>,
-  file: { activeFileName: string; activeFilePath: string },
+async function applySnapshotInBrowser(
+  page: import("@playwright/test").Page,
+  snap: Snapshot,
 ) {
-  return {
-    version: 9,
-    state: {
-      fleet: [
-        { _id: "t1", vehicle_id: "cat-797f", count: 8, trips_per_day: 22, payload_kn: 4000 },
-      ],
-      designLifeYears: 10,
-      workingDaysPerYear: 250,
-      cesaResult: null,
-      cesaDirty: false,
-      subgradeCbr: 8,
-      coverages: 1_050_000,
-      trhCategory: "B",
-      cbrResult: null,
-      trhResult: null,
-      pavementDirty: false,
-      costScenarios: [
-        {
-          _id: "s1",
-          name: "Asphalt",
-          surface: "asphalt",
-          thickness_mm: 100,
-          haul_distance_km: 5,
-          trips_per_day: 200,
-        },
-      ],
-      costResult: null,
-      economicsDirty: false,
-      lccaInputs: { discountRate: 0.1, analysisPeriodYears: 20, scenarios: [] },
-      lccaResult: null,
-      customVehicles: [],
-      customMaterials: [],
-      projectName: "Test",
-      authorName: "",
-      reportSummary: null,
-      theme: "system",
-      autoCheckUpdates: true,
-      unitSystem: "SI",
-      boqGeometry: { roadLengthKm: 1, roadWidthM: 8, shoulderWidthM: 1.5 },
-      activeFileName: null,
-      activeFilePath: null,
-      recentFiles: [],
-      ...patch,
-      ...file,
-    },
-  };
+  const patch = storePatchFromSnapshot(snap);
+  await seedStoreState(page, {
+    ...patch,
+    activeFileName: "mock.hcalc",
+    activeFilePath: "C:/mock/mock.hcalc",
+    isProjectDirty: false,
+    cesaDirty: false,
+    pavementDirty: false,
+    economicsDirty: false,
+  });
+  await page.waitForTimeout(300);
 }
 
 const V2_SNAPSHOT: Snapshot = {
@@ -139,25 +100,6 @@ test.describe("DAS-131 snapshot parsing", () => {
     expect(patch.unitSystem).toBe("SI");
   });
 });
-
-async function applySnapshotInBrowser(
-  page: import("@playwright/test").Page,
-  snap: Snapshot,
-) {
-  const patch = storePatchFromSnapshot(snap);
-  const file = { activeFileName: "mock.hcalc", activeFilePath: "C:/mock/mock.hcalc" };
-  await page.evaluate(
-    ({ key, payload }) => {
-      localStorage.setItem(key, JSON.stringify(payload));
-    },
-    {
-      key: STORE_KEY,
-      payload: persistPayloadFromPatch(patch, file),
-    },
-  );
-  await page.reload();
-  await page.waitForTimeout(800);
-}
 
 test.describe("DAS-131 snapshot v2 in UI", () => {
   test("loadFromSnapshot restores custom vehicle and working days", async ({ page }) => {
