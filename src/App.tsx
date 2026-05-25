@@ -44,7 +44,7 @@ const NAV: { to: string; label: string; icon: NucleoIconComponent }[] = [
   { to: "/settings", label: "Settings", icon: IconGear2Outline18 },
 ];
 
-const FILE_BAR_ICON = nucleoIconProps({ size: 14 });
+const FILE_BAR_ICON = nucleoIconProps({ size: 16 });
 const NAV_ICON = nucleoIconProps({ size: 16 });
 
 let closeGuardUnlisten: (() => void) | undefined;
@@ -295,31 +295,24 @@ export default function App() {
         ? "Unsaved project *"
         : null;
 
-  const displayName =
-    hasBoundFile && activeFileName
-      ? activeFileName.length > 20
-        ? activeFileName.slice(0, 20) + "…"
-        : activeFileName
-      : null;
-
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
       <TitleBar subtitle={titleBarSubtitle} />
       <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside className="flex w-60 shrink-0 flex-col border-r bg-card">
-        <div className="flex h-14 flex-col justify-center border-b px-4 gap-1">
-          <div className="flex items-center">
+        <div className="flex h-14 flex-col justify-center gap-1.5 border-b px-3 py-2">
+          <div className="flex items-center gap-2">
             <span className="text-base font-semibold tracking-tight">HaulCalc</span>
-            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase text-subtle">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase text-subtle">
               v{__APP_VERSION__}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-0.5">
             <button
               type="button"
               onClick={() => undo()}
               disabled={!canUndo}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
             >
@@ -329,7 +322,7 @@ export default function App() {
               type="button"
               onClick={() => redo()}
               disabled={!canRedo}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
               title="Redo (Ctrl+Y)"
               aria-label="Redo"
             >
@@ -338,7 +331,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleNewProject}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="New project (Ctrl+N)"
               aria-label="New project"
             >
@@ -347,7 +340,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => openProject(store).catch((err) => { console.error(err); toast.error(`Open failed: ${err.message}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Open project (Ctrl+O)"
               aria-label="Open project"
             >
@@ -356,7 +349,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => saveProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Save (Ctrl+S)"
               aria-label="Save project"
             >
@@ -365,17 +358,12 @@ export default function App() {
             <button
               type="button"
               onClick={() => saveAsProject(useCalcStore.getState()).catch((err) => { console.error(err); toast.error(`Save As failed: ${err instanceof Error ? err.message : String(err)}`); })}
-              className="rounded p-0.5 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded p-1 text-subtle hover:bg-selected hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Save As (Ctrl+Shift+S)"
               aria-label="Save project as"
             >
               <IconSquareDottedArrowBottomRightOutline18 {...FILE_BAR_ICON} aria-hidden />
             </button>
-            {displayName && (
-              <span className="truncate text-2xs text-subtle" title={activeFileName ?? undefined}>
-                {displayName}{isProjectDirty ? " *" : ""}
-              </span>
-            )}
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-2">
