@@ -15,6 +15,8 @@
     --foreground: var(--text-strong);
     --card: 0 0% 100%;
     --card-foreground: var(--text-strong);
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--text-strong);
     --primary: var(--text-strong);
     --primary-foreground: 0 0% 100%;
     --secondary: var(--bg-selected);
@@ -48,6 +50,8 @@
     --foreground: var(--text-strong);
     --card: 0 0% 11%;
     --card-foreground: var(--text-strong);
+    --popover: 0 0% 11%;
+    --popover-foreground: var(--text-strong);
     --primary: var(--text-strong);
     --primary-foreground: 0 0% 11%;
     --secondary: var(--bg-selected);
