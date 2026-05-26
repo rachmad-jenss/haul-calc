@@ -50,6 +50,15 @@ jobs:
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
+      - name: Regenerate bundle icons from base.svg
+        run: pnpm tauri icon src-tauri/icons/base.svg
+
+      - name: Clean Rust build (force fresh Windows icon embed)
+        shell: cmd
+        run: |
+          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
+          cargo clean --manifest-path src-tauri\Cargo.toml
+
       - name: Unblock bundler tools
         shell: cmd
         run: |
