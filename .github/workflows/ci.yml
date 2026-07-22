@@ -27,10 +27,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: powershell
+
 jobs:
   lint:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +65,7 @@ jobs:
   build:
     if: github.event_name == 'push' && github.repository == 'rachmad-jenss/haul-calc'
     needs: lint
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 45
     defaults:
       run:
@@ -102,7 +106,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm playwright install chromium --with-deps
+        run: pnpm playwright install chromium
 
       - name: Run E2E smoke tests
         id: e2e
