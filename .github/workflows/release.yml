@@ -8,13 +8,14 @@ on:
 permissions:
   contents: write
 
+# Public OSS repo: GitHub-hosted Windows for Tauri (no self-hosted).
 jobs:
   release:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: windows-latest
     timeout-minutes: 60
     defaults:
       run:
-        shell: cmd
+        shell: pwsh
     steps:
       - uses: actions/checkout@v4
 
@@ -30,22 +31,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Setup Rust
-        shell: cmd
-        run: |
-          if not exist "C:\Windows\ServiceProfiles\NetworkService\.cargo\bin\rustup.exe" (
-            curl -sSf -o "%TEMP%\rustup-init.exe" https://win.rustup.rs/x86_64
-            "%TEMP%\rustup-init.exe" -y --default-toolchain stable --no-modify-path
-            del "%TEMP%\rustup-init.exe"
-          )
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          rustup update stable --no-self-update
-          rustup default stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build sidecar
-        shell: cmd
-        run: |
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
+        run: powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
@@ -54,21 +43,7 @@ jobs:
         run: pnpm tauri icon src-tauri/icons/base.svg
 
       - name: Clean Rust build (force fresh Windows icon embed)
-        shell: cmd
-        run: |
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          cargo clean --manifest-path src-tauri\Cargo.toml
-
-      - name: Unblock bundler tools
-        shell: cmd
-        run: |
-          set TAURI_CACHE=C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri
-          if exist "%TAURI_CACHE%" (
-            powershell.exe -ExecutionPolicy Bypass -Command "Get-ChildItem -Path 'C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri' -Recurse -File | Unblock-File"
-            echo Bundler tools unblocked
-          ) else (
-            echo No cached bundler tools found
-          )
+        run: cargo clean --manifest-path src-tauri/Cargo.toml
 
       - name: Build Tauri app and create GitHub Release
         uses: tauri-apps/tauri-action@v0
@@ -76,7 +51,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          PATH: C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;${{ env.PATH }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Haul Calc ${{ github.ref_name }}'
@@ -86,8 +60,7 @@ jobs:
           includeUpdaterJson: true
 
       - name: Upload updater artifacts and latest.json
-        shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          powershell.exe -ExecutionPolicy Bypass -File scripts\make-latest-json.ps1 -Tag "${{ github.ref_name }}" -Repo "${{ github.repository }}"
+          powershell.exe -ExecutionPolicy Bypass -File scripts/make-latest-json.ps1 -Tag "${{ github.ref_name }}" -Repo "${{ github.repository }}"
