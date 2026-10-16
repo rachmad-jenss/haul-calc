@@ -27,14 +27,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Public OSS repo: GitHub-hosted Windows for Tauri (no self-hosted).
 defaults:
   run:
-    shell: powershell
+    shell: pwsh
 
 jobs:
   lint:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: windows-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -65,11 +66,8 @@ jobs:
   build:
     if: github.event_name == 'push' && github.repository == 'rachmad-jenss/haul-calc'
     needs: lint
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: windows-latest
     timeout-minutes: 45
-    defaults:
-      run:
-        shell: cmd
     steps:
       - uses: actions/checkout@v4
 
@@ -85,22 +83,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Setup Rust
-        shell: cmd
-        run: |
-          if not exist "C:\Windows\ServiceProfiles\NetworkService\.cargo\bin\rustup.exe" (
-            curl -sSf -o "%TEMP%\rustup-init.exe" https://win.rustup.rs/x86_64
-            "%TEMP%\rustup-init.exe" -y --default-toolchain stable --no-modify-path
-            del "%TEMP%\rustup-init.exe"
-          )
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          rustup update stable --no-self-update
-          rustup default stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build sidecar
-        shell: cmd
-        run: |
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
+        run: powershell.exe -ExecutionPolicy Bypass -File python-sidecar/build.ps1
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
@@ -122,25 +108,11 @@ jobs:
             tests/test-results/
             tests/screenshots/
 
-      - name: Unblock bundler tools
-        shell: cmd
-        run: |
-          set TAURI_CACHE=C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri
-          if exist "%TAURI_CACHE%" (
-            powershell.exe -ExecutionPolicy Bypass -Command "Get-ChildItem -Path 'C:\Windows\ServiceProfiles\NetworkService\AppData\Local\tauri' -Recurse -File | Unblock-File"
-            echo Bundler tools unblocked
-          ) else (
-            echo No cached bundler tools found
-          )
-
       - name: Build Tauri app
-        shell: cmd
+        run: pnpm tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: |
-          set PATH=C:\Windows\ServiceProfiles\NetworkService\.cargo\bin;%PATH%
-          pnpm tauri build
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
