@@ -4,7 +4,7 @@ version = "1.7.1"
 description = "Haul road pavement calculations desktop app"
 authors = ["Rachmad Jenss"]
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.90"
 
 [lib]
 name = "haul_calc_lib"
@@ -18,7 +18,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "2.14"
 tauri-plugin-process = "2"
 tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
