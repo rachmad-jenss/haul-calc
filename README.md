@@ -8,7 +8,7 @@ Desktop GUI (Windows) for **mining haul road pavement calculations**, powered by
 
 ## Download
 
-Grab the latest installer from the [Releases](https://github.com/rachmad-jenss/haul-calc/releases/latest) page (`Haul.Calc_*_x64-setup.exe`).
+Download the latest Windows x64 installer (`HaulCalc_<version>_x64-setup.exe`) from the [Releases](https://github.com/rachmad-jenss/haul-calc/releases/latest) page.
 
 The app auto-updates — once installed, use **Settings → Updates → Check for Updates** to get new versions.
 
@@ -75,7 +75,7 @@ pnpm install
 pnpm tauri build
 ```
 
-Output lands in `src-tauri/target/release/bundle/nsis/Haul Calc_*_x64-setup.exe`.
+Output lands in `src-tauri/target/release/bundle/nsis/HaulCalc_<version>_x64-setup.exe`.
 
 ## Running tests
 
