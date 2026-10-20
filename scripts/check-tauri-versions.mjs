@@ -28,7 +28,7 @@ function majorMinor(version) {
 }
 
 function readCargoLockVersions(lockPath) {
-  const text = readFileSync(lockPath, "utf8");
+  const text = readFileSync(lockPath, "utf8").replace(/\r\n/g, "\n");
   const versions = new Map();
   const re = /^name = "([^"]+)"\nversion = "([^"]+)"/gm;
   for (const match of text.matchAll(re)) {
