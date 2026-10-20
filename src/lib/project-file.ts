@@ -1,4 +1,5 @@
 import { save, open } from "@tauri-apps/plugin-dialog";
+
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { toast } from "sonner";
 import { basenameFromPath, resolveActiveFilePath } from "@/lib/file-binding";
@@ -192,10 +193,17 @@ export async function saveProject(store: CalcStore): Promise<void> {
     if (!store.activeFilePath?.trim()) {
       store.setActiveFilePath(existingPath);
     }
-    await writeTextFile(
-      existingPath,
-      JSON.stringify(snapshotFromStore(store), null, 2),
-    );
+    try {
+      await writeTextFile(
+        existingPath,
+        JSON.stringify(snapshotFromStore(store), null, 2),
+      );
+    } catch (error) {
+      if (!isFileScopeError(error)) throw error;
+      // File picker grants access to files outside the home-folder .hcalc scope.
+      await saveAsProject(store, existingPath);
+      return;
+    }
     store.setProjectDirty(false);
     toast.success(`Saved to ${store.activeFileName ?? basenameFromPath(existingPath)}`);
     return;
@@ -204,10 +212,10 @@ export async function saveProject(store: CalcStore): Promise<void> {
   await saveAsProject(store);
 }
 
-export async function saveAsProject(store: CalcStore): Promise<void> {
+export async function saveAsProject(store: CalcStore, defaultPath?: string): Promise<void> {
   const filePath = await save({
     filters: [{ name: "HaulCalc Project", extensions: ["hcalc"] }],
-    defaultPath: `${store.projectName || "project"}.hcalc`,
+    defaultPath: defaultPath ?? `${store.projectName || "project"}.hcalc`,
   });
 
   if (!filePath) return;
@@ -235,7 +243,27 @@ export async function openProject(store: OpenStore): Promise<void> {
   loadSnapshot(snap, filePath, store);
 }
 
+function isFileScopeError(error: unknown): boolean {
+  return /forbidden path|not allowed/i.test(String(error));
+}
+
 export async function openProjectFromPath(filePath: string, store: OpenStore): Promise<void> {
-  const snap = parseSnapshot(await readTextFile(filePath));
-  loadSnapshot(snap, filePath, store);
+  let selectedPath = filePath;
+  let contents: string;
+  try {
+    contents = await readTextFile(filePath);
+  } catch (error) {
+    if (!isFileScopeError(error)) throw error;
+    // OS file associations and older recent files may be outside the current scope.
+    const pickedPath = await open({
+      defaultPath: filePath,
+      filters: [{ name: "HaulCalc Project", extensions: ["hcalc"] }],
+      multiple: false,
+    });
+    if (!pickedPath || Array.isArray(pickedPath)) return;
+    selectedPath = pickedPath;
+    contents = await readTextFile(selectedPath);
+  }
+  const snap = parseSnapshot(contents);
+  loadSnapshot(snap, selectedPath, store);
 }
